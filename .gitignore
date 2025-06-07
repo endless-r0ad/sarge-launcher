@@ -1,0 +1,48 @@
+
+.DS_Store
+node_modules/
+dist/
+dist-ssr
+*.local
+
+#tauri build folders
+src-tauri/gen
+src-tauri/target
+
+# local env files
+.env.local
+.env.*.local
+.env
+
+# Log files
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# npm, yarn and bun lock files
+package-lock.json
+yarn.lock
+bun.lockb
+
+# Editor directories and files
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# miscellaneous
+/.vs
+.Thumbs.db
+*.sublime*
+.idea
+debug.log
+TODO.md
+
