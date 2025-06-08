@@ -1,5 +1,5 @@
 [package]
-name = "app"
+name = "sarge-launcher"
 version = "0.1.0"
 description = "A Tauri App"
 authors = ["you"]
@@ -23,3 +23,19 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 tauri = { version = "2.5.0", features = [] }
 tauri-plugin-log = "2.0.0-rc"
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+rayon = "1.10.0"
+
+[features]
+# this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
+# If you use cargo directly instead of tauri's cli you can use this feature flag to switch between tauri's `dev` and `build` modes.
+# DO NOT REMOVE!!
+custom-protocol = [ "tauri/custom-protocol" ]
+
+[profile.release]
+panic = "abort" # Strip expensive panic clean-up logic
+codegen-units = 1 # Compile crates one after another so the compiler can optimize better
+lto = true # Enables link to optimizations
+opt-level = "s" # Optimize for binary size
+strip = true # Remove debug symbols

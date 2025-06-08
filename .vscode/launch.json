@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Tauri Development Debug",
             "cargo": {
-                "args": [         
+                "args": [
                   "build",
                   "--manifest-path=./src-tauri/Cargo.toml",
                   "--no-default-features",
