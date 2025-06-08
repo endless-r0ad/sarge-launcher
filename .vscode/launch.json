@@ -1,0 +1,26 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Tauri Development Debug",
+            "cargo": {
+                "args": [         
+                  "build",
+                  "--manifest-path=./src-tauri/Cargo.toml",
+                  "--no-default-features",
+                ]
+              },
+            "env": {
+              "WEBKIT_DISABLE_COMPOSITING_MODE": "1",
+              "RUST_BACKTRACE": "1",
+              "GDK_BACKEND": "x11"
+            },
+            "preLaunchTask": "ui:dev",
+        },
+    ]
+}
