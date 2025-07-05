@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="32.0px"
+   height="32.0px"
+   viewBox="0 0 32.0 32.0"
+   version="1.1"
+   id="SVGRoot"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs8955" />
+  <g
+     id="layer1">
+    <path
+       style="opacity:0.97;fill:none;stroke:#ffffff;paint-order:stroke fill markers;stroke-opacity:1;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none"
+       id="path9070"
+       d="M 31,16 A 15,15 0 0 1 16.000196,31 15,15 0 0 1 1,16.000393 15,15 0 0 1 15.999411,1 15,15 0 0 1 31,15.999215" />
+    <path
+       style="opacity:0.97;fill:none;stroke:#ffffff;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       id="path9120"
+       d="M 23.5,16 A 7.5,15 0 0 1 16.000098,31 7.5,15 0 0 1 8.5,16.000393 7.5,15 0 0 1 15.999705,1 7.5,15 0 0 1 23.5,15.999215" />
+    <path
+       style="opacity:0.97;fill:none;stroke:#ffffff;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       id="path9122-3"
+       d="M 27,6.0000973 A 11,1.4999675 0 0 1 20.648801,7.3595295 11,1.4999675 0 0 1 8.9293365,7.149139 11,1.4999675 0 0 1 5.3748158,5.6118772" />
+    <path
+       style="opacity:0.97;fill:none;stroke:#ffffff;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       id="path9122-3-7"
+       d="m -4.8748159,-26.11178 a 11,1.4999675 0 0 1 -6.3511991,1.359432 11,1.4999675 0 0 1 -11.719464,-0.21039 A 11,1.4999675 0 0 1 -26.5,-26.5"
+       transform="scale(-1)" />
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       d="M 16,1 V 31"
+       id="path9181" />
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:1.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       d="M 1,16 H 31"
+       id="path1046" />
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 6,7 V 6"
+       id="path1161" />
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 26,25 v 1"
+       id="path1163" />
+  </g>
+</svg>
