@@ -19,7 +19,7 @@
     infoAlert: [string]
   }>()
 
-  const componentName = ref("sarge-launcher")
+  const componentName = ref("Sarge Launcher")
   const showWelcomeMessage = ref<boolean>(props.config.welcome_message)
 
   function closeWelcomeMessage() {

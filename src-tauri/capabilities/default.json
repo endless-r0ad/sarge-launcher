@@ -6,6 +6,14 @@
     "main"
   ],
   "permissions": [
-    "core:default"
+    "core:default",
+    "shell:allow-open",
+    "shell:allow-execute",
+    "dialog:default",
+    "process:default",
+    "core:webview:allow-set-webview-zoom",
+    "core:webview:allow-create-webview-window",
+    "shell:default",
+    "log:default"
   ]
 }

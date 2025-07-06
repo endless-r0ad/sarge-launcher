@@ -1,10 +1,10 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "sarge-launcher",
+  "productName": "Sarge Launcher",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "sarge-launcher",
   "build": {
-    "frontendDist": "..",
+    "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build"
@@ -12,15 +12,25 @@
   "app": {
     "windows": [
       {
-        "title": "sarge-launcher",
-        "width": 800,
-        "height": 600,
+        "fullscreen": false,
+        "height": 720,
+        "width": 1280,
         "resizable": true,
-        "fullscreen": false
+        "title": "Sarge Launcher",   
+        "transparent": false,
+        "zoomHotkeysEnabled": true,
+        "minHeight": 450,
+        "minWidth": 800
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": {
+          "allow": ["$CACHE/**", "**/.cache/**"]
+        }
+      }
     }
   },
   "bundle": {

@@ -1,173 +1,167 @@
 use serde::{Deserialize, Serialize};
 
-use std::collections::HashMap;
-//use std::time::Instant;
-
 use crate::master::MasterServer;
 use crate::shared;
+use std::collections::HashMap;
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct ServerPlayer {
-    name: String,
-    namecolored: String,
-    frags: i32,
-    ping: i32,
+	name: String,
+	namecolored: String,
+	frags: i32,
+	ping: i32,
 }
 
 impl ServerPlayer {
-    fn new(name: String, frags: String, ping: String) -> Self {
-        let parsed_name = shared::parse_q3_colorstring(name);
-        Self {
-            name: parsed_name.0,
-            namecolored: parsed_name.1,
-            frags: frags.parse::<i32>().unwrap(),
-            ping: ping.parse::<i32>().unwrap(),
-        }
-    }
+	fn new(name: String, frags: String, ping: String) -> Self {
+		let parsed_name = shared::parse_q3_colorstring(name);
+		Self {
+			name: parsed_name.0,
+			namecolored: parsed_name.1,
+			frags: frags.parse::<i32>().unwrap(),
+			ping: ping.parse::<i32>().unwrap(),
+		}
+	}
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Quake3Server {
-    pub master: Option<MasterServer>,
-    pub ip: String,
-    pub port: String,
-    pub address: String,
-    pub protocol: Option<usize>,
-    pub ping: u128,
-    pub errormessage: String,
-    pub host: String,
-    pub hostcolored: String,
-    pub game: String,
-    pub playersconnected: i32,
-    pub maxclients: String,
-    pub bots: i32,
-    pub map: String,
-    pub othersettings: HashMap<String, String>,
-    pub players: Option<Vec<ServerPlayer>>,
-    pub list: String,
-    pub custom: bool,
-    pub version: String
+	pub master: Option<MasterServer>,
+	pub ip: String,
+	pub port: String,
+	pub address: String,
+	pub protocol: Option<u8>,
+	pub ping: u16,
+	pub errormessage: String,
+	pub host: String,
+	pub hostcolored: String,
+	pub game: String,
+	pub playersconnected: u8,
+	pub maxclients: String,
+	pub bots: u8,
+	pub map: String,
+	pub othersettings: HashMap<String, String>,
+	pub players: Option<Vec<ServerPlayer>>,
+	pub list: String,
+	pub custom: bool,
+	pub version: String,
 }
 
 impl Quake3Server {
-    pub fn new(ip: String, port: String, master: Option<MasterServer>, protocol: Option<usize>) -> Quake3Server {
+	pub fn new(ip: String, port: String, master: Option<MasterServer>, protocol: Option<u8>) -> Quake3Server {
+		Quake3Server {
+			master,
+			ip: ip.clone(),
+			port: port.clone(),
+			address: format!("{}:{}", ip, port),
+			protocol: protocol,
+			ping: 0,
+			errormessage: String::from(""),
+			host: String::new(),
+			hostcolored: String::new(),
+			game: String::new(),
+			playersconnected: 0,
+			maxclients: String::from("0"),
+			bots: 0,
+			map: String::new(),
+			othersettings: HashMap::new(),
+			players: None,
+			list: String::from("main"),
+			custom: false,
+			version: String::from(""),
+		}
+	}
 
-        Quake3Server {
-            master,
-            ip: ip.clone(),
-            port: port.clone(),
-            address: format!("{}:{}", ip, port),
-            protocol: protocol,
-            ping: 0,
-            errormessage: String::from(""),
-            host: String::new(),
-            hostcolored: String::new(),
-            game: String::new(),
-            playersconnected: 0,
-            maxclients: String::from("0"),
-            bots: 0,
-            map: String::new(),
-            othersettings: HashMap::new(),
-            players: None,
-            list: String::from("main"),
-            custom: false,
-            version: String::from("")
-        }
-    }
+	pub fn parse_server_response(&mut self, &response_buf: &[u8; 2400]) -> Result<(), String> {
+		let mut index = 0;
 
-    pub fn parse_server_response(&mut self, &response_buf: &[u8; 2400]) -> Result<(), String> {
-        //let start = Instant::now();
+		if &response_buf[index..(index + 19)] != b"\xff\xff\xff\xffstatusResponse\n" {
+			return Err(format!(
+				"Invalid status response: {:?} ",
+				String::from_utf8_lossy(&response_buf[index..(index + 19)])
+			));
+		}
 
-        let mut index = 0;
+		index += 20;
 
-        if &response_buf[index..(index + 19)] != b"\xff\xff\xff\xffstatusResponse\n" {
-            return Err(format!("Invalid status response: {:?} ", String::from_utf8_lossy(&response_buf[index..(index + 19)])))
-        }
+		let mut reverse_response = response_buf;
+		reverse_response.reverse();
 
-        index += 20;
+		let end_index: usize = response_buf.len() - reverse_response.iter().position(|&r| r == 0x0a).unwrap();
+		let last_gamestate_delimiter = response_buf.len() - reverse_response.iter().position(|&r| r == 0x5c).unwrap();
+		let to_gamestate_end: usize = response_buf[last_gamestate_delimiter..].iter().position(|&r| r == 0x0a).unwrap();
 
-        let mut reverse_response = response_buf;
-        reverse_response.reverse();
+		let gamestate = String::from_utf8_lossy(&response_buf[index..last_gamestate_delimiter + to_gamestate_end]);
+		let gamestate_list: Vec<&str> = gamestate.split("\\").collect();
 
-        let end_index: usize = response_buf.len() - reverse_response.iter().position(|&r| r == 0x0a).unwrap();
-        let last_gamestate_delimiter = response_buf.len() - reverse_response.iter().position(|&r| r == 0x5c).unwrap();
-        let to_gamestate_end: usize = response_buf[last_gamestate_delimiter..].iter().position(|&r| r == 0x0a).unwrap();
+		for i in (0..gamestate_list.len()).step_by(2) {
+			match gamestate_list[i] {
+				"sv_hostname" => {
+					let parsed_host = shared::parse_q3_colorstring(gamestate_list[i + 1].to_owned());
+					self.host = parsed_host.0;
+					self.hostcolored = parsed_host.1;
+				}
+				"version" => {
+					self.version = gamestate_list[i + 1].to_owned();
+				}
+				"gamename" => {
+					self.game = gamestate_list[i + 1].to_owned();
+				}
+				"sv_maxclients" => {
+					self.maxclients = gamestate_list[i + 1].to_owned();
+				}
+				"mapname" => {
+					self.map = gamestate_list[i + 1].to_owned();
+				}
+				_ => {
+					self.othersettings.entry(gamestate_list[i].to_owned()).or_insert(gamestate_list[i + 1].to_owned());
+				}
+			}
+		}
 
-        let gamestate= String::from_utf8_lossy(&response_buf[index..last_gamestate_delimiter + to_gamestate_end]); 
-        let gamestate_list: Vec<&str> = gamestate.split("\\").collect();
+		index = last_gamestate_delimiter + to_gamestate_end;
 
-        //println!("gamestate list is {:?}", gamestate_list);
+		if index == end_index - 1 {
+			return Ok(());
+		}
 
-        for i in (0..gamestate_list.len()).step_by(2) {
-            match gamestate_list[i] {
-                "sv_hostname" => {
-                    let parsed_host = shared::parse_q3_colorstring(gamestate_list[i+1].to_owned());
-                    self.host = parsed_host.0;
-                    self.hostcolored = parsed_host.1;
-                }
-                "version" => {
-                    self.version = gamestate_list[i+1].to_owned();
-                }
-                "gamename" => {
-                    self.game = gamestate_list[i+1].to_owned();
-                }
-                "sv_maxclients" => {
-                    self.maxclients = gamestate_list[i+1].to_owned();
-                }
-                "mapname" => {
-                    self.map = gamestate_list[i+1].to_owned();
-                }
-                _ => {
-                    self.othersettings.entry(gamestate_list[i].to_owned()).or_insert(gamestate_list[i+1].to_owned());
-                }
-            }              
-        }
+		let players = String::from_utf8_lossy(&response_buf[index + 1..end_index - 1]);
+		let player_list: Vec<&str> = players.split("\n").collect();
 
-        index = last_gamestate_delimiter + to_gamestate_end;
+		for player in player_list {
+			let p: Vec<&str> = player.split(" ").collect();
+			let name: String;
 
-        if index == end_index-1 { return Ok(()) } // empty server
+			if p.len() > 3 {
+				name = p[2..].join(" ").to_string();
+			} else {
+				name = p[2].to_string();
+			}
 
-        let players = String::from_utf8_lossy(&response_buf[index+1..end_index-1]);
-        let player_list: Vec<&str> = players.split("\n").collect();
+			let new_player = ServerPlayer::new(name[1..name.len() - 1].to_owned(), p[0].to_owned(), p[1].to_owned());
 
-        for player in player_list {
-            let p: Vec<&str> = player.split(" ").collect();
-            let name: String;
+			if new_player.ping == 0 {
+				self.bots += 1;
+			} else {
+				self.playersconnected += 1;
+			}
 
-            if p.len() > 3 {
-                name = p[2..].join(" ").to_string();
-            } else {
-                name = p[2].to_string();
-            }
- 
-            let new_player = ServerPlayer::new(name[1..name.len()-1].to_owned(), p[0].to_owned(), p[1].to_owned());
-            
-            if new_player.ping == 0 {
-                self.bots += 1;
-            } else {
-                self.playersconnected += 1;
-            }
+			if let Some(player_vec) = self.players.as_mut() {
+				player_vec.push(new_player);
+			} else {
+				let _ = self.players.insert(vec![new_player]);
+			}
+		}
 
-            if let Some(player_vec) = self.players.as_mut() {
-                player_vec.push(new_player);
-            } else {
-                let _ = self.players.insert(vec![new_player]);
-            }
-        }
+		Ok(())
+	}
 
-        //let elapsed = start.elapsed();
-        //println!("NEW finished {:?} Elapsed time: {:.2?}", server.host, elapsed);
-
-        Ok(())
-    }
-
-    pub fn set_error(&mut self, err: std::io::Error) -> () {
-        self.ping = 999;
-        self.errormessage = err.to_string();
-        self.host = err.to_string();
-        self.hostcolored = err.to_string();
-        self.game = String::from("unreachable");
-        self.map = String::from("unreachable");
-    }
-
+	pub fn set_error(&mut self, err: std::io::Error) -> () {
+		self.ping = 999;
+		self.errormessage = err.to_string();
+		self.host = err.to_string();
+		self.hostcolored = err.to_string();
+		self.game = String::from("unreachable");
+		self.map = String::from("unreachable");
+	}
 }
