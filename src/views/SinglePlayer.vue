@@ -297,13 +297,8 @@
           @click="clickLevel(level)"
         >
           <div class="map-row">
-            <img
-              v-if="levelHasLevelshot(level.level_name)"
-              height="96px"
-              width="128px"
-              :src="levelshots![level.level_name.toLowerCase()]"
-            />
-            <img v-else height="96px" width="128px" src="../assets/icons/q3-white.svg" />
+            <img v-if="levelHasLevelshot(level.level_name)" class="map-img" :src="levelshots![level.level_name.toLowerCase()]"/>
+            <img v-else class="map-img" src="../assets/icons/q3-white.svg" />
             <h3 style="width: 44%; text-align: left; white-space: nowrap; overflow: hidden; margin-left: 24px">
               {{ level.level_name }}
             </h3>
@@ -622,6 +617,11 @@
     flex-direction: row;
     height: min-content;
     overflow: hidden;
+  }
+
+  .map-img {
+    height: 96px;
+    width: 128px;
   }
 
   .level-row {

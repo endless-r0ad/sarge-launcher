@@ -239,9 +239,9 @@
   }
 
   .banner-bg {
-    background-image: url('../assets/images/mod3.png');
+    background-image: url('../assets/images/code.png');
     background-size: 100%;
-    background-position: center;
+    background-position: 20% 40%;
   }
 
   .quake-bg {
