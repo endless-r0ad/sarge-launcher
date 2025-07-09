@@ -1,60 +1,51 @@
 <script setup lang="ts">
-  import { defineProps, defineEmits, onMounted, onBeforeUnmount } from 'vue';
+  import { defineProps, defineEmits, onMounted, onBeforeUnmount } from 'vue'
 
-  const props = defineProps<{ popupType: string }>(); // config: Config, appData: AppData,
-  
-  const emit = defineEmits<{
-    cancelModal: [],
-    executeModal: [],
-    mutateConfig: [],
-  }>();
+  const props = defineProps<{ popupType: string }>()
 
-  
+  const emit = defineEmits<{ cancelModal: []; executeModal: []; mutateConfig: [] }>()
+
   function handleKeyPress(event: KeyboardEvent) {
     if (event.code == 'Escape') {
       emit('cancelModal')
     }
   }
-    
+
   onMounted(() => {
     document.addEventListener('keydown', handleKeyPress)
-  }) 
-      
+  })
+
   onBeforeUnmount(() => {
     document.removeEventListener('keydown', handleKeyPress)
-  }) 
-
+  })
 </script>
 
 <template>
-  <div class="backdrop" @mousedown.self="emit('cancelModal')" >
-      <div :class="props.popupType"> 
-        <div>
-          <span v-if="props.popupType == 'error'">(!)&nbsp;&nbsp;</span>
-          <slot></slot>
-        </div>  
-      </div>    
+  <div class="backdrop" @mousedown.self="emit('cancelModal')">
+    <div :class="props.popupType">
+      <div>
+        <span v-if="props.popupType == 'error'">(!)&nbsp;&nbsp;</span>
+        <slot></slot>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
   .backdrop {
-    /* top: 52px !important; */
     top: 0;
     left: 0;
     bottom: 0;
     position: fixed;
     background: rgba(0, 0, 0, 0.6);
     width: 100%;
-    /* height: 100%; */
     z-index: 999;
     color: white;
   }
 
   .center-text {
-    text-align: center; 
+    text-align: center;
     margin: 4px 1px auto auto;
-    
     font-size: 1em;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -63,9 +54,8 @@
   }
 
   .center {
-
     padding: 24px;
-    margin:  auto;
+    margin: auto;
     background-color: var(--secondary-bg);
     border-radius: 0.2rem;
     position: fixed;
@@ -79,47 +69,31 @@
   }
 
   .error {
-
     width: max-content;
     height: max-content;
-      /* padding: 10px; */
     padding: 16px;
-    margin:  40px auto;
-    /* border-radius: 10px; */
+    margin: 40px auto;
     background-color: #b65718;
-    /* border: 2px solid #fff; */
     border-radius: 0.2rem;
-
-    /* width: 12rem; */
     height: 240px;
     max-width: max-content;
     max-height: max-content;
     overflow: auto;
     z-index: 999;
-    border: 1px solid var(--main-bg);;
-    /* border: 1px solid white; */
-    }
+    border: 1px solid var(--main-bg);
+  }
 
   .info {
-
     width: max-content;
     height: max-content;
-      /* padding: 10px; */
     padding: 16px;
-    margin:  40px auto;
-    /* border-radius: 10px; */
+    margin: 40px auto;
     background-color: #444;
-    /* border: 2px solid #fff; */
     border-radius: 0.2rem;
-
-    /* width: 12rem; */
     height: 240px;
     max-width: max-content;
     max-height: max-content;
     z-index: 999;
-    border: 1px solid var(--main-bg);;
-    /* border: 1px solid white; */
-    }
-
-
+    border: 1px solid var(--main-bg);
+  }
 </style>

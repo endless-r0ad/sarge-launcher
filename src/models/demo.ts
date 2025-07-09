@@ -1,9 +1,8 @@
-import { type Nullable } from "@/utils/util"
+import { type Nullable } from '@/utils/util'
 
 export interface DemoPlayer {
   name: string
   namecolored: string
-  //othersettings: { [key: string]: string }
 }
 
 export interface Demo {

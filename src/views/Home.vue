@@ -1,12 +1,12 @@
 <script setup lang="ts">
-  import Popup from "@/components/Popup.vue"
-  import { defineProps, defineEmits, ref, onMounted } from "vue"
-  import { invoke } from "@tauri-apps/api/core"
-  import { ensureError } from "@/utils/util"
-  import { type Config, type AppData } from "@/models/config"
-  import { type Q3Executable } from "@/models/client"
+  import Popup from '@/components/Popup.vue'
+  import { defineProps, defineEmits, ref, onMounted } from 'vue'
+  import { invoke } from '@tauri-apps/api/core'
+  import { ensureError } from '@/utils/util'
+  import { type Config, type AppData } from '@/models/config'
+  import { type Q3Executable } from '@/models/client'
 
-  const props = defineProps<{ config: Config; appData: AppData, showUnreachableServers: boolean, showTrashedServers: boolean }>()
+  const props = defineProps<{ config: Config; appData: AppData; showUnreachableServers: boolean; showTrashedServers: boolean }>()
 
   const emit = defineEmits<{
     mutateConfig: [Config]
@@ -19,36 +19,32 @@
     infoAlert: [string]
   }>()
 
-  const componentName = ref("Sarge Launcher")
+  const componentName = ref('Sarge Launcher')
   const showWelcomeMessage = ref<boolean>(props.config.welcome_message)
 
   function closeWelcomeMessage() {
     showWelcomeMessage.value = false
 
     if (props.config.welcome_message) {
-      emit("mutateConfig", { ...props.config, welcome_message: false })
+      emit('mutateConfig', { ...props.config, welcome_message: false })
     }
   }
 
-  const hoveredCard = ref("")
-
-  // async function FindQ3Dirs() { await invoke('find_q3_dirs'); }
-
-  // function spawnQuake(){ emit('spawnQuake', componentName.value) }
+  const hoveredCard = ref('')
 
   function emitComponentName() {
-    emit("emitComponentName", componentName.value)
+    emit('emitComponentName', componentName.value)
   }
 
   async function pickClientBlocking() {
     try {
-      let new_client: Q3Executable = await invoke("pick_client_blocking")
+      let new_client: Q3Executable = await invoke('pick_client_blocking')
 
       if (new_client != null) {
-        emit("addQ3Client", new_client)
+        emit('addQ3Client', new_client)
       }
     } catch (err) {
-      emit("errorAlert", ensureError(err).message)
+      emit('errorAlert', ensureError(err).message)
     }
   }
 
@@ -58,10 +54,10 @@
 <template>
   <Teleport to="#popup">
     <Popup v-if="showWelcomeMessage" :popupType="'center'" @cancelModal="closeWelcomeMessage">
-      <div style="width: 400px;">
-        <img style="position: absolute; left: 15%; top: 4%;" src="../assets/icons/sarge.svg">
-        <h2 style="position: absolute; right: 15%; top: 4%;">SARGE LAUNCHER</h2>
-        <p style="margin-top: 72px;">
+      <div style="width: 400px">
+        <img style="position: absolute; left: 15%; top: 4%" src="../assets/icons/sarge.svg" />
+        <h2 style="position: absolute; right: 15%; top: 4%">SARGE LAUNCHER</h2>
+        <p style="margin-top: 72px">
           Sarge Launcher is a utility for Quake 3 Arena and Quake 3 Arena mods that provides some useful features for both n00bs and
           veterans. If you are new, you should purchase the game first, then update your client to ioquake3 or quake3e.
         </p>
@@ -92,17 +88,10 @@
       @mouseleave="hoveredCard = ''"
       style="grid-column: 2 / 5; grid-row: 1 / 3"
     >
-      <a class="link" href="https://www.youtube.com/watch?v=ZH51hb7hIN0&list=PL20723923F60F926A" target="_blank">
-        <!-- <video src="../assets/hero_vid.mp4" autoplay muted class="q3-video" type="video/mp4" onloadstart="this.playbackRate = 0.25;"></video> -->
-        <img v-if="config.play_gif" src="../assets/images/orbb-quake.gif" class="q3-video" />
-        <img v-if="!config.play_gif" src="../assets/images/q3map2.png" class="q3-video" />
+      <a class="link" href="https://www.youtube.com/watch?v=wC10pyS0Gyk&list=PLGGojOY6nta5NmPMshZE9l5y3WOaQtU7O&index=1" target="_blank">
+        <img src="../assets/images/contenders.png" class="q3-video" />
         <div v-if="hoveredCard == 'quake 3 arena'" class="center card-name tint">
           <span class="center">{{ hoveredCard }}</span>
-          <div class="play-pause" @click="config.play_gif = !config.play_gif">
-            <img v-if="config.play_gif" src="../assets/icons/pause.svg" />
-            <img v-else src="../assets/icons/play.svg" />
-          </div>
-          <!-- <button class="top-right" @click="this.config.play_gif = !this.config.play_gif">play / pause</button>    -->
         </div>
       </a>
     </div>
@@ -125,19 +114,10 @@
       <a class="link" href="https://store.steampowered.com/app/2200/Quake_III_Arena/" target="_blank">
         <div v-if="hoveredCard == 'buy'" class="tint spotlight">
           <div class="center card-name">buy</div>
-          <!-- <div class="center-gog card-name">gog</div> -->
-          <!-- <span class="center card-name">steam</span>
-          <span class="center card-name">gog</span> -->
         </div>
       </a>
     </div>
-    <!-- <div class="grid-bg quake-bg grow" @mouseover="hoveredCard='gog'" @mouseleave="hoveredCard=''" style="grid-column: 3; grid-row: 3 / 5;">
-      <a class="link" href="https://www.gog.com/en/game/quake_iii_arena" target="_blank">
-        <div v-if="hoveredCard=='gog'" class="tint">
-          <span class="center card-name">{{ hoveredCard }}</span>
-        </div> 
-      </a>
-    </div> -->
+
     <div
       class="grid-bg upgrade-bg grow"
       @mouseover="hoveredCard = 'quake3e'"
@@ -234,86 +214,76 @@
 
 <style scoped>
   .client-grid {
-    /* width: 100%; */
     height: 100%;
     display: grid;
     grid-template-columns: repeat(5, minmax(111px, 20%));
     grid-template-rows: repeat(4, minmax(74px, 25%));
-    /* justify-items: center; */
     grid-gap: 16px;
-    /* grid-auto-flow: row dense; */
-    /* text-align: center;
-    align-items: center; */
+
     padding: 4px;
     color: white;
     user-select: none;
-    /* overflow: hidden; */
   }
 
   .grid-bg {
-    /* background-color: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 1%, rgba(255, 255, 255, 0.001) 25.35%); */
     background-color: var(--secondary-bg);
     background-repeat: no-repeat;
     background-size: 100%;
     background-position: center center;
     color: white;
-    /* border-radius: 0.3rem; */
   }
 
   .plus-bg {
-    background-image: url("../assets/icons/plus.svg");
+    background-image: url('../assets/icons/plus.svg');
     background-size: 10%;
-    /* background-size: 102%; */
   }
 
   .banner-bg {
-    background-image: url("../assets/images/banner-2.jpg");
-    background-size: 102%;
+    background-image: url('../assets/images/mod3.png');
+    background-size: 100%;
+    background-position: center;
   }
 
   .quake-bg {
-    background-image: url("../assets/images/q3_box_art.jpg");
+    background-image: url('../assets/images/q3_box_art.jpg');
   }
 
   .welcome-bg {
-    background-image: url("../assets/icons/sarge.svg");
+    background-image: url('../assets/icons/sarge.svg');
     background-size: 40%;
   }
 
   .upgrade-bg {
-    background-image: url("../assets/icons/q3-white.svg");
+    background-image: url('../assets/icons/q3-white.svg');
     background-size: 40%;
   }
 
   .urt-bg {
-    background-image: url("../assets/images/urt.png");
+    background-image: url('../assets/images/urt.png');
     background-size: 60%;
   }
 
   .defrag-bg {
-    background-image: url("../assets/images/idfe_logo01.svg");
+    background-image: url('../assets/images/idfe_logo01.svg');
     background-size: 220%;
   }
 
   .cpma-bg {
-    background-image: url("../assets/images/cpma-2.png");
+    background-image: url('../assets/images/cpma-2.png');
     background-size: 60%;
   }
 
   .map-bg {
-    background-image: url("../assets/images/map-nightmare.jpg");
+    background-image: url('../assets/images/map-nightmare.jpg');
     background-position: center center;
-    /* border-bottom: 1px solid white; */
   }
 
   .mod-bg {
-    /* background-image: url('../assets/images/mod-code.png'); */
     background-position: center center;
-    /* border-bottom: 1px solid white; */
   }
 
   .oa-bg {
-    background-image: url("../assets/images/Openarena.svg");
+    background-image: url('../assets/images/Openarena.svg');
     background-size: 70%;
   }
 
@@ -327,7 +297,6 @@
   }
 
   .tint {
-    /* transition: all .2s ease-in-out;  */
     min-height: 100%;
     min-width: 100%;
     background-color: rgba(0, 0, 0, 0.6);
@@ -395,6 +364,5 @@
 
   .q3-video:hover {
     background-color: rgba(0, 0, 0, 0.7);
-    /* min-height: 100%; */
   }
 </style>

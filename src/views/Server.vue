@@ -6,7 +6,6 @@
   import { invoke } from '@tauri-apps/api/core'
   import { listen } from '@tauri-apps/api/event'
   import { info } from '@tauri-apps/plugin-log'
-  import { convertFileSrc } from "@tauri-apps/api/core"
   import { type Nullable, ensureError, newCustomServer, validServerAddress, validIp } from '@/utils/util';
   import { type Config, type AppData } from '@/models/config'
   import { type Q3Executable } from '@/models/client'
@@ -14,6 +13,7 @@
   import { type MasterServer } from '@/models/master'
   import { useVirtualScroll } from '@/composables/virtualscroll';
   import { useClickRow } from '@/composables/clickrow';
+  import { useLevelshot } from '@/composables/levelshot'
   import { watch, nextTick, defineProps, defineEmits, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
 
   const props = defineProps<{ config: Config, appData: AppData, showUnreachableServers: boolean, showTrashedServers: boolean }>()
@@ -51,6 +51,8 @@
     return serverDetails.value.filter((s) => s.master?.address == master.address && s.master?.game == master.game).length
   }
 
+  const { levelshots, syncLevelshots, levelHasLevelshot } = useLevelshot()
+
   const refreshingSingle = ref(false)
 
   async function refreshServers(fullRefresh: boolean){
@@ -86,6 +88,8 @@
     loadingEvent.value = 'querying servers...'
 
     try {
+      await syncLevelshots(props.config.fs_homepath)
+
       serverDetailsLastRefresh.value = await invoke('refresh_all_servers', 
                 { allServers: serverIPs.value, 
                   numThreads: (props.config.server_browser_threads == 0 ? 1 : props.config.server_browser_threads),
@@ -104,6 +108,7 @@
 
     loadingEvent.value = ''
     loading.value = false
+    handleScroll()
 
     const executionTime = performance.now() - startTime;
 
@@ -154,7 +159,8 @@
      virtualHeight,
      marginTop,
      virtualStartIndex,
-     virtualEndIndex 
+     virtualEndIndex,
+     handleScroll
   } = useVirtualScroll('serverTable', mainLength, pinnedLength)
 
 
@@ -319,7 +325,7 @@
   const selectedServerIndex = computed(() => {
     if (selectedServer.value) {
       if (selectedServer.value.list == 'main') {
-        getVirtualRows.value.indexOf(selectedServer.value)    // using return doesnt work correctly here but this does???
+        getVirtualRows.value.indexOf(selectedServer.value)
       }     
       return getServersByList(selectedServer.value.list).indexOf(selectedServer.value)
     }
@@ -378,7 +384,7 @@
 
   function spawnQuake(){
     if (selectedServer.value) {
-      if ('g_needpass' in selectedServer.value.othersettings && selectedServer.value.othersettings['g_needpass'] == "1") {
+      if ('g_needpass' in selectedServer.value.othersettings && selectedServer.value.othersettings['g_needpass'] == '1') {
         showPopup.value = 'password'
         popupInput.value = props.appData.server_password
       } else {
@@ -528,9 +534,6 @@
     if (event.key == 'Escape') { escapeButton() }
   }
 
-  const levelshots = ref<Nullable<{ [key: string]: string }>>(null)
-
-
   onActivated(() => {
     document.addEventListener('keydown', handleKeyDown)
     document.addEventListener('keyup', handleKeyUp)
@@ -545,13 +548,6 @@
 
   onMounted(async () => {
     emitComponentName()    
-    levelshots.value = await invoke("get_cached_levelshots")
-
-    if (levelshots.value) {
-      for (var key in levelshots.value) {
-        levelshots.value[key] = convertFileSrc(levelshots.value[key])
-      }
-    }
     await refreshServers(true)
   })
 
@@ -616,7 +612,7 @@
           :isSelected="server === selectedServer && displayDetails"
           :refreshing="refreshingSingle"
           :altKeyHeld="altKeyHeld"
-          :levelshotPath="levelshots![server.map.toLowerCase()]"
+          :levelshotPath="levelHasLevelshot(server.map) ? levelshots![server.map.toLowerCase()] : null"
           tabindex="0"
           @click="clickServer(server, index, $event);"
           @showDetails="displayDetails = true"
@@ -633,7 +629,7 @@
           :refreshing="refreshingSingle"
           :altKeyHeld="altKeyHeld"
           :displayDetailsOnMount="keepSelectedDetailsOpen"
-          :levelshotPath="levelshots![server.map.toLowerCase()]"
+          :levelshotPath="levelHasLevelshot(server.map) ? levelshots![server.map.toLowerCase()] : null"
           tabindex="0"
           @click="clickServer(server, index, $event);"
           @showDetails="displayDetails = true"
@@ -650,7 +646,7 @@
           :isSelected="server === selectedServer && displayDetails"
           :refreshing="refreshingSingle"
           :altKeyHeld="altKeyHeld"
-          :levelshotPath="levelshots![server.map.toLowerCase()]"
+          :levelshotPath="levelHasLevelshot(server.map) ? levelshots![server.map.toLowerCase()] : null"
           tabindex="0"
           @click="clickServer(server, index, $event);"
           @showDetails="displayDetails = true"
@@ -658,7 +654,7 @@
           @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer();"
           /> 
         </div> 
-        <div v-if="!showTrashedServers" class="hidden-trash" @click="displayTrashedServers()">
+        <div v-if="!showTrashedServers && trashLength > 0" class="hidden-trash" @click="displayTrashedServers()">
           ...
         </div>                
         <div v-if="trashLength == 0" class="empty-trash">
@@ -731,7 +727,6 @@
       
     <Popup v-if="showPopup=='masterSettings'" :popupType="'center'" @executeModal="handleMasterServerPopup(true)" @cancelModal="handleMasterServerPopup(true)">   
       <div v-for="master in localAppData.masters" style="height: 32px;">
-        <!-- <label class="switch">  -->
         <span><input type="checkbox" v-model="master.active"></span>
         <text :style="master.unreachable ? 'color: #aaa; text-decoration: line-through;' : ''" class="ml-1">{{ master.game }}: {{ master.name }} </text>
       </div>
@@ -838,20 +833,20 @@
   }
 
   .trash-server-button:hover {    
-    background-color: var(--main-bg);;
+    background-color: var(--main-bg);
     border-radius: 0.2rem;
     cursor: pointer;
   }
 
   .active-popup {    
-    background-color: var(--main-bg);;
+    background-color: var(--main-bg);
     border-radius: 0.2rem;
     cursor: pointer;
   }
 
   .master-servers {
     padding: 14px;
-    background-color: var(--alt-bg);;
+    background-color: var(--alt-bg);
     color: #fff;
     position: absolute;
     bottom: 44px;
@@ -914,13 +909,13 @@
 
   .close-button {
     background: rgba(0, 0, 0, 0);
-    border: 1px solid var(--main-bg);;
+    border: 1px solid var(--main-bg);
     border-radius: 0.2rem;
     margin: 0px 8px 8px 0px;
   }
 
   .close-button:hover {
-    background-color: var(--main-bg);;
+    background-color: var(--main-bg);
     cursor: pointer;
   }
 
@@ -928,14 +923,13 @@
     outline: none;
     width: 80%;
     height: 18px;
-    background-color: var(--main-bg);;
+    background-color: var(--main-bg);
     color: #ccc;
     border-width: 0px;
     border-radius: 0.2rem;
     margin: 8px 0px;
     padding: 2px 0px;
     text-indent: 4px;
-    /* border: 1px solid black; */
   }
 
   .custom-ip::selection {

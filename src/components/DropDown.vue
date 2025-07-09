@@ -1,14 +1,11 @@
 <script setup lang="ts">
-  import { type Nullable } from "@/utils/util"
-  import { defineProps, defineEmits, ref, onMounted, onBeforeUnmount } from "vue"
-  import { type Q3Executable } from "@/models/client"
+  import { type Nullable } from '@/utils/util'
+  import { defineProps, defineEmits, ref, onMounted, onBeforeUnmount } from 'vue'
+  import { type Q3Executable } from '@/models/client'
 
   const props = defineProps<{ q3Clients: Nullable<Q3Executable[]>; activeClient: Nullable<Q3Executable> }>()
 
-  const emit = defineEmits<{
-    q3ClientSelect: [Q3Executable]
-    deleteClient: [Q3Executable]
-  }>()
+  const emit = defineEmits<{ q3ClientSelect: [Q3Executable]; deleteClient: [Q3Executable] }>()
 
   const isDropDownVisible = ref(false)
   const deleteHovered = ref(false)
@@ -19,34 +16,34 @@
       deleteClicked.value = false
       return
     }
-    emit("q3ClientSelect", client)
+    emit('q3ClientSelect', client)
   }
 
   function deleteClient(client: Q3Executable) {
     deleteClicked.value = true
-    emit("deleteClient", client)
+    emit('deleteClient', client)
 
     isDropDownVisible.value = false
   }
 
   function handleKeyPress(event: KeyboardEvent) {
-    if (event.code == "Escape") {
+    if (event.code == 'Escape') {
       isDropDownVisible.value = false
     }
   }
 
   function handleClick(event: MouseEvent) {
     const target = event.target as HTMLTextAreaElement
-    isDropDownVisible.value = target.id == "dropdown" && props.activeClient ? !isDropDownVisible.value : false
+    isDropDownVisible.value = target.id == 'dropdown' && props.activeClient ? !isDropDownVisible.value : false
   }
 
   onMounted(() => {
-    document.addEventListener("keydown", handleKeyPress)
-    document.addEventListener("click", handleClick)
+    document.addEventListener('keydown', handleKeyPress)
+    document.addEventListener('click', handleClick)
   })
   onBeforeUnmount(() => {
-    document.removeEventListener("keydown", handleKeyPress)
-    document.removeEventListener("click", handleClick)
+    document.removeEventListener('keydown', handleKeyPress)
+    document.removeEventListener('click', handleClick)
   })
 </script>
 
@@ -57,7 +54,7 @@
     :style="isDropDownVisible ? 'background-color: var(--alt-bg);' : ''"
     id="dropdown"
   >
-    {{ activeClient?.name || "Quake 3 Client" }}
+    {{ activeClient?.name || 'Quake 3 Client' }}
 
     <div class="clients-wrapper" v-if="isDropDownVisible">
       <span
@@ -85,7 +82,6 @@
   .active-client {
     padding: 2px;
     width: 160px;
-    /* border: solid 1px var(--main-bg);  */
     background-color: var(--main-bg);
     margin: 2px 4px 4px 0px;
     border-radius: 0.2rem;
@@ -118,7 +114,6 @@
     border-radius: 0.2rem;
     width: 248px;
     background: var(--main-bg);
-    /* border: 2px solid var(--secondary-bg); */
     box-shadow: 0px 0px 8px var(--secondary-bg);
     overflow: auto;
     max-height: 210px;
@@ -145,7 +140,6 @@
   .client:last-of-type {
     border-bottom-left-radius: 0.2rem;
     border-bottom-right-radius: 0.2rem;
-    /* border-bottom: solid 1px var(--secondary-bg); */
   }
 
   .remove-client-button {
@@ -153,7 +147,7 @@
     cursor: pointer;
     width: 30px;
     text-align: left;
-    background: url("../assets/icons/x.svg") center center no-repeat;
+    background: url('../assets/icons/x.svg') center center no-repeat;
     background-size: 10px;
     display: inline-block;
   }

@@ -1,12 +1,12 @@
-import { type Config, type AppData } from "@/models/config"
-import { type Quake3Server } from "@/models/server"
+import { type Config, type AppData } from '@/models/config'
+import { type Quake3Server } from '@/models/server'
 
 export type Nullable<T> = T | null
 
 export function ensureError(value: unknown): Error {
   if (value instanceof Error) return value
 
-  let stringified = "[Unable to stringify the thrown value]"
+  let stringified = '[Unable to stringify the thrown value]'
   try {
     stringified = JSON.stringify(value)
   } catch {}
@@ -15,13 +15,9 @@ export function ensureError(value: unknown): Error {
   return error
 }
 
-export function setDefaultImage(event: any) {
-  event.target.src = '/src/assets/icons/q3-white.svg';
-}
-
 export function tempConfig(): Config {
   return {
-    path: "",
+    path: '',
     welcome_message: true,
     play_gif: true,
     server_browser_threads: 50,
@@ -29,21 +25,21 @@ export function tempConfig(): Config {
     show_unreachable: false,
     manage_q3_instance: true,
     show_trashed_servers: true,
-    demo_path: "",
-    fs_homepath: "",
+    demo_path: '',
+    fs_homepath: '',
     q3_clients: [],
   }
 }
 
 export function tempAppData(): AppData {
   return {
-    path: "",
+    path: '',
     pinned: new Set(),
     custom: new Set(),
     trash: new Set(),
     trash_ip: new Set(),
     masters: [],
-    server_password: "",
+    server_password: '',
   }
 }
 
@@ -55,29 +51,29 @@ export function newCustomServer(ip_and_port: string[], address: string): Quake3S
     address: address,
     protocol: null,
     ping: 0,
-    errormessage: "",
-    host: "",
-    hostcolored: "",
-    game: "",
+    errormessage: '',
+    host: '',
+    hostcolored: '',
+    game: '',
     playersconnected: 0,
-    maxclients: "0",
+    maxclients: '0',
     bots: 0,
-    map: "",
+    map: '',
     othersettings: {},
     players: null,
-    list: "pinned",
+    list: 'pinned',
     custom: true,
-    version: "",
+    version: '',
   }
 }
 
 export function validServerAddress(input: string): boolean {
-  if (!input.includes(":") || !input.includes(".")) {
+  if (!input.includes(':') || !input.includes('.')) {
     return false
   }
 
-  let split_s = input.split(":")
-  let stripped = split_s[0].replaceAll(".", "")
+  let split_s = input.split(':')
+  let stripped = split_s[0].replaceAll('.', '')
 
   // port
   if (split_s.length > 2 || split_s[1].length == 0 || split_s[1].length > 5 || !/^\d+$/.test(split_s[1])) {
@@ -110,7 +106,7 @@ export const Q3_BOT_NAMES: string[] = [
   'crash',
   'doom',
   'grunt',
-  'hunter', 
+  'hunter',
   'keel',
   'klesk',
   'lucy',
@@ -125,5 +121,5 @@ export const Q3_BOT_NAMES: string[] = [
   'tankjr',
   'uriel',
   'visor',
-  'xaero'
-];
+  'xaero',
+]

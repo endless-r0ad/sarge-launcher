@@ -1,17 +1,17 @@
 <script setup lang="ts">
-  import DemoRow from "@/components/DemoRow.vue"
-  import Loading from "@/components/Loading.vue"
-  import { invoke } from "@tauri-apps/api/core"
-  import { sep } from "@tauri-apps/api/path"
-  import { info } from "@tauri-apps/plugin-log"
-  import { convertFileSrc } from "@tauri-apps/api/core"
-  import { type Nullable, ensureError } from "@/utils/util"
-  import { type Config, type AppData } from "@/models/config"
-  import { type Q3Executable } from "@/models/client"
-  import { type Demo } from "@/models/demo"
-  import { watch, nextTick, defineProps, defineEmits, ref, computed, onMounted, onActivated } from "vue"
-  import { useVirtualScroll } from "@/composables/virtualscroll"
-  import { useClickRow } from '@/composables/clickrow';
+  import DemoRow from '@/components/DemoRow.vue'
+  import Loading from '@/components/Loading.vue'
+  import { invoke } from '@tauri-apps/api/core'
+  import { sep } from '@tauri-apps/api/path'
+  import { info } from '@tauri-apps/plugin-log'
+  import { type Nullable, ensureError } from '@/utils/util'
+  import { type Config, type AppData } from '@/models/config'
+  import { type Q3Executable } from '@/models/client'
+  import { type Demo } from '@/models/demo'
+  import { watch, nextTick, defineProps, defineEmits, ref, computed, onMounted, onActivated } from 'vue'
+  import { useVirtualScroll } from '@/composables/virtualscroll'
+  import { useClickRow } from '@/composables/clickrow'
+  import { useLevelshot } from '@/composables/levelshot'
 
   const props = defineProps<{ config: Config, appData: AppData, showUnreachableServers: boolean, showTrashedServers: boolean }>()
 
@@ -26,21 +26,23 @@
     infoAlert: [string]
   }>()
 
-  const componentName = ref("Demo Browser")
+  const componentName = ref('Demo Browser')
   const demoPath = ref(props.config.demo_path)
 
   async function selectDemoPath() {
-    let path: Nullable<string> = await invoke("pick_demo_path")
+    let path: Nullable<string> = await invoke('pick_demo_path')
 
     if (path != null) {
       demoPath.value = path
-      emit("mutateConfig", { ...props.config, demo_path: path })
+      emit('mutateConfig', { ...props.config, demo_path: path })
       await getDemos()
     }
   }
 
   const loading = ref(false)
-  const loadingEvent = ref("")
+  const loadingEvent = ref('')
+
+  const { levelshots, syncLevelshots, levelHasLevelshot } = useLevelshot()
 
   const demos = ref<Demo[]>([])
   const demosLastRefresh = ref<Demo[]>([])
@@ -53,49 +55,39 @@
     const startTime = performance.now()
 
     loading.value = true
-    loadingEvent.value = "parsing demos..."
+    loadingEvent.value = 'parsing demos...'
     selectedDemo.value = null
     demosLastRefresh.value = []
     demos.value = []
-    searchQuery.value = ""
+    searchQuery.value = ''
     sortDesc.value = false
-    currentSort.value = ""
+    currentSort.value = ''
 
     try {
-      demosLastRefresh.value = await invoke("get_demos_rayon", { demoPath: demoPath.value })
+      await syncLevelshots(props.config.fs_homepath)
+
+      demosLastRefresh.value = await invoke('get_demos_rayon', { demoPath: demoPath.value })
       demos.value = demosLastRefresh.value
     } catch (err) {
-      emit("errorAlert", ensureError(err).message)
-    }
-
-    try {
-      let levels = await invoke("get_levels", { fsHomepath: props.config.fs_homepath })
-      await invoke("extract_levelshots_to_cache", { levels: levels })
-      levelshots.value = await invoke("get_cached_levelshots")
-
-      if (levelshots.value) {
-        for (var key in levelshots.value) {
-          levelshots.value[key] = convertFileSrc(levelshots.value[key])
-        }
-      }
-    } catch (err) {
-      emit("errorAlert", ensureError(err).message)
+      emit('errorAlert', ensureError(err).message)
     }
 
     loading.value = false
-    loadingEvent.value = ""
+    loadingEvent.value = ''
+    handleScroll()
+
     const executionTime = performance.now() - startTime
 
     info(`${totalDemos.value} demos read from ${demoPath.value} in ${parseFloat((executionTime / 1000).toFixed(2))} seconds`)
   }
 
-  const searchQuery = ref("")
+  const searchQuery = ref('')
 
   watch(searchQuery, async (newSearch, _oldSearch) => {
     selectedDemo.value = null
     lastSelectedDemo.value = null
     sortDesc.value = false
-    currentSort.value = ""
+    currentSort.value = ''
 
     let query = newSearch.toLowerCase()
 
@@ -113,22 +105,22 @@
   })
 
   const sortDesc = ref(false)
-  const currentSort = ref("")
+  const currentSort = ref('')
 
   function getArrowSort(column: string) {
     if (currentSort.value != column) {
-      return "sort-arrow-default"
+      return 'sort-arrow-default'
     }
     if (sortDesc.value && currentSort.value == column) {
-      return "sort-arrow-desc"
+      return 'sort-arrow-desc'
     }
     if (!sortDesc.value && currentSort.value == column) {
-      return "sort-arrow-asc"
+      return 'sort-arrow-asc'
     }
   }
 
   function sortDemos(column: string) {
-    if (currentSort.value == column || currentSort.value == "") {
+    if (currentSort.value == column || currentSort.value == '') {
       sortDesc.value = !sortDesc.value
     } else {
       sortDesc.value = true
@@ -137,17 +129,17 @@
     selectedDemo.value = null
     currentSort.value = column
 
-    if (column == "name") {
+    if (column == 'name') {
       demos.value.sort((a, b) => {
-        if (a["player_pov"][column] > b["player_pov"][column]) {
+        if (a['player_pov'][column] > b['player_pov'][column]) {
           return sortDesc.value ? -1 : 1
         }
-        if (a["player_pov"][column] < b["player_pov"][column]) {
+        if (a['player_pov'][column] < b['player_pov'][column]) {
           return sortDesc.value ? 1 : -1
         }
         return 0
       })
-    } else if (column == "file_name" || column == "duration" || column == "gamename" || column == "mapname" || column == "g_gametype") {
+    } else if (column == 'file_name' || column == 'duration' || column == 'gamename' || column == 'mapname' || column == 'g_gametype') {
       demos.value.sort((a, b) => {
         if (a[column] > b[column]) {
           return sortDesc.value ? -1 : 1
@@ -174,10 +166,10 @@
 
   function emitConnect() {
     if (selectedDemo.value != null) {
-      let relative_index = selectedDemo.value.path.indexOf(sep() + "demos")
+      let relative_index = selectedDemo.value.path.indexOf(sep() + 'demos')
       let relative_path = selectedDemo.value.path.substring(relative_index + 6)
-      let args = ["+set", "fs_game", selectedDemo.value.gamename, "+demo", relative_path]
-      emit("emitConnectArgs", args)
+      let args = ['+set', 'fs_game', selectedDemo.value.gamename, '+demo', relative_path]
+      emit('emitConnectArgs', args)
     }
   }
 
@@ -188,7 +180,7 @@
 
   function spawnQuake() {
     if (selectedDemo.value != null) {
-      emit("spawnQuake", componentName.value)
+      emit('spawnQuake', componentName.value)
     }
   }
 
@@ -201,7 +193,8 @@
     virtualHeight,
     marginTop,
     virtualStartIndex,
-    virtualEndIndex 
+    virtualEndIndex,
+    handleScroll
   } = useVirtualScroll('demoTable', totalDemos);
 
   const getVirtualRows = computed(() => {
@@ -224,10 +217,10 @@
 
     nextTick(() => {
       // the real dom is now updated (document.)
-      let selected = document.getElementById("selected")
+      let selected = document.getElementById('selected')
 
       if (selected) {
-        selected?.scrollIntoView({ behavior: "instant" as ScrollBehavior, block: "start", inline: "nearest" })
+        selected?.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'start', inline: 'nearest' })
         selected?.focus()
       }
     })
@@ -243,7 +236,7 @@
 
   function clickDemo(clicked: Demo, event: MouseEvent) {
     let target = event.target as HTMLTextAreaElement;
-    if (target.id == "moreButton") { return }
+    if (target.id == 'moreButton') { return }
 
     handleClick(clicked, target)
 
@@ -255,15 +248,13 @@
 
   const keepSelectedDetailsOpen = ref(false)
 
-  const levelshots = ref<Nullable<{ [key: string]: string }>>(null)
-
   onMounted(async () => {
-    emit("emitComponentName", componentName.value)
+    emit('emitComponentName', componentName.value)
     await getDemos()
   })
 
   onActivated(async () => {
-    emit("emitComponentName", componentName.value)
+    emit('emitComponentName', componentName.value)
     emitConnect()
   })
 </script>
@@ -315,7 +306,7 @@
           :demo="demo"
           :isSelected="demo === selectedDemo && displayDetails"
           :displayDetailsOnMount="keepSelectedDetailsOpen"
-          :levelshotPath="levelshots![demo.mapname.toLowerCase()]"
+          :levelshotPath="levelHasLevelshot(demo.mapname) ? levelshots![demo.mapname.toLowerCase()] : null"
           tabindex="0"
           @click="clickDemo(demo, $event)"
           @showDetails="displayDetails = true"

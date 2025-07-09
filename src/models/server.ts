@@ -1,5 +1,5 @@
-import { type Nullable } from "@/utils/util"
-import { type MasterServer } from "@/models/master"
+import { type Nullable } from '@/utils/util'
+import { type MasterServer } from '@/models/master'
 
 export interface ServerPlayer {
   name: string

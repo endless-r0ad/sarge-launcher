@@ -1,5 +1,5 @@
-import { type ComputedRef, useTemplateRef, ref, computed, onActivated, onDeactivated } from "vue"
-import { type Nullable } from "@/utils/util"
+import { type ComputedRef, useTemplateRef, ref, computed, onActivated, onDeactivated } from 'vue'
+import { type Nullable } from '@/utils/util'
 
 export interface VirtualScroll {
   rowHeight: number
@@ -11,9 +11,10 @@ export function useVirtualScroll(
   totalItems: ComputedRef<number>,
   pinnedToTop: Nullable<ComputedRef<number>> = null
 ) {
-
   const scroller = ref<VirtualScroll>({ rowHeight: 24, overscan: 10 })
-  const setScroller = (newScroller: VirtualScroll) => { scroller.value = newScroller }
+  const setScroller = (newScroller: VirtualScroll) => {
+    scroller.value = newScroller
+  }
 
   const scrollingTable = useTemplateRef<HTMLDivElement>(scrollableDiv)
 
@@ -25,10 +26,7 @@ export function useVirtualScroll(
   })
 
   const virtualStartIndex = computed(() => {
-    return Math.max(
-      0,
-      translateY.value / scroller.value.rowHeight - (scroller.value.overscan + (pinnedToTop?.value ?? 0))
-    )
+    return Math.max(0, translateY.value / scroller.value.rowHeight - (scroller.value.overscan + (pinnedToTop?.value ?? 0)))
   })
 
   const virtualEndIndex = computed(() => {
@@ -39,19 +37,17 @@ export function useVirtualScroll(
   })
 
   const marginTop = computed(() => {
-    return translateY.value >
-      scroller.value.overscan * scroller.value.rowHeight + (pinnedToTop?.value ?? 0) * scroller.value.rowHeight
+    return translateY.value > scroller.value.overscan * scroller.value.rowHeight + (pinnedToTop?.value ?? 0) * scroller.value.rowHeight
       ? -scroller.value.rowHeight * (scroller.value.overscan + (pinnedToTop?.value ?? 0))
       : -translateY.value
   })
 
   function handleScroll() {
     if (scrollingTable.value) {
-      translateY.value =
-        Math.min(
-          virtualHeight.value,
-          scroller.value.rowHeight * Math.floor(scrollingTable.value.scrollTop / scroller.value.rowHeight)
-        )
+      translateY.value = Math.min(
+        virtualHeight.value,
+        scroller.value.rowHeight * Math.floor(scrollingTable.value.scrollTop / scroller.value.rowHeight)
+      )
     }
   }
 
@@ -62,15 +58,15 @@ export function useVirtualScroll(
   }
 
   onActivated(async () => {
-    scrollingTable.value?.addEventListener("scroll", handleScroll)
-    window.addEventListener("resize", handleResize)
+    scrollingTable.value?.addEventListener('scroll', handleScroll)
+    window.addEventListener('resize', handleResize)
     handleResize()
     handleScroll()
   })
 
   onDeactivated(async () => {
-    scrollingTable.value?.removeEventListener("scroll", handleScroll)
-    window.removeEventListener("resize", handleResize)
+    scrollingTable.value?.removeEventListener('scroll', handleScroll)
+    window.removeEventListener('resize', handleResize)
   })
 
   return {
@@ -81,5 +77,6 @@ export function useVirtualScroll(
     marginTop,
     virtualStartIndex,
     virtualEndIndex,
+    handleScroll,
   }
 }

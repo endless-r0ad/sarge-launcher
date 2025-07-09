@@ -1,6 +1,6 @@
-import { type Nullable } from "@/utils/util"
-import { type Q3Executable } from "@/models/client"
-import { type MasterServer } from "@/models/master"
+import { type Nullable } from '@/utils/util'
+import { type Q3Executable } from '@/models/client'
+import { type MasterServer } from '@/models/master'
 
 export interface Config {
   path: string

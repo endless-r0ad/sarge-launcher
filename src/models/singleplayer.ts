@@ -1,4 +1,4 @@
-import { Q3_BOT_NAMES } from "@/utils/util"
+import { Q3_BOT_NAMES } from '@/utils/util'
 
 export interface Bot {
   name: (typeof Q3_BOT_NAMES)[number]

@@ -17,7 +17,7 @@
   margin: 0 34% 0 0;
   padding-left: 10px;
   height: 39px;
-  border-bottom: 1px solid var(--main-bg);;
+  border-bottom: 1px solid var(--main-bg);
 }
 
 .table-header-right {
@@ -25,7 +25,7 @@
   width: 34%;
   text-align: right;
   padding-right: 8px;
-  border-bottom: 1px solid var(--main-bg);;
+  border-bottom: 1px solid var(--main-bg);
   height: 39px;
   /* margin: -2px 0px 0px 0px; */
 }
@@ -34,7 +34,7 @@
   outline: none;
   width: 160px;
   /* height: 18px; */
-  background-color: var(--main-bg);;
+  background-color: var(--main-bg);
   color: #ccc;
   border-width: 0px;
   border-radius: 0.2rem;
@@ -52,7 +52,7 @@
 .connect-button {
   background-color: rgba(0, 0, 0, 0);
   color: white;
-  border: 1px solid var(--main-bg);; /* Green */
+  border: 1px solid var(--main-bg);
   border-radius: 0.2rem;
   cursor: pointer;
   font-size: 110%;
@@ -65,8 +65,8 @@
 .connect-button:disabled,
 .connect-button[disabled]{
   background-color: rgba(0, 0, 0, 0);
-  color: var(--main-bg);;
-  border: 1px solid var(--main-bg);; /* Green */
+  color: var(--main-bg);
+  border: 1px solid var(--main-bg);
   border-radius: 0.2rem;
   cursor: default;
   font-size: 110%;
@@ -76,13 +76,13 @@
 }
 
 .connect-button:hover:enabled {
-  background-color: var(--main-bg);;
+  background-color: var(--main-bg);
 }
 
 .refresh-button {
   background-color: rgba(0, 0, 0, 0);
   color: white;
-  border: 1px solid var(--main-bg);; /* Green */
+  border: 1px solid var(--main-bg);
   border-radius: 0.2rem;
   cursor: pointer;
   font-size: 110%;
@@ -93,13 +93,13 @@
 }
 
 .refresh-button:hover {
-  background-color: var(--main-bg);;
+  background-color: var(--main-bg);
 }
 
 .ok-button {
   background-color: rgba(0, 0, 0, 0);
   color: white;
-  border: 1px solid var(--main-bg);; /* Green */
+  border: 1px solid var(--main-bg);
   border-radius: 0.2rem;
   cursor: pointer;
   font-size: 110%;
@@ -113,7 +113,7 @@
 }
 
 .ok-button:hover {
-  background-color: var(--main-bg);;
+  background-color: var(--main-bg);
 }
 
 .table-column-header {
@@ -213,7 +213,7 @@ div::-webkit-scrollbar-thumb {
   /* padding: 6px 0px 6px 0; */
   user-select: none;
   color: #fff;
-  border-top: 1px solid var(--main-bg);;
+  border-top: 1px solid var(--main-bg);
 }
 
 .table-footer-left {
@@ -246,12 +246,12 @@ div::-webkit-scrollbar-thumb {
   height: 18px;
   padding: 2px;
   cursor: pointer;
-  border: 1px solid var(--main-bg);;
+  border: 1px solid var(--main-bg);
   border-radius: 0.2rem;
 }
 
 .footer-icon:hover {
-  background-color: var(--main-bg);;
+  background-color: var(--main-bg);
 }
 
 .footer-url {
