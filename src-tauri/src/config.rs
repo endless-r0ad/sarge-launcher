@@ -35,7 +35,7 @@ pub struct Config {
 	show_trashed_servers: bool,
 	demo_path: Option<String>,
 	fs_homepath: Option<String>,
-	q3_clients: Option<Vec<Q3Executable>>,
+	q3_clients: Vec<Q3Executable>
 }
 
 impl Config {
@@ -51,7 +51,7 @@ impl Config {
 			show_trashed_servers: true,
 			demo_path: None,
 			fs_homepath: None,
-			q3_clients: Some(Vec::<Q3Executable>::new()),
+			q3_clients: Vec::<Q3Executable>::new(),
 		}
 	}
 }

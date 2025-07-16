@@ -4,41 +4,14 @@ use std::sync::Mutex;
 use std::thread;
 
 use std::process::{Command, Stdio};
-use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
+use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::DialogExt;
 
 use crate::client::Q3Executable;
 use crate::config::Q3Browser;
 
-#[tauri::command(async)]
-pub async fn pick_client(app: AppHandle, window: WebviewWindow) -> Result<(), String> {
-	let picking = app.dialog().file().set_title("Select a Quake 3 Client");
-
-	picking.pick_file(move |mut file| {
-		if let Some(picked_file) = &mut file {
-			let file_name = picked_file.as_path().unwrap().file_name().unwrap().to_string_lossy().into_owned();
-			let picked_client = Q3Executable::new(file_name.to_string(), picked_file.clone().simplified(), false);
-			println!("pick_client - CHOSEN FILE IS - {:?}", picked_client);
-
-			let mut client_bytes = std::fs::File::open(&picked_file.as_path().unwrap()).unwrap();
-			let mut first_bytes = [0; 24];
-
-			let _ = client_bytes.read_exact(&mut first_bytes);
-
-			println!("first 24 bytes of client is -- ");
-			println!("{:?}", first_bytes);
-
-			let _ = window.emit("picked_client", picked_client).unwrap();
-		} else {
-			println!("pick_client - CHOSEN FILE IS - {:?}", file);
-		}
-	});
-
-	Ok(())
-}
-
 #[tauri::command]
-pub async fn pick_client_blocking(app: AppHandle) -> Result<Option<Q3Executable>, String> {
+pub async fn pick_client(app: AppHandle) -> Result<Option<Q3Executable>, String> {
 	let chosen_client: Option<Q3Executable>;
 	let mut is_valid_client: bool;
 	let mut chosen_file_bytes = [0; 12];
@@ -47,8 +20,12 @@ pub async fn pick_client_blocking(app: AppHandle) -> Result<Option<Q3Executable>
 
 	if let Some(picked_file) = &mut file_path {
 		let file_name = picked_file.as_path().unwrap().file_name().unwrap().to_string_lossy().into_owned();
+        let path = picked_file.clone().simplified();
+        let parent_path = path.as_path().unwrap().parent().unwrap().to_str().unwrap().to_string();
 
-		chosen_client = Some(Q3Executable::new(file_name.to_string(), picked_file.clone().simplified(), false));
+		chosen_client = Some(
+            Q3Executable{name: file_name.to_string(), exe_path: path.to_string(), parent_path: parent_path}
+        );
 
 		let mut client_bytes = File::open(&picked_file.as_path().unwrap()).unwrap();
 		let _ = client_bytes.read_exact(&mut chosen_file_bytes);
@@ -87,7 +64,7 @@ pub async fn spawn_quake(app: AppHandle, active_client: Q3Executable, q3_args: V
 			child.kill().unwrap();
 		}
 
-		let mut new_child = Command::new(active_client.path.to_string())
+		let mut new_child = Command::new(active_client.exe_path.to_string())
 			.args(q3_args)
 			.stdin(Stdio::piped())
 			.stderr(Stdio::piped())
@@ -105,7 +82,7 @@ pub async fn spawn_quake(app: AppHandle, active_client: Q3Executable, q3_args: V
 			});
 		}
 	} else {
-		let mut new_child = Command::new(active_client.path.to_string())
+		let mut new_child = Command::new(active_client.exe_path.to_string())
 			.args(q3_args)
 			.stdin(Stdio::piped())
 			.stderr(Stdio::piped())

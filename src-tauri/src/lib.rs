@@ -31,7 +31,6 @@ pub fn run() {
 			commands::config::save_app_data,
 			commands::client::spawn_quake,
 			commands::client::pick_client,
-			commands::client::pick_client_blocking,
 			commands::client::kill_q3_client,
 			commands::demo::get_demos_rayon,
 			commands::demo::pick_demo_path,

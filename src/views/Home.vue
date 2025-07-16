@@ -13,7 +13,6 @@
     mutateAppData: [AppData]
     spawnQuake: [string]
     addQ3Client: [Q3Executable]
-    emitConnectArgs: [string[]]
     emitComponentName: [string]
     errorAlert: [string]
     infoAlert: [string]
@@ -38,7 +37,7 @@
 
   async function pickClientBlocking() {
     try {
-      let new_client: Q3Executable = await invoke('pick_client_blocking')
+      let new_client: Q3Executable = await invoke('pick_client')
 
       if (new_client != null) {
         emit('addQ3Client', new_client)

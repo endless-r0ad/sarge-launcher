@@ -128,6 +128,11 @@
   text-align: center;
 }
 
+.sort-header {
+  cursor: pointer;
+  text-align: left;
+}
+
 .sort-arrow-default {
   background: url('../icons/up-arrow.svg') center center no-repeat;
   background-size: 10px;

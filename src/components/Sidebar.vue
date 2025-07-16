@@ -6,7 +6,7 @@
 </script>
 
 <template>
-  <div class="sidebar">
+  <div class="sidebar no-select">
     <div class="logo">
       <router-link to="/home" style="background: transparent">
         <img v-if="$route.path == '/home'" src="../assets/icons/q3-accent.svg" width="50px" />

@@ -168,12 +168,13 @@
       </div>
       <div style="width: 25%; text-align: left; white-space: nowrap; padding: 8px">
         <div style="height: 180px; overflow: hidden auto">
-          Server Info:
+          <span style="font-weight: 600;">Server Info</span>
           <div v-for="(setting, _index) in sortedServerInfo">
             <span>{{ setting[0] }}: &nbsp;</span>
             <span>{{ setting[1] }}</span>
           </div>
-          System Info:
+          <br>
+          <span style="font-weight: 600;">System Info</span>
           <div v-for="(setting, _index) in sortedSystemInfo">
             <span>{{ setting[0] }}: &nbsp;</span>
             <span>{{ setting[1] }}</span>

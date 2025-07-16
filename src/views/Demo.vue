@@ -18,9 +18,8 @@
   const emit = defineEmits<{
     mutateConfig: [Config]
     mutateAppData: [AppData]
-    spawnQuake: [string]
+    spawnQuake: [string[]]
     addQ3Client: [Q3Executable]
-    emitConnectArgs: [string[]]
     emitComponentName: [string]
     errorAlert: [string]
     infoAlert: [string]
@@ -161,15 +160,16 @@
 
   watch(selectedDemo, (_newSelectedDemo, _old) => {
     keepSelectedDetailsOpen.value = false
-    emitConnect()
+    setDemoConnectArgs()
   })
 
-  function emitConnect() {
+  const demoConnectArgs = ref<string[]>([])
+
+  function setDemoConnectArgs() {
     if (selectedDemo.value != null) {
       let relative_index = selectedDemo.value.path.indexOf(sep() + 'demos')
-      let relative_path = selectedDemo.value.path.substring(relative_index + 6)
-      let args = ['+set', 'fs_game', selectedDemo.value.gamename, '+demo', relative_path]
-      emit('emitConnectArgs', args)
+      let relative_path = selectedDemo.value.path.substring(relative_index + 7)
+      demoConnectArgs.value = ['+set', 'fs_game', selectedDemo.value.gamename, '+demo', `\"${relative_path}\"`]
     }
   }
 
@@ -180,7 +180,7 @@
 
   function spawnQuake() {
     if (selectedDemo.value != null) {
-      emit('spawnQuake', componentName.value)
+      emit('spawnQuake', demoConnectArgs.value)
     }
   }
 
@@ -255,12 +255,12 @@
 
   onActivated(async () => {
     emit('emitComponentName', componentName.value)
-    emitConnect()
+    setDemoConnectArgs()
   })
 </script>
 
 <template>
-  <div class="table-header-base">
+  <div class="table-header-base no-select">
     <div class="table-header-right">
       <input class="search" type="text" placeholder="search" v-model="searchQuery" />
     </div>
@@ -271,14 +271,14 @@
 
     <div class="table-column-header">
       <span style="width: 1%"></span>
-      <span style="width: 9%; text-align: left">game<span :class="getArrowSort('gamename')" @click="sortDemos('gamename')" /></span>
-      <span style="width: 8%; text-align: left">type<span :class="getArrowSort('g_gametype')" @click="sortDemos('g_gametype')" /></span>
-      <span style="width: 12%; text-align: left">pov<span :class="getArrowSort('name')" @click="sortDemos('name')" /></span>
-      <span style="width: 44%; text-align: left">demo<span :class="getArrowSort('file_name')" @click="sortDemos('file_name')" /></span>
+      <span style="width: 9%; text-align: left"><span class="sort-header" @click="sortDemos('gamename')">game</span><span :class="getArrowSort('gamename')" @click="sortDemos('gamename')" /></span>
+      <span style="width: 8%; text-align: left"><span class="sort-header" @click="sortDemos('g_gametype')">type</span><span :class="getArrowSort('g_gametype')" @click="sortDemos('g_gametype')" /></span>
+      <span style="width: 12%; text-align: left"><span class="sort-header" @click="sortDemos('name')">pov</span><span :class="getArrowSort('name')" @click="sortDemos('name')" /></span>
+      <span style="width: 44%; text-align: left"><span class="sort-header" @click="sortDemos('file_name')">demo</span><span :class="getArrowSort('file_name')" @click="sortDemos('file_name')" /></span>
       <span style="width: 1%"></span>
-      <span style="width: 14%; text-align: left">map<span :class="getArrowSort('mapname')" @click="sortDemos('mapname')" /></span>
+      <span style="width: 14%; text-align: left"><span class="sort-header" @click="sortDemos('mapname')">map</span><span :class="getArrowSort('mapname')" @click="sortDemos('mapname')" /></span>
       <span style="width: 1%"></span>
-      <span style="width: 12%; text-align: left">duration<span :class="getArrowSort('duration')" @click="sortDemos('duration')" /></span>
+      <span style="width: 12%; text-align: left"><span class="sort-header" @click="sortDemos('duration')">duration</span><span :class="getArrowSort('duration')" @click="sortDemos('duration')" /></span>
       <span style="width: 2%"></span>
     </div>
   </div>

@@ -18,9 +18,8 @@
   const emit = defineEmits<{
     mutateConfig: [Config]
     mutateAppData: [AppData]
-    spawnQuake: [string]
+    spawnQuake: [string[]]
     addQ3Client: [Q3Executable]
-    emitConnectArgs: [string[]]
     emitComponentName: [string]
     errorAlert: [string]
     infoAlert: [string]
@@ -42,6 +41,18 @@
   const bots_team_free = ref<Bot[]>([])
   const bots_team_red = ref<Bot[]>([])
   const bots_team_blue = ref<Bot[]>([])
+
+  function pushBot(bot: Bot) {
+    if (bot.team == 'Free' && bots_team_free.value.length < Math.min(sv_maxclients.value-1, 15)) {
+        bots_team_free.value.push(bot)
+    }
+    if (bot.team == 'Red' && bots_team_red.value.length < (sv_maxclients.value - bots_team_blue.value.length - 1)) {
+        bots_team_red.value.push(bot)
+    }
+    if (bot.team == 'Blue' && bots_team_blue.value.length < (sv_maxclients.value - bots_team_red.value.length - 1)) {
+        bots_team_blue.value.push(bot)
+    }
+  }
 
   const loading = ref(false)
   const loadingEvent = ref('')
@@ -82,6 +93,7 @@
       emit('errorAlert', ensureError(err).message)
     }
 
+    showPak0LevelsOnly.value = false
     loading.value = false
     loadingEvent.value = ''
     handleScroll()
@@ -117,11 +129,11 @@
   const selectedLevel = ref<Nullable<Level>>(null)
   const lastSelectedLevel = ref<Nullable<Level>>(null)
 
-  const launchArg = ref<string[]>([])
   const gameType = ref<Nullable<number>>(2)
   const teamSelect = ref<'Free' | 'Red' | 'Blue'>('Free')
   const difficulty = ref<1 | 2 | 3 | 4 | 5>(5)
   const cheats = ref(false)
+  const sv_maxclients = ref(8)
 
   function getQ3ClientType() {
     let activeClient = props.config.q3_clients?.filter((c) => c.active)[0]
@@ -150,21 +162,13 @@
     return levels.value.indexOf(d)
   }
 
-  function emitConnect() {
-    if (selectedLevel.value != null) {
-      emit('emitConnectArgs', launchArg.value)
-    }
-  }
-
   function escapeButton() {
     lastSelectedLevel.value = null
     selectedLevel.value = null
   }
 
   function spawnQuake() {
-    console.log('1')
     if (selectedLevel.value && gameType.value != null) {
-        console.log('2')
       let launch = ''
 
       if (gameType.value == 2) {
@@ -177,33 +181,31 @@
         launch = cheats.value ? '+devmap' : '+map'
       }
 
-      let arg = [launch, selectedLevel.value.level_name, '+set', 'g_gametype', gameType.value.toString()]
+      let args = [launch, selectedLevel.value.level_name, '+set', 'g_gametype', gameType.value.toString()]
 
-      arg.push(...['+set', gameType.value == 2 ? 'g_spskill' : 'skill', difficulty.value.toString(), '+wait', '3'])
+      args.push(...['+set', 'sv_maxclients', sv_maxclients.value.toString()])
+      args.push(...['+set', gameType.value == 2 ? 'g_spskill' : 'skill', difficulty.value.toString(), '+wait', '3'])
 
       if (gameType.value != 3 && gameType.value != 4 && getQ3ClientType() != 'df') {
         bots_team_free.value.forEach((bot) => {
-          arg.push(...['+addbot', bot.name, bot.difficulty.toString(), bot.team])
+          args.push(...['+addbot', bot.name, bot.difficulty.toString()])
         })
       }
 
       if (gameType.value == 3 || (gameType.value == 4 && getQ3ClientType() != 'df')) {
         bots_team_red.value.forEach((bot) => {
-          arg.push(...['+addbot', bot.name, bot.difficulty.toString(), bot.team])
+          args.push(...['+addbot', bot.name, bot.difficulty.toString(), bot.team])
         })
 
         bots_team_blue.value.forEach((bot) => {
-          arg.push(...['+addbot', bot.name, bot.difficulty.toString(), bot.team])
+          args.push(...['+addbot', bot.name, bot.difficulty.toString(), bot.team])
         })
       }
 
-      arg.push(...['+wait', '5'])
-      arg.push(...['+team', teamSelect.value])
+      args.push(...['+wait', '5'])
+      args.push(...['+team', teamSelect.value])
 
-      console.log('args are ', arg)
-
-      emit('emitConnectArgs', arg)
-      emit('spawnQuake', componentName.value)
+      emit('spawnQuake', args)
     }
   }
 
@@ -258,15 +260,14 @@
 
   onActivated(async () => {
     emit('emitComponentName', componentName.value)
-    emitConnect()
   })
 </script>
 
 <template>
-  <div class="table-header-base" style="height: 40px">
+  <div class="table-header-base no-select" style="height: 40px">
     <div class="table-header-right">
       <button class="refresh-button" :class="{ 'pak0-only': showPak0LevelsOnly }" @click="showPak0LevelsOnly = !showPak0LevelsOnly">
-        Q3A
+        Quake 3
       </button>
       <input class="search" type="text" placeholder="search" v-model="searchQuery" />
     </div>
@@ -385,7 +386,8 @@
       />
       <img v-else style="width: 50%" src="../assets/icons/q3-white.svg" />
       <div style="width: 50%; text-align: center; overflow: hidden scroll; padding: 4px 0px 4px 4px" v-if="gameType != 4 && gameType != 3">
-        <div v-for="b in bots_team_free" style="white-space: nowrap">
+        <button class="bot-button" style="margin: 0px 0px 6px 30px; color: #fff;">you</button>
+        <div v-for="b in bots_team_free" style="white-space: nowrap;">
           <button @click="bots_team_free.splice(bots_team_free.indexOf(b), 1)" class="close-button">
             <img src="../assets/icons/x.svg" width="8px" />
           </button>
@@ -394,7 +396,8 @@
         </div>
       </div>
       <div v-if="gameType == 3 || gameType == 4" class="team red">
-        <div v-for="b in bots_team_red" style="white-space: nowrap">
+        <button v-if="teamSelect == 'Red'" class="bot-button" style="margin: 0px 0px 6px 30px; color: #fff;">you</button>
+        <div v-for="b in bots_team_red" style="white-space: nowrap;">
           <button @click="bots_team_red.splice(bots_team_red.indexOf(b), 1)" class="close-button">
             <img src="../assets/icons/x.svg" width="8px" />
           </button>
@@ -403,7 +406,8 @@
         </div>
       </div>
       <div v-if="gameType == 3 || gameType == 4" class="team blue">
-        <div v-for="b in bots_team_blue" style="white-space: nowrap">
+        <button v-if="teamSelect == 'Blue'" class="bot-button" style="margin: 0px 0px 6px 30px; color: #fff;">you</button>
+        <div v-for="b in bots_team_blue" style="white-space: nowrap;">
           <button @click="bots_team_blue.splice(bots_team_blue.indexOf(b), 1)" class="close-button">
             <img src="../assets/icons/x.svg" width="8px" />
           </button>
@@ -415,14 +419,14 @@
 
     <div style="display: flex; margin: 10px 0">
       <div style="width: 50%; text-align: center">
-        <button class="dif-button" :class="{ active: cheats }" @click="cheats = !cheats">cheats</button>
+        <button class="dif-button" @click="sv_maxclients = (sv_maxclients % 24) + 1">sv_maxclients: {{ sv_maxclients }}</button>
         <button
           v-if="gameType == 4 || gameType == 3"
           class="dif-button"
           :style="teamSelect == 'Red' ? 'background-color: rgba(255, 0, 0, 0.2)' : 'background-color: rgba(0, 0, 255, 0.2);'"
           @click="teamSelect = teamSelect == 'Red' ? 'Blue' : 'Red'"
         >
-          My Team: {{ teamSelect }}
+          Team: {{ teamSelect }}
         </button>
       </div>
       <div style="width: 50%; text-align: center" v-if="gameType != 4 && gameType != 3">
@@ -430,7 +434,7 @@
           v-if="gameType != 4 && gameType != 3"
           class="dif-button"
           style="display: inline-block"
-          @click="bots_team_free.push({ name: 'sarge', difficulty: difficulty, team: 'Free' })"
+          @click="pushBot({ name: 'sarge', difficulty: difficulty, team: 'Free' })"
         >
           +bot
         </button>
@@ -440,7 +444,7 @@
           v-if="gameType == 4 || gameType == 3"
           class="dif-button"
           style="display: inline-block"
-          @click="bots_team_red.push({ name: 'sarge', difficulty: difficulty, team: 'Red' })"
+          @click="pushBot({ name: 'sarge', difficulty: difficulty, team: 'Red' })"
         >
           +bot
         </button>
@@ -450,12 +454,13 @@
           v-if="gameType == 4 || gameType == 3"
           class="dif-button"
           style="display: inline-block"
-          @click="bots_team_blue.push({ name: 'sarge', difficulty: difficulty, team: 'Blue' })"
+          @click="pushBot({ name: 'sarge', difficulty: difficulty, team: 'Blue' })"
         >
           +bot
         </button>
       </div>
     </div>
+    <button class="dif-button" :class="{ active: cheats }" @click="cheats = !cheats" style="margin-left: 5%;">cheats</button>
 
     <div style="text-align: center">
       <button class="setup-button" :disabled="!selectedLevel || gameType == null" @click="spawnQuake()">Connect</button>

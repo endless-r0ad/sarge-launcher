@@ -76,9 +76,9 @@
   <div style="overflow: hidden">
     <div class="server-row">
       <span style="width: 2%">
-        <div v-if="server.list == 'pinned' && !server.custom" class="fave-solid" id="addToListButton" />
+        <div v-if="server.list == 'pinned' && !server.custom" class="pin-solid" id="addToListButton" />
         <div v-if="server.list == 'pinned' && server.custom" class="custom">c</div>
-        <div v-if="server.list == 'main' && !altKeyHeld" class="fave" id="addToListButton" />
+        <div v-if="server.list == 'main' && !altKeyHeld" class="pin" id="addToListButton" />
         <div v-if="server.list == 'main' && altKeyHeld" class="trash-button" id="addToListButton" />
         <div v-if="server.list == 'trash'" class="minus" id="addToListButton">-</div>
       </span>
@@ -120,7 +120,7 @@
       </div>
       <div style="width: 30%; text-align: left; white-space: nowrap; padding: 8px">
         <div style="height: 180px; overflow: hidden auto">
-          Server Info:
+          <span style="font-weight: 600;">Server Info</span>
           <div v-for="(setting, _index) in sortedOtherSettings">
             <span>{{ setting[0] }}: &nbsp;</span>
             <span>{{ setting[1] }}</span>
@@ -184,21 +184,18 @@
     opacity: 0.5;
   }
 
-  .fave {
-    background: url('../assets/icons/fave.svg') center center no-repeat;
+  .pin {
+    background: url('../assets/icons/pin.svg') center center no-repeat;
     height: 20px;
+    width: 20px;
     cursor: pointer;
   }
 
-  .fave:hover {
-    background: url('../assets/icons/fave-filled.svg') center center no-repeat;
+  .pin-solid,
+  .pin:hover {
+    background: url('../assets/icons/pin-filled.svg') center center no-repeat;
     height: 20px;
-    cursor: pointer;
-  }
-
-  .fave-solid {
-    background: url('../assets/icons/fave-filled.svg') center center no-repeat;
-    height: 20px;
+    width: 20px;
     cursor: pointer;
   }
 

@@ -1,19 +1,9 @@
 use serde::{Deserialize, Serialize};
-use tauri_plugin_dialog::FilePath;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Q3Executable {
 	pub name: String,
-	pub path: FilePath,
-	pub active: bool,
+	pub exe_path: String,
+    pub parent_path: String
 }
 
-impl Q3Executable {
-	pub fn new(name: String, path: FilePath, active: bool) -> Self {
-		Self {
-			name: name,
-			path: path,
-			active: active,
-		}
-	}
-}

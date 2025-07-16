@@ -78,7 +78,6 @@ pub async fn save_app_data(app: AppHandle, app_data: AppData) -> Result<(), Stri
 
 #[tauri::command(async)]
 pub async fn save_config(app: AppHandle, updated_config: Config) -> Result<(), String> {
-	//confirm_config;
 	let state = app.state::<Mutex<Q3Browser>>();
 	let mut config_dir = app.path().app_config_dir().unwrap();
 
@@ -108,11 +107,9 @@ pub async fn save_config(app: AppHandle, updated_config: Config) -> Result<(), S
 
 #[tauri::command(async)]
 pub fn get_config(app: AppHandle) -> Result<Config, String> {
-	//confirm_config;
 	let state = app.state::<Mutex<Q3Browser>>();
 	let mut config_dir = app.path().app_config_dir().unwrap();
 
-	// create dirs if not there
 	if !config_dir.exists() {
 		create_dir(&config_dir).unwrap();
 	}
@@ -145,11 +142,9 @@ pub fn get_config(app: AppHandle) -> Result<Config, String> {
 
 #[tauri::command(async)]
 pub fn get_appdata(app: AppHandle) -> Result<AppData, String> {
-	//confirm_config;
 	let state = app.state::<Mutex<Q3Browser>>();
 	let mut app_data_dir = app.path().app_data_dir().unwrap();
 
-	// create dirs if not there
 	if !app_data_dir.exists() {
 		create_dir(&app_data_dir).unwrap();
 	}

@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import DropDown from '@/components/DropDown.vue'
   import { invoke } from '@tauri-apps/api/core'
-  import { defineProps, defineEmits, ref } from 'vue'
+  import { defineProps, defineEmits } from 'vue'
   import { ensureError } from '@/utils/util'
   import { type Q3Executable } from '@/models/client'
   import { type Nullable } from '@/utils/util'
@@ -10,22 +10,16 @@
   const props = defineProps<{ currentView: string; config: Config; activeClient: Nullable<Q3Executable> }>()
 
   const emit = defineEmits<{
-    spawnQuake: [string]
+    spawnQuake: [string[]]
     addQ3Client: [Q3Executable]
     toggleQ3Client: [Q3Executable]
     deleteQ3Client: [Q3Executable]
     errorAlert: [string]
   }>()
 
-  const componentName = ref('Header')
-
-  function spawnQuake() {
-    emit('spawnQuake', componentName.value)
-  }
-
-  async function pickClientBlocking() {
+  async function pickClient() {
     try {
-      let new_client: Q3Executable = await invoke('pick_client_blocking')
+      let new_client: Q3Executable = await invoke('pick_client')
 
       if (new_client != null) {
         emit('addQ3Client', new_client)
@@ -44,14 +38,14 @@
 </script>
 
 <template>
-  <div class="navbar">
+  <div class="navbar no-select">
     <div>
       <h3 class="page-title">{{ currentView }}</h3>
     </div>
 
     <div class="nav-right">
-      <div v-if="props.activeClient" class="launch-client-button" @click="spawnQuake" />
-      <div class="add-client-button" @click="pickClientBlocking"></div>
+      <div v-if="props.activeClient" class="launch-client-button" @click="emit('spawnQuake', [])" />
+      <div class="add-client-button" @click="pickClient"></div>
 
       <DropDown :q3Clients="config.q3_clients" :activeClient="activeClient" @q3ClientSelect="q3ClientSelect" @deleteClient="deleteClient" />
     </div>

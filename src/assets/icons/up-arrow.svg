@@ -12,9 +12,10 @@
   <defs
      id="defs64" />
   <g
-     id="layer1">
+     id="layer1"
+     style="fill:#ffffff;fill-opacity:1">
     <path
-       style="fill:#000000;fill-rule:evenodd"
+       style="fill:#ffffff;fill-rule:evenodd;fill-opacity:1"
        id="path462"
        d="m 16,2 c 2.944487,10e-8 16.194675,22.95 14.722432,25.5 -1.472244,2.55 -27.972621,2.55 -29.4448641,0 C -0.19467521,24.95 13.055514,1.9999999 16,2 Z" />
   </g>

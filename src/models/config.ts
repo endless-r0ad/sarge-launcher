@@ -13,7 +13,7 @@ export interface Config {
   show_trashed_servers: boolean
   demo_path: Nullable<string>
   fs_homepath: Nullable<string>
-  q3_clients: Nullable<Q3Executable[]>
+  q3_clients: Q3Executable[]
 }
 
 export interface AppData {

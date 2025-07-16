@@ -21,9 +21,8 @@
   const emit = defineEmits<{
     mutateConfig: [Config],
     mutateAppData: [AppData],
-    spawnQuake: [string],
+    spawnQuake: [string[]],
     addQ3Client: [Q3Executable],
-    emitConnectArgs: [string[]],
     emitComponentName: [string],
     errorAlert: [string],
     infoAlert: [string],
@@ -253,9 +252,8 @@
     if (popupInput.value != '') {
       localAppData.value.server_password = popupInput.value
       emit('mutateAppData', localAppData.value)
-      let args = ['+set', 'fs_game', selectedServer.value!.game, '+password', popupInput.value, '+connect', selectedServer.value!.address];
-      emit('emitConnectArgs', args)
-      emit('spawnQuake', componentName.value)   
+      serverConnectArgs.value = ['+set', 'fs_game', selectedServer.value!.game, '+password', popupInput.value, '+connect', selectedServer.value!.address];
+      emit('spawnQuake', serverConnectArgs.value)   
 
       if (closeAfterHandle) {
         popupInput.value = '', showPopup.value = '';
@@ -312,13 +310,14 @@
 
   watch(selectedServer, (_new, _old) => {
       keepSelectedDetailsOpen.value = false
-      emitConnectArgs()
+      setServerConnectArgs()
     })
 
-  function emitConnectArgs(){
+  const serverConnectArgs = ref<string[]>([])
+
+  function setServerConnectArgs(){
     if (selectedServer.value != null) {
-      let args = ['+set', 'fs_game', selectedServer.value.game, '+connect', selectedServer.value.address];
-      emit('emitConnectArgs', args)
+      serverConnectArgs.value = ['+set', 'fs_game', selectedServer.value.game, '+connect', selectedServer.value.address];
     }     
   }
 
@@ -388,7 +387,7 @@
         showPopup.value = 'password'
         popupInput.value = props.appData.server_password
       } else {
-        emit('spawnQuake', componentName.value)
+        emit('spawnQuake', serverConnectArgs.value)
       }          
     }        
   }
@@ -538,7 +537,7 @@
     document.addEventListener('keydown', handleKeyDown)
     document.addEventListener('keyup', handleKeyUp)
     emitComponentName() 
-    emitConnectArgs()
+    setServerConnectArgs()
   }) 
 
   onDeactivated(() => {
@@ -556,7 +555,7 @@
 
 <template>
     
-  <div class="table-header-base">
+  <div class="table-header-base no-select">
     <div class="table-header-right">
         <input class="search" type="text" placeholder="search" v-model="searchQuery"> 
         <span class="add-custom-server" :class="{'active-popup': showPopup == 'add'}" @click="showPopup='add'" />
@@ -571,15 +570,15 @@
   
     <div class="table-column-header">
       <span style="width: 3%;"></span>
-      <span style="width: 11%; text-align: left;">game<span :class="getArrowSort('game')" @click="sortServers('game');" /></span>
-      <span style="width: 3%; text-align: left;"></span>
-      <span style="width: 36%; text-align: left;">hostname<span :class="getArrowSort('host')" @click="sortServers('host');" /></span>
+      <span style="width: 11%; text-align: left;"><span class="sort-header" @click="sortServers('game');">game</span><span :class="getArrowSort('game')" @click="sortServers('game');"/></span>
+      <span style="width: 3%;"></span>
+      <span style="width: 36%; text-align: left;"><span class="sort-header" @click="sortServers('host');">hostname</span><span :class="getArrowSort('host')" @click="sortServers('host');" /></span>
       <span style="width: 1%;"></span>
-      <span style="width: 16%; text-align: left;">map<span :class="getArrowSort('map')" @click="sortServers('map');" /></span>
-      <span style="width: 10%; text-align: left;">players<span :class="getArrowSort('playersconnected')" @click="sortServers('playersconnected');" /></span>
+      <span style="width: 16%; text-align: left;"><span class="sort-header" @click="sortServers('map');">map</span><span :class="getArrowSort('map')" @click="sortServers('map');"/></span>
+      <span style="width: 10%; text-align: left;"><span class="sort-header" @click="sortServers('playersconnected')">players</span><span :class="getArrowSort('playersconnected')" @click="sortServers('playersconnected')"/></span>
       <span style="width: 2%;"></span>   
-      <span style="width: 7%; text-align: left;">ping<span :class="getArrowSort('ping')" @click="sortServers('ping');" /></span>  
-      <span style="width: 16%; text-align: left;">address<span :class="getArrowSort('address')" @click="sortServers('address');" /></span>  
+      <span style="width: 7%; text-align: left;"><span class="sort-header" @click="sortServers('ping');">ping</span><span :class="getArrowSort('ping')" @click="sortServers('ping');"/></span>  
+      <span style="width: 16%; text-align: left;"><span class="sort-header" @click="sortServers('address');">address</span><span :class="getArrowSort('address')" @click="sortServers('address');"/></span>  
       <span style="width: 2%;"></span>     
     </div>
   </div>
@@ -595,14 +594,14 @@
       >
     <div v-if="loading" >  
       <Loading :position="'center'" :message="loadingEvent" :size="90" />
-      <div class="empty-pinned"><span><img src="../assets/icons/fave.svg" class="trash-icon"></span></div>
+      <div class="empty-pinned"><span><img src="../assets/icons/pin.svg" class="pin-icon"></span></div>
       <div v-for="(_, index) in 48" class="row" :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''" ></div>     
       <div class="empty-trash"><span>alt + <img src="../assets/icons/trash.svg" class="trash-icon"></span></div>      
     </div>
     <div v-if="!loading" :style="{ height: (virtualHeight + addtlHeight) + 'px'}">      
       <div class="main" v-bind:style="{ transform: 'translateY(' + translateY + 'px)', marginTop: marginTop + 'px' }">      
         <div v-if="pinnedLength == 0" id="scrollEmptyPinned" class="empty-pinned">
-          <img src="../assets/icons/fave.svg" class="trash-icon">
+          <img src="../assets/icons/pin.svg" class="pin-icon">
         </div>
         <ServerRow v-for="(server, index) in pinnedServers" 
           class="row pinned"
@@ -766,6 +765,11 @@
 
   .pinned:nth-of-type(even) {
     background-color: rgba(9, 61, 82, 0.5)
+  }
+
+  .pin-icon {
+    height: 22px;
+    margin-bottom: -4px;
   }
 
   .main {
