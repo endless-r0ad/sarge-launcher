@@ -1,176 +1,82 @@
-use std::fs::{create_dir, read_to_string, File};
-use std::io::{BufWriter, Write};
-use std::path::PathBuf;
+use std::fs::create_dir;
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
 
 use crate::config::{AppData, Config, Q3Browser};
 
-fn read_config_json(config_path: &PathBuf) -> Result<Config, String> {
-	let config_str = read_to_string(config_path).unwrap();
 
-	let config_json = serde_json::from_str(&config_str);
+#[tauri::command(async)]
+pub async fn save_config(app: AppHandle, updated_config: Config) -> Result<(), tauri::Error> {
+	let state = app.state::<Mutex<Q3Browser>>();
+	let mut config = app.path().app_config_dir()?;
 
-	let config: Config = match config_json {
-		Ok(config) => config,
-		Err(_e) => {
-			std::fs::remove_file(config_path).unwrap();
-			let new_config = Config::new(config_path.to_str().unwrap().to_string());
-			let file = File::create(&config_path).unwrap();
-			let mut writer = BufWriter::new(file);
-			serde_json::to_writer(&mut writer, &new_config).unwrap();
-			writer.flush().unwrap();
-			return Ok(new_config);
-		}
-	};
-	return Ok(config);
-}
+	if !config.exists() {
+		create_dir(&config)?;
+	}
 
-fn read_app_data_json(data_dir: &PathBuf) -> Result<AppData, String> {
-	let app_data_str = read_to_string(data_dir).unwrap();
+	config.push("config.json");
+	updated_config.write_to_file(&config)?;
+	state.lock().unwrap().config.lock().unwrap().replace(updated_config);
 
-	let app_data_json = serde_json::from_str(&app_data_str);
-
-	let app_data: AppData = match app_data_json {
-		Ok(app_data) => app_data,
-		Err(_e) => {
-			std::fs::remove_file(data_dir).unwrap();
-			let new_app_data = AppData::new(data_dir.to_str().unwrap().to_string());
-			let file = File::create(&data_dir).unwrap();
-			let mut writer = BufWriter::new(file);
-			serde_json::to_writer(&mut writer, &new_app_data).unwrap();
-			writer.flush().unwrap();
-			return Ok(new_app_data);
-		}
-	};
-	return Ok(app_data);
+	Ok(())
 }
 
 #[tauri::command(async)]
-pub async fn save_app_data(app: AppHandle, app_data: AppData) -> Result<(), String> {
+pub async fn save_app_data(app: AppHandle, updated_data: AppData) -> Result<(), tauri::Error> {
 	let state = app.state::<Mutex<Q3Browser>>();
-	let mut app_data_dir = app.path().app_data_dir().unwrap();
+	let mut app_data_dir = app.path().app_data_dir()?;
 
 	if !app_data_dir.exists() {
-		create_dir(&app_data_dir).unwrap();
+		create_dir(&app_data_dir)?;
 	}
 
-	app_data_dir.push("sarge-launcher-data.json");
-
-	let file = File::create(&app_data_dir).unwrap();
-	let mut writer = BufWriter::new(file);
-	serde_json::to_writer(&mut writer, &app_data).unwrap();
-	writer.flush().unwrap();
-
-	let state = state.lock().unwrap();
-	let mut state_data = state.app_data.lock().unwrap();
-
-	if let Some(_old_state) = &mut *state_data {
-		state_data.replace(app_data);
-	} else {
-		state_data.replace(app_data);
-	}
-
-	drop(state_data);
+	app_data_dir.push("appdata.json");
+    updated_data.write_to_file(&app_data_dir)?;
+    state.lock().unwrap().app_data.lock().unwrap().replace(updated_data);
 
 	Ok(())
 }
 
 #[tauri::command(async)]
-pub async fn save_config(app: AppHandle, updated_config: Config) -> Result<(), String> {
+pub fn get_config(app: AppHandle) -> Result<Config, tauri::Error> {
 	let state = app.state::<Mutex<Q3Browser>>();
-	let mut config_dir = app.path().app_config_dir().unwrap();
+	let mut config_dir = app.path().app_config_dir()?;
 
 	if !config_dir.exists() {
-		create_dir(&config_dir).unwrap();
+		create_dir(&config_dir)?;
 	}
 
-	config_dir.push("sarge-launcher.json");
-
-	let file = File::create(&config_dir).unwrap();
-	let mut writer = BufWriter::new(file);
-	serde_json::to_writer(&mut writer, &updated_config).unwrap();
-	writer.flush().unwrap();
-
-	let state = state.lock().unwrap();
-	let mut state_config = state.config.lock().unwrap();
-
-	if let Some(_old_state) = &mut *state_config {
-		state_config.replace(updated_config);
-	} else {
-		state_config.replace(updated_config);
-	}
-	drop(state_config);
-
-	Ok(())
-}
-
-#[tauri::command(async)]
-pub fn get_config(app: AppHandle) -> Result<Config, String> {
-	let state = app.state::<Mutex<Q3Browser>>();
-	let mut config_dir = app.path().app_config_dir().unwrap();
-
-	if !config_dir.exists() {
-		create_dir(&config_dir).unwrap();
-	}
-
-	config_dir.push("sarge-launcher.json");
+	config_dir.push("config.json");
 
 	if !config_dir.exists() {
 		let config = Config::new(config_dir.to_str().unwrap().to_string());
-		let file = File::create(&config_dir).unwrap();
-		let mut writer = BufWriter::new(file);
-		serde_json::to_writer(&mut writer, &config).unwrap();
-		writer.flush().unwrap();
+		config.write_to_file(&config_dir)?;
 	}
 
-	let config_json = read_config_json(&config_dir).unwrap();
-
-	let state = state.lock().unwrap();
-	let mut state_config = state.config.lock().unwrap();
-
-	if let Some(_old_state) = &mut *state_config {
-		state_config.replace(config_json.to_owned());
-		drop(state_config);
-	} else {
-		state_config.replace(config_json.to_owned());
-		drop(state_config);
-	}
+	let config_json = Config::read_from_file(&config_dir)?;
+	state.lock().unwrap().config.lock().unwrap().replace(config_json.to_owned());
 
 	Ok(config_json)
 }
 
 #[tauri::command(async)]
-pub fn get_appdata(app: AppHandle) -> Result<AppData, String> {
+pub fn get_appdata(app: AppHandle) -> Result<AppData, tauri::Error> {
 	let state = app.state::<Mutex<Q3Browser>>();
-	let mut app_data_dir = app.path().app_data_dir().unwrap();
+	let mut app_data_dir = app.path().app_data_dir()?;
 
 	if !app_data_dir.exists() {
-		create_dir(&app_data_dir).unwrap();
+		create_dir(&app_data_dir)?;
 	}
 
-	app_data_dir.push("sarge-launcher-data.json");
+	app_data_dir.push("appdata.json");
 
 	if !app_data_dir.exists() {
 		let app_data = AppData::new(app_data_dir.to_str().unwrap().to_string());
-		let file = File::create(&app_data_dir).unwrap();
-		let mut writer = BufWriter::new(file);
-		serde_json::to_writer(&mut writer, &app_data).unwrap();
-		writer.flush().unwrap();
+		app_data.write_to_file(&app_data_dir)?;
 	}
 
-	let app_data_json = read_app_data_json(&app_data_dir).unwrap();
-
-	let state = state.lock().unwrap();
-	let mut state_data = state.app_data.lock().unwrap();
-
-	if let Some(_old_state) = &mut *state_data {
-		state_data.replace(app_data_json.to_owned());
-		drop(state_data);
-	} else {
-		state_data.replace(app_data_json.to_owned());
-		drop(state_data);
-	}
+	let app_data_json = AppData::read_from_file(&app_data_dir)?;
+	state.lock().unwrap().app_data.lock().unwrap().replace(app_data_json.to_owned());
 
 	Ok(app_data_json)
 }

@@ -19,7 +19,6 @@ export function tempConfig(): Config {
   return {
     path: '',
     welcome_message: true,
-    play_gif: true,
     server_browser_threads: 50,
     server_timeout: 400,
     show_unreachable: false,

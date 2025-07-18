@@ -5,7 +5,6 @@ import { type MasterServer } from '@/models/master'
 export interface Config {
   path: string
   welcome_message: boolean
-  play_gif: boolean
   server_browser_threads: number
   server_timeout: number
   show_unreachable: boolean

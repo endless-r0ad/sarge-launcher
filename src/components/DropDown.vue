@@ -60,7 +60,7 @@
       <span
         v-for="(client, _index) in q3Clients"
         class="client"
-        :key="client.path"
+        :key="client.exe_path"
         :style="deleteHovered ? 'background-color: var(--main-bg);' : ''"
         @click.prevent="toggleClientSelect(client)"
       >

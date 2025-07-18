@@ -1,4 +1,7 @@
 use serde::{Deserialize, Serialize};
+use std::fs::{read_to_string, File};
+use std::io::Write;
+use std::path::PathBuf;
 use std::sync::Mutex;
 
 use std::collections::HashSet;
@@ -27,7 +30,6 @@ impl Default for Q3Browser {
 pub struct Config {
 	path: String,
 	welcome_message: bool,
-	play_gif: bool,
 	server_browser_threads: usize,
 	server_timeout: u16,
 	show_unreachable: bool,
@@ -43,7 +45,6 @@ impl Config {
 		Self {
 			path: path,
 			welcome_message: true,
-			play_gif: true,
 			server_browser_threads: 50,
 			server_timeout: 400,
 			show_unreachable: false,
@@ -54,6 +55,31 @@ impl Config {
 			q3_clients: Vec::<Q3Executable>::new(),
 		}
 	}
+
+    pub fn write_to_file(&self, path: &PathBuf) -> Result<(), tauri::Error> {
+        let mut file = File::create(&path)?;
+        let updated_app_data_string = serde_json::to_string_pretty(&self)?;
+        file.write_all(updated_app_data_string.as_bytes())?;
+
+        Ok(())
+    }
+
+    pub fn read_from_file(config_path: &PathBuf) -> Result<Self, tauri::Error> {
+        let config_str = read_to_string(config_path)?;
+
+        let config_json = serde_json::from_str(&config_str);
+
+        let config: Config = match config_json {
+            Ok(config) => config,
+            Err(_e) => {
+                std::fs::remove_file(config_path)?;
+                let new_config = Config::new(config_path.to_str().unwrap().to_string());
+                new_config.write_to_file(&config_path)?;
+                return Ok(new_config);
+            }
+        };
+        return Ok(config);
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -79,4 +105,29 @@ impl AppData {
 			server_password: String::from(""),
 		}
 	}
+
+    pub fn write_to_file(&self, path: &PathBuf) -> Result<(), tauri::Error> {
+        let mut file = File::create(&path)?;
+        let updated_app_data_string = serde_json::to_string_pretty(&self)?;
+        file.write_all(updated_app_data_string.as_bytes())?;
+
+        Ok(())
+    }
+
+    pub fn read_from_file(data_dir: &PathBuf) -> Result<Self, tauri::Error> {
+        let app_data_str = read_to_string(data_dir)?;
+
+        let app_data_json = serde_json::from_str(&app_data_str);
+
+        let app_data: AppData = match app_data_json {
+            Ok(app_data) => app_data,
+            Err(_e) => {
+                std::fs::remove_file(data_dir)?;
+                let new_app_data = AppData::new(data_dir.to_str().unwrap().to_string());
+                new_app_data.write_to_file(&data_dir)?;
+                return Ok(new_app_data);
+            }
+        };
+        return Ok(app_data);
+    }
 }

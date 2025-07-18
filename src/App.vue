@@ -59,11 +59,10 @@
       trash: Array.from(newAppData.trash),
       trash_ip: Array.from(newAppData.trash_ip),
     }
-    await invoke('save_app_data', { appData: appDataForBackend })
+    await invoke('save_app_data', { updatedData: appDataForBackend })
   }
 
   const isMounted = ref(false)
-  const q3ClientIsOpen = ref(false)
   const q3ClientProcessId = ref<Nullable<number>>(null)
   const currentComponent = ref('')
 
@@ -79,12 +78,16 @@
 
   function showInfoAlert(infoMsg: string) {
     info(infoMsg)
-    showAlertPopup.value = true, popupType.value = 'info', alertMessage.value = infoMsg
+    showAlertPopup.value = true 
+    popupType.value = 'info'
+    alertMessage.value = infoMsg
   }
 
   function showErrorAlert(err: string) {
     error(err)
-    showAlertPopup.value = true, popupType.value = 'error', alertMessage.value = err
+    showAlertPopup.value = true
+    popupType.value = 'error'
+    alertMessage.value = err
   }
 
   function closeAlert() { 
@@ -145,17 +148,12 @@
       }
     }
 
-    let id = 0
-
     try {
-      id = await invoke('spawn_quake', {
+      q3ClientProcessId.value = await invoke('spawn_quake', {
         activeClient: activeClient.value,
         q3Args: ['+set', 'fs_basepath', activeClient.value?.parent_path].concat(launchArgs),
         manageInstance: config.value.manage_q3_instance,
       })
-
-      q3ClientProcessId.value = id
-      q3ClientIsOpen.value = true
     } catch (err) {
       const e: Error = ensureError(err)
       if (e.message.includes('expected struct Q3Executable') || e.message.includes('missing required key activeClient')) {
@@ -164,7 +162,6 @@
         showErrorAlert(e.message)
       }
     }
-    q3ClientIsOpen.value = false // maybe actually keep track?
   }
 
   async function exitApp() {
