@@ -4,7 +4,7 @@
   import { invoke } from '@tauri-apps/api/core'
   import { sep } from '@tauri-apps/api/path'
   import { info } from '@tauri-apps/plugin-log'
-  import { type Nullable, ensureError } from '@/utils/util'
+  import { ensureError } from '@/utils/util'
   import { type Config, type AppData } from '@/models/config'
   import { type Q3Executable } from '@/models/client'
   import { type Demo } from '@/models/demo'
@@ -13,7 +13,7 @@
   import { useClickRow } from '@/composables/clickrow'
   import { useLevelshot } from '@/composables/levelshot'
 
-  const props = defineProps<{ config: Config, appData: AppData, showUnreachableServers: boolean, showTrashedServers: boolean }>()
+  const props = defineProps<{ config: Config, appData: AppData, showUnreachableServers: boolean, showTrashedServers: boolean, activeClient: Q3Executable | null }>()
 
   const emit = defineEmits<{
     mutateConfig: [Config]
@@ -26,15 +26,16 @@
   }>()
 
   const componentName = ref('Demo Browser')
-  const demoPath = ref(props.config.demo_path)
 
-  async function selectDemoPath() {
-    let path: Nullable<string> = await invoke('pick_demo_path')
+  async function pickClient() {
+    try {
+      let new_client: Q3Executable = await invoke('pick_client')
 
-    if (path != null) {
-      demoPath.value = path
-      emit('mutateConfig', { ...props.config, demo_path: path })
-      await getDemos()
+      if (new_client != null) {
+        emit('addQ3Client', new_client)
+      }
+    } catch (err) {
+      emit('errorAlert', ensureError(err).message)
     }
   }
 
@@ -43,11 +44,18 @@
 
   const { levelshots, syncLevelshots, levelHasLevelshot } = useLevelshot()
 
+  watch(() => props.activeClient, async(newVal, oldVal) => {
+    if (newVal?.name != oldVal?.name) {
+      await getDemos()
+    }
+  })
+
   const demos = ref<Demo[]>([])
   const demosLastRefresh = ref<Demo[]>([])
+  const searchPaths = ref<string[]>([])
 
   async function getDemos() {
-    if (demoPath.value == null || loading.value) {
+    if (props.activeClient == null || loading.value) {
       return
     }
 
@@ -63,9 +71,10 @@
     currentSort.value = ''
 
     try {
-      await syncLevelshots(props.config.fs_homepath)
+      await syncLevelshots(props.activeClient, false)
+      searchPaths.value = await invoke('get_client_paths', { activeClient: props.activeClient })
 
-      demosLastRefresh.value = await invoke('get_demos_rayon', { demoPath: demoPath.value })
+      demosLastRefresh.value = await invoke('get_demos_rayon', { searchPaths: searchPaths.value })
       demos.value = demosLastRefresh.value
     } catch (err) {
       emit('errorAlert', ensureError(err).message)
@@ -77,7 +86,7 @@
 
     const executionTime = performance.now() - startTime
 
-    info(`${totalDemos.value} demos read from ${demoPath.value} in ${parseFloat((executionTime / 1000).toFixed(2))} seconds`)
+    info(`${totalDemos.value} demos read in ${parseFloat((executionTime / 1000).toFixed(2))} seconds`)
   }
 
   const searchQuery = ref('')
@@ -151,8 +160,8 @@
     }
   }
 
-  const selectedDemo = ref<Nullable<Demo>>(null)
-  const lastSelectedDemo = ref<Nullable<Demo>>(null)
+  const selectedDemo = ref<Demo | null>(null)
+  const lastSelectedDemo = ref<Demo | null>(null)
 
   function getDemoIndex(d: Demo) {
     return demos.value.indexOf(d)
@@ -160,18 +169,7 @@
 
   watch(selectedDemo, (_newSelectedDemo, _old) => {
     keepSelectedDetailsOpen.value = false
-    setDemoConnectArgs()
   })
-
-  const demoConnectArgs = ref<string[]>([])
-
-  function setDemoConnectArgs() {
-    if (selectedDemo.value != null) {
-      let relative_index = selectedDemo.value.path.indexOf(sep() + 'demos')
-      let relative_path = selectedDemo.value.path.substring(relative_index + 7)
-      demoConnectArgs.value = ['+set', 'fs_game', selectedDemo.value.gamename, '+demo', `\"${relative_path}\"`]
-    }
-  }
 
   function escapeButton() {
     lastSelectedDemo.value = null
@@ -180,7 +178,10 @@
 
   function spawnQuake() {
     if (selectedDemo.value != null) {
-      emit('spawnQuake', demoConnectArgs.value)
+      let relative_index = selectedDemo.value.path.indexOf(sep() + 'demos')
+      let relative_path = selectedDemo.value.path.substring(relative_index + 7)
+      let args = ['+set', 'fs_game', selectedDemo.value.gamename, '+demo', `\"${relative_path}\"`]
+      emit('spawnQuake', args)
     }
   }
 
@@ -231,7 +232,8 @@
   const {
    handleClick,
    dblClickHappenedOnSameObject,
-   resetDblClickTimeout
+   resetDblClickTimeout,
+   rightClickToSelect
   } = useClickRow(selectedDemo, lastSelectedDemo, displayDetails);
 
   function clickDemo(clicked: Demo, event: MouseEvent) {
@@ -255,7 +257,6 @@
 
   onActivated(async () => {
     emit('emitComponentName', componentName.value)
-    setDemoConnectArgs()
   })
 </script>
 
@@ -292,7 +293,7 @@
     ref="demoTable"
     id="demoTable"
   >
-    <div v-if="!loading && demoPath" :style="{ height: virtualHeight + 'px' }">
+    <div v-if="!loading && props.activeClient" :style="{ height: virtualHeight + 'px' }">
       <div
         class="main"
         :style="{ transform: 'translateY(' + translateY + 'px)', marginTop: marginTop + 'px' }"
@@ -309,6 +310,7 @@
           :levelshotPath="levelHasLevelshot(demo.mapname) ? levelshots![demo.mapname.toLowerCase()] : null"
           tabindex="0"
           @click="clickDemo(demo, $event)"
+          @contextmenu.prevent="rightClickToSelect(demo)"
           @showDetails="displayDetails = true"
           @hideDetails="displayDetails = false"
           @detailsDisplayedOnUnmount="keepSelectedDetailsOpen = !keepSelectedDetailsOpen"
@@ -319,8 +321,8 @@
       <Loading :position="'center'" :message="loadingEvent" :size="90" />
       <div v-for="(_, index) in 48" class="row" :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"></div>
     </div>
-    <div v-if="!demoPath">
-      <div class="center"><button class="select-path-button" @click="selectDemoPath()">Set Demo Path</button></div>
+    <div v-if="!props.activeClient">
+      <div class="center"><button class="select-path-button" @click="pickClient()">Set a Quake 3 Client</button></div>
       <div v-for="(_, index) in 48" class="row" :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"></div>
     </div>
   </div>
@@ -331,8 +333,8 @@
       <span class="footer-data-right" v-if="searchQuery.length > 0">Demos: {{ demos.length }}</span>
     </div>
     <div class="table-footer-left">
-      <img src="../assets/icons/q3-white.svg" class="footer-icon" @click="selectDemoPath()" />
-      <span class="footer-url">{{ demoPath }}</span>
+      <img src="../assets/icons/q3-white.svg" class="footer-icon" @click="pickClient()" />
+      <span v-if="searchPaths.length" class="footer-url">{{ searchPaths[0] + sep() + 'demos' }}</span>
     </div>
   </div>
 </template>

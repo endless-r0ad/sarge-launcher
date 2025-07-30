@@ -1,5 +1,4 @@
 import { type ComputedRef, useTemplateRef, ref, computed, onActivated, onDeactivated } from 'vue'
-import { type Nullable } from '@/utils/util'
 
 export interface VirtualScroll {
   rowHeight: number
@@ -9,7 +8,7 @@ export interface VirtualScroll {
 export function useVirtualScroll(
   scrollableDiv: string,
   totalItems: ComputedRef<number>,
-  pinnedToTop: Nullable<ComputedRef<number>> = null
+  pinnedToTop: ComputedRef<number> | null = null
 ) {
   const scroller = ref<VirtualScroll>({ rowHeight: 24, overscan: 10 })
   const setScroller = (newScroller: VirtualScroll) => {

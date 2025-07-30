@@ -1,11 +1,63 @@
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: 0.2s;
+  transition: opacity 0.2s;
+}
+
+.slider:hover {
+  opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #00ffff;
+  border-radius: 20%;
+  cursor: pointer;
+}
+
+.main-view {
+  position: fixed;
+  top: calc(3vh + 38px);
+  left: 112px;
+  padding-top: 12px;
+  width: calc(100% - 144px);
+  height: calc(100% - 94px);
+}
+
+.item {
+  padding-bottom: 8px;
+  text-align: left;
+}
+
+.conf-plus {
+  margin: 0px 4px 0px 2px;
+  text-align: left;
+}
+
+.router-active {
+  background: var(--secondary-bg);
+}
+
+label {
+  font-size: 90%;
+  width: 100%;
+}
+
 #selected {
-  /* background-color: var(--main-bg); */
   background-image: linear-gradient(to right, rgba(0, 143, 168, 0.514) 1%, rgba(255, 255, 255, 0.02));
-  /* background-image: linear-gradient(to left, rgba(60, 67, 75, 1) 75%, rgba(0, 143, 168, 1) 99%); */
 }
 
 .table-header-base {
-  background-color: rgba(34, 40, 49, 0.7); 
+  background-color: rgba(34, 40, 49, 0.7);
   background-color: var(--secondary-bg);
   border-radius: 0.2rem 0.2rem 0 0;
   user-select: none;
@@ -27,20 +79,17 @@
   padding-right: 8px;
   border-bottom: 1px solid var(--main-bg);
   height: 39px;
-  /* margin: -2px 0px 0px 0px; */
 }
 
 .search {
   outline: none;
   width: 160px;
-  /* height: 18px; */
   background-color: var(--main-bg);
   color: #ccc;
   border-width: 0px;
   border-radius: 0.2rem;
   padding: 4px;
   font-size: 95%;
-
 }
 
 .search::selection {
@@ -59,11 +108,10 @@
   padding: 1px 10px 2px 10px;
   font-weight: 400;
   margin-right: 6px;
-  /* letter-spacing: 1px; */
 }
 
 .connect-button:disabled,
-.connect-button[disabled]{
+.connect-button[disabled] {
   background-color: rgba(0, 0, 0, 0);
   color: var(--main-bg);
   border: 1px solid var(--main-bg);
@@ -89,7 +137,6 @@
   padding: 1px 10px 2px 10px;
   font-weight: 400;
   margin-right: 6px;
-  /* letter-spacing: 1px; */
 }
 
 .refresh-button:hover {
@@ -106,10 +153,8 @@
   padding: 2px 10px 2px 10px;
   font-weight: 400;
   text-align: center;
-  /* width: 20%; */
   display: inline-block;
   margin: 8px;
-  /* letter-spacing: 1px; */
 }
 
 .ok-button:hover {
@@ -154,7 +199,6 @@
 .sort-arrow-asc {
   background: url('../icons/up-arrow-blue.svg') center center no-repeat;
   background-size: 10px;
-
   cursor: pointer;
   position: relative;
   padding: 0px 10px;
@@ -162,12 +206,11 @@
 }
 
 .scrollable-container {
-  height: calc(100% - 102px); /* height: calc(100vh - 172px); */
+  height: calc(100% - 102px);
   overflow-y: scroll;
-  /* scroll-behavior: smooth; */
   user-select: none;
   font-size: 90%;
-  background-color: rgba(31, 37, 46, 0.8); 
+  background-color: rgba(31, 37, 46, 0.8);
 }
 
 div::-webkit-scrollbar {
@@ -185,7 +228,6 @@ div::-webkit-scrollbar-thumb {
   width: 6px;
 }
 
-
 .row {
   min-height: 20px;
   padding: 2px;
@@ -194,8 +236,6 @@ div::-webkit-scrollbar-thumb {
   outline: none;
   line-height: 20px;
 }
-
-
 
 .row-2 {
   min-height: 20px;
@@ -215,7 +255,6 @@ div::-webkit-scrollbar-thumb {
   border-radius: 0 0 0.2rem 0.2rem;
   font-size: 85%;
   height: 34px;
-  /* padding: 6px 0px 6px 0; */
   user-select: none;
   color: #fff;
   border-top: 1px solid var(--main-bg);
@@ -228,7 +267,6 @@ div::-webkit-scrollbar-thumb {
   margin-top: 3px;
   overflow: hidden;
 }
-
 
 .table-footer-right {
   float: right;
@@ -264,65 +302,79 @@ div::-webkit-scrollbar-thumb {
   padding-left: 4px;
 }
 
+.ml-1 {
+  margin-left: 8px;
+}
+
+.gametype-tag {
+  margin: 0 0 0 8px;
+  font-size: 12px;
+  font-weight: 100;
+  border: 1px solid var(--main-bg);
+  border-radius: 0.2rem;
+  color: #fff;
+  padding: 3px;
+}
+
 .no-select {
   -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none;   /* Chrome/Safari/Opera */
-  -khtml-user-select: none;    /* Konqueror */
-  -moz-user-select: none;      /* Firefox */
-  -ms-user-select: none;       /* Internet Explorer/Edge */
-  user-select: none;           /* Non-prefixed version */
+  -webkit-user-select: none; /* Chrome/Safari/Opera */
+  -khtml-user-select: none; /* Konqueror */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version */
 }
 
 .q3c-0 {
   color: rgb(0, 0, 0);
 }
 .q3c-1 {
-  color:rgb(255, 0, 0);
+  color: rgb(255, 0, 0);
 }
 .q3c-2 {
-  color:rgb(0, 255, 0);
+  color: rgb(0, 255, 0);
 }
 .q3c-3 {
-  color:rgb(255, 255, 0);
+  color: rgb(255, 255, 0);
 }
 .q3c-4 {
-  color:rgb(51, 51, 255);
+  color: rgb(51, 51, 255);
 }
 .q3c-5 {
-  color:rgb(0, 255, 255);
+  color: rgb(0, 255, 255);
 }
 .q3c-6 {
-  color:rgb(255, 0, 255);
+  color: rgb(255, 0, 255);
 }
 .q3c-7 {
-  color:rgb(255, 255, 255);
+  color: rgb(255, 255, 255);
 }
 .q3c-8 {
-  color:rgb(255, 128, 0);
+  color: rgb(255, 128, 0);
 }
 .q3c-9 {
-  color:rgb(153, 153, 255);
+  color: rgb(153, 153, 255);
 }
 .q3c-a {
-  color:rgb(255, 0, 0);
+  color: rgb(255, 0, 0);
 }
 .q3c-b {
-  color:rgb(255, 68, 0);
+  color: rgb(255, 68, 0);
 }
 .q3c-c {
-  color:rgb(255, 128, 0);
+  color: rgb(255, 128, 0);
 }
 .q3c-d {
-  color:rgb(255, 187, 0);
+  color: rgb(255, 187, 0);
 }
 .q3c-e {
-  color:rgb(255, 255, 0);
+  color: rgb(255, 255, 0);
 }
 .q3c-f {
-  color:rgb(187, 255, 0);
+  color: rgb(187, 255, 0);
 }
 .q3c-g {
-  color:rgb(128, 255, 0);
+  color: rgb(128, 255, 0);
 }
 .q3c-h {
   color: rgb(68, 255, 0);
@@ -334,50 +386,50 @@ div::-webkit-scrollbar-thumb {
   color: rgb(0, 255, 68);
 }
 .q3c-k {
-  color:rgb(0, 255, 128);
+  color: rgb(0, 255, 128);
 }
 .q3c-l {
-  color:rgb(0, 255, 187);
+  color: rgb(0, 255, 187);
 }
 .q3c-m {
-  color:rgb(0, 255, 255);
+  color: rgb(0, 255, 255);
 }
 .q3c-n {
-  color:rgb(0, 187, 255);
+  color: rgb(0, 187, 255);
 }
 .q3c-o {
-  color:rgb(0, 128, 255);
+  color: rgb(0, 128, 255);
 }
 .q3c-p {
-  color:rgb(0, 68, 255);
+  color: rgb(0, 68, 255);
 }
 .q3c-q {
-  color:rgb(0, 0, 255);
+  color: rgb(0, 0, 255);
 }
 .q3c-r {
-  color:rgb(68, 0, 255);
+  color: rgb(68, 0, 255);
 }
 .q3c-s {
-  color:rgb(128, 0, 255);
+  color: rgb(128, 0, 255);
 }
 .q3c-t {
   color: rgb(187, 0, 255);
 }
 .q3c-u {
-  color:rgb(255, 0, 255);
+  color: rgb(255, 0, 255);
 }
 .q3c-v {
-  color:rgb(255, 0, 187);
+  color: rgb(255, 0, 187);
 }
 .q3c-w {
-  color:rgb(255, 0, 128);
+  color: rgb(255, 0, 128);
 }
 .q3c-x {
-  color:rgb(255, 0, 68);
+  color: rgb(255, 0, 68);
 }
 .q3c-y {
-  color:rgb(255, 255, 255);
+  color: rgb(255, 255, 255);
 }
 .q3c-z {
-  color:rgb(128, 128, 128);
+  color: rgb(128, 128, 128);
 }

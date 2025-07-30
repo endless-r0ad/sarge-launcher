@@ -1,9 +1,8 @@
 <script setup lang="ts">
   import { watch, defineProps, defineEmits, ref, computed, onMounted, onUnmounted } from 'vue'
   import { type Demo } from '@/models/demo'
-  import { type Nullable } from '@/utils/util'
 
-  const props = defineProps<{ demo: Demo; isSelected: boolean; displayDetailsOnMount: boolean; levelshotPath: Nullable<string> }>()
+  const props = defineProps<{ demo: Demo; isSelected: boolean; displayDetailsOnMount: boolean; levelshotPath: string | null }>()
 
   const emit = defineEmits<{ detailsDisplayedOnUnmount: []; showDetails: []; hideDetails: [] }>()
 
@@ -185,7 +184,7 @@
       <button class="more-button" id="moreButton" @click.prevent="showServerCommands = true">...</button>
     </div>
 
-    <Teleport to="#popup">
+    <Teleport to="#modal">
       <div
         v-if="showServerCommands"
         class="backdrop"

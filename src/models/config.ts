@@ -1,4 +1,3 @@
-import { type Nullable } from '@/utils/util'
 import { type Q3Executable } from '@/models/client'
 import { type MasterServer } from '@/models/master'
 
@@ -10,8 +9,6 @@ export interface Config {
   show_unreachable: boolean
   manage_q3_instance: boolean
   show_trashed_servers: boolean
-  demo_path: Nullable<string>
-  fs_homepath: Nullable<string>
   q3_clients: Q3Executable[]
 }
 

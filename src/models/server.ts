@@ -1,4 +1,3 @@
-import { type Nullable } from '@/utils/util'
 import { type MasterServer } from '@/models/master'
 
 export interface ServerPlayer {
@@ -9,11 +8,11 @@ export interface ServerPlayer {
 }
 
 export interface Quake3Server {
-  master: Nullable<MasterServer>
+  master: MasterServer | null
   ip: string
   port: string
   address: string
-  protocol: Nullable<number>
+  protocol: number | null
   ping: number
   errormessage: string
   host: string
@@ -24,7 +23,7 @@ export interface Quake3Server {
   bots: number
   map: string
   othersettings: { [key: string]: string }
-  players: Nullable<ServerPlayer[]>
+  players: ServerPlayer[] | null
   list: string
   custom: boolean
   version: string

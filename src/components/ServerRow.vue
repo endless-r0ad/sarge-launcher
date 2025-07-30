@@ -2,7 +2,6 @@
   import Loading from '@/components/Loading.vue'
   import { watch, defineProps, defineEmits, ref, computed, onMounted, onUnmounted } from 'vue'
   import { type Quake3Server } from '@/models/server'
-  import { type Nullable } from '@/utils/util'
 
   const props = defineProps<{
     server: Quake3Server
@@ -10,7 +9,7 @@
     refreshing: boolean
     altKeyHeld: boolean
     displayDetailsOnMount?: boolean
-    levelshotPath: Nullable<string>
+    levelshotPath: string | null
   }>()
 
   const emit = defineEmits<{ detailsDisplayedOnUnmount: []; showDetails: []; hideDetails: [] }>()

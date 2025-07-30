@@ -1,4 +1,3 @@
-import { type Nullable } from '@/utils/util'
 
 export interface DemoPlayer {
   name: string
@@ -16,12 +15,12 @@ export interface Demo {
   snapshots: number
   sv_hostname: string
   sv_hostname_color: string
-  players: Nullable<DemoPlayer[]>
+  players: DemoPlayer[] | null
   server_info: { [key: string]: string }
   system_info: { [key: string]: string }
   server_commands: { [key: number]: string }
   duration: number
   df_time: number
-  issue: Nullable<string>
+  issue: string | null
   version: string
 }

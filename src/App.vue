@@ -1,17 +1,17 @@
 <script setup lang="ts">
   import Loading from '@/components/Loading.vue'
   import Header from '@/components/Header.vue'
-  import Popup from '@/components/Popup.vue'
+  import Modal from '@/components/Modal.vue'
   import Sidebar from '@/components/Sidebar.vue'
-  import { type Nullable, ensureError, tempConfig, tempAppData } from '@/utils/util'
+  import { ensureError, defaultConfig, defaultAppData } from '@/utils/util'
   import { ref, onMounted } from 'vue'
   import { invoke } from '@tauri-apps/api/core'
   import { info, error } from '@tauri-apps/plugin-log'
   import { type Config, type AppData } from '@/models/config'
   import { type Q3Executable } from '@/models/client'
 
-  const config = ref<Config>(tempConfig())
-  const appData = ref<AppData>(tempAppData())
+  const config = ref<Config>(defaultConfig())
+  const appData = ref<AppData>(defaultAppData())
 
   onMounted(async () => {
     try {
@@ -37,6 +37,7 @@
 
   async function saveConfig() {
     try {
+      console.log('updated config is ', config.value)
       showSettings.value = false
       await invoke('save_config', { updatedConfig: config.value })
     } catch (err) {
@@ -63,7 +64,7 @@
   }
 
   const isMounted = ref(false)
-  const q3ClientProcessId = ref<Nullable<number>>(null)
+  const q3ClientProcessId = ref<number | null>(null)
   const currentComponent = ref('')
 
   function getComponentName(componentName: string) { currentComponent.value = componentName }
@@ -96,7 +97,7 @@
     alertMessage.value = '' 
   }
 
-  const activeClient = ref<Nullable<Q3Executable>>(null)
+  const activeClient = ref<Q3Executable | null>(null)
 
   async function addQ3Client(client: Q3Executable) {
     if (config.value.q3_clients.length > 0) {
@@ -120,6 +121,7 @@
       c.active = c.exe_path == client.exe_path
     })
     activeClient.value = client
+    console.log('activeClient is ', activeClient.value)
     await saveConfig()
   }
 
@@ -140,19 +142,13 @@
   }
 
   async function spawnQuake(launchArgs: string[]) {
-    if (config.value.manage_q3_instance && q3ClientProcessId.value !== null) {
-      try {
-        await invoke('kill_q3_client', { processId: q3ClientProcessId.value })
-      } catch (err) {
-        showErrorAlert(ensureError(err).message)
-      }
-    }
-
     try {
-      q3ClientProcessId.value = await invoke('spawn_quake', {
+      if (config.value.manage_q3_instance) {
+        await invoke('kill_q3_client', { processId: q3ClientProcessId.value })
+      }
+      q3ClientProcessId.value = await invoke('spawn_client', {
         activeClient: activeClient.value,
-        q3Args: ['+set', 'fs_basepath', activeClient.value?.parent_path].concat(launchArgs),
-        manageInstance: config.value.manage_q3_instance,
+        q3Args: ['+set', 'fs_basepath', activeClient.value?.parent_path].concat(launchArgs)
       })
     } catch (err) {
       const e: Error = ensureError(err)
@@ -164,9 +160,6 @@
     }
   }
 
-  async function exitApp() {
-    await invoke('exit_app')
-  }
 </script>
 
 <template>
@@ -184,17 +177,18 @@
     @errorAlert="showErrorAlert"
   />
 
-  <Sidebar v-if="isMounted" :showSettings="showSettings" @toggleSettings="toggleSettings" @exitApp="exitApp" />
+  <Sidebar v-if="isMounted" :showSettings="showSettings" @toggleSettings="toggleSettings" @exitApp="invoke('exit_app')" />
 
   <div v-if="isMounted" class="main-view">
     <router-view v-slot="{ Component }">
-      <KeepAlive exclude="Home">
+      <KeepAlive>
         <component
           :is="Component"
           :config="config"
           :appData="appData"
           :showUnreachableServers="config.show_unreachable"
           :showTrashedServers="config.show_trashed_servers"
+          :activeClient="activeClient"
           @mutateConfig="mutateConfig"
           @mutateAppData="mutateAppData"
           @spawnQuake="spawnQuake"
@@ -207,31 +201,20 @@
     </router-view>
   </div>
 
-  <div id="popup">
-    <Popup v-if="showAlertPopup" :popupType="popupType" @cancelModal="closeAlert" @executeModal="closeAlert">{{ alertMessage }}</Popup>
-    <Popup v-if="showSettings" :popupType="'center'" @executeModal="saveConfig" @cancelModal="saveConfig">
+  <div id="modal">
+    <Modal v-if="showAlertPopup" :popupType="popupType" @cancelModal="closeAlert" @executeModal="closeAlert">{{ alertMessage }}</Modal>
+
+    <Modal v-if="showSettings" :popupType="'center'" @executeModal="saveConfig" @cancelModal="saveConfig">
       <div class="item"><input type="checkbox" v-model="config.manage_q3_instance" /><label class="ml-1">Manage Q3 Instance</label></div>
-      <div class="item">
-        <input type="checkbox" v-model="config.show_unreachable" /><label class="ml-1">Show Unreachable Servers</label>
-      </div>
-      <div class="item">
-        <input type="checkbox" v-model="config.show_trashed_servers" /><label class="ml-1">Show Trashed Servers</label>
-      </div>
+      <div class="item"><input type="checkbox" v-model="config.show_unreachable" /><label class="ml-1">Show Unreachable Servers</label></div>
+      <div class="item"><input type="checkbox" v-model="config.show_trashed_servers" /><label class="ml-1">Show Trashed Servers</label></div>
 
-      <div class="config-plus">
-        +<label class="ml-1">Browser Threads - {{ config.server_browser_threads == 0 ? 1 : config.server_browser_threads }}</label>
-      </div>
-      <div class="item">
-        <input type="range" min="0" max="120" step="5" value="60" class="slider" v-model.number="config.server_browser_threads" />
-      </div>
+      <div class="conf-plus">+<label class="ml-1">Browser Threads - {{ config.server_browser_threads == 0 ? 1 : config.server_browser_threads }}</label></div>
+      <div class="item"><input type="range" min="0" max="120" step="5" value="60" class="slider" v-model.number="config.server_browser_threads" /></div>
 
-      <div class="config-plus">
-        +<label class="ml-1">Server Timeout - {{ config.server_timeout }}ms</label>
-      </div>
-      <div class="item">
-        <input type="range" min="200" max="1000" step="100" value="400" class="slider" v-model.number="config.server_timeout" />
-      </div>
-    </Popup>
+      <div class="conf-plus">+<label class="ml-1">Server Timeout - {{ config.server_timeout }}ms</label></div>
+      <div class="item"><input type="range" min="200" max="1000" step="100" value="400" class="slider" v-model.number="config.server_timeout" /></div>
+    </Modal>
   </div>
 </template>
 
@@ -272,70 +255,4 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  .ml-1 {
-    margin-left: 8px;
-  }
-
-  .router-active {
-    background: var(--secondary-bg);
-  }
-
-  .main-view {
-    position: fixed;
-    top: calc(3vh + 38px);
-    left: 112px;
-    padding-top: 12px;
-    width: calc(100% - 144px);
-    height: calc(100% - 94px);
-  }
-
-  .slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 4px;
-    background: #d3d3d3;
-    outline: none;
-    opacity: 0.7;
-    -webkit-transition: 0.2s;
-    transition: opacity 0.2s;
-  }
-
-  .slider:hover {
-    opacity: 1;
-  }
-
-  .slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 10px;
-    height: 10px;
-    background: #00ffff;
-    border-radius: 20%;
-    cursor: pointer;
-  }
-
-  form {
-    max-width: 420px;
-    margin: 5px auto;
-    text-align: left;
-    color: white;
-  }
-
-  label {
-    font-size: 90%;
-    width: 100%;
-  }
-</style>
-
-<style scoped>
-  .item {
-    padding-bottom: 8px;
-    text-align: left;
-  }
-
-  .config-plus {
-    margin: 0px 4px 0px 2px;
-    text-align: left;
-  }
 </style>

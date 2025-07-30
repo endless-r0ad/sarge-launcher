@@ -1,12 +1,11 @@
 <script setup lang="ts">
 
   import ServerRow from '@/components/ServerRow.vue'
-  import Popup from '@/components/Popup.vue'
+  import Modal from '@/components/Modal.vue'
   import Loading from '@/components/Loading.vue'
   import { invoke } from '@tauri-apps/api/core'
-  import { listen } from '@tauri-apps/api/event'
   import { info } from '@tauri-apps/plugin-log'
-  import { type Nullable, ensureError, newCustomServer, validServerAddress, validIp } from '@/utils/util';
+  import { ensureError, newCustomServer, validServerAddress, validIp } from '@/utils/util';
   import { type Config, type AppData } from '@/models/config'
   import { type Q3Executable } from '@/models/client'
   import { type Quake3Server } from '@/models/server'
@@ -16,7 +15,7 @@
   import { useLevelshot } from '@/composables/levelshot'
   import { watch, nextTick, defineProps, defineEmits, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
 
-  const props = defineProps<{ config: Config, appData: AppData, showUnreachableServers: boolean, showTrashedServers: boolean }>()
+  const props = defineProps<{ config: Config, appData: AppData, showUnreachableServers: boolean, showTrashedServers: boolean, activeClient: Q3Executable }>()
   
   const emit = defineEmits<{
     mutateConfig: [Config],
@@ -76,7 +75,7 @@
       serverIPs.value = []
       
       try{
-        serverIPs.value = await invoke('get_q3_server_ips', { protocol: q3MasterProtocol.value })
+        serverIPs.value = await invoke('get_q3_server_ips', { q3Protocol: q3MasterProtocol.value })
         info(`${serverIPs.value.length} servers pulled from ${activeMasterServers.value.length} active master servers`)
       }
       catch(err){
@@ -87,7 +86,7 @@
     loadingEvent.value = 'querying servers...'
 
     try {
-      await syncLevelshots(props.config.fs_homepath)
+      await syncLevelshots(props.activeClient, false)
 
       serverDetailsLastRefresh.value = await invoke('refresh_all_servers', 
                 { allServers: serverIPs.value, 
@@ -119,21 +118,19 @@
 
   async function refreshSingleServer() {
     if (selectedServer.value == null || refreshingSingle.value) { return }
+    
     refreshingSingle.value = true
 
-    const unlistenSingle = await listen('q3_single_server', (event: any) => {                         
-     
+    try{
+      let refreshed: Quake3Server = await invoke('refresh_single_server', {refreshServer: selectedServer.value, timeout: 1000})
+
       let splice_index = serverDetails.value.indexOf(selectedServer.value!)
       let splice_index2 = serverDetailsLastRefresh.value.indexOf(selectedServer.value!)
 
-      serverDetails.value[splice_index] = event.payload
-      serverDetailsLastRefresh.value[splice_index2] = event.payload
-      selectedServer.value = event.payload
-    })
-    
-    try{
-      await invoke('refresh_single_server', {refreshServer: selectedServer.value, timeout: 1000})
-      unlistenSingle()
+      serverDetails.value[splice_index] = refreshed
+      serverDetailsLastRefresh.value[splice_index2] = refreshed
+      selectedServer.value = refreshed
+
       refreshingSingle.value = false;
     }
     catch(err){
@@ -193,17 +190,15 @@
 
             serverDetails.value.push(customServer)
             serverDetailsLastRefresh.value.push(customServer) 
-
-            const unlistenSingle = await listen('q3_single_server', (event: any) => {                         
-              serverDetails.value[serverDetails.value.length-1] = event.payload
-              serverDetailsLastRefresh.value[serverDetailsLastRefresh.value.length-1] = event.payload
-              selectedServer.value = event.payload
-            })
             
             try{
-              await invoke('refresh_single_server', {refreshServer: customServer, timeout: 1000})
-              unlistenSingle()
-              refreshingSingle.value = false
+              let refreshed: Quake3Server = await invoke('refresh_single_server', {refreshServer: selectedServer.value, timeout: 1000})
+
+              serverDetails.value[serverDetails.value.length-1] = refreshed
+              serverDetailsLastRefresh.value[serverDetailsLastRefresh.value.length-1] = refreshed
+              selectedServer.value = refreshed
+
+              refreshingSingle.value = false;
             }
             catch(err){
               emit('errorAlert', ensureError(err).message)
@@ -252,8 +247,8 @@
     if (popupInput.value != '') {
       localAppData.value.server_password = popupInput.value
       emit('mutateAppData', localAppData.value)
-      serverConnectArgs.value = ['+set', 'fs_game', selectedServer.value!.game, '+password', popupInput.value, '+connect', selectedServer.value!.address];
-      emit('spawnQuake', serverConnectArgs.value)   
+      let args = ['+set', 'fs_game', selectedServer.value!.game, '+password', popupInput.value, '+connect', selectedServer.value!.address];
+      emit('spawnQuake', args)   
 
       if (closeAfterHandle) {
         popupInput.value = '', showPopup.value = '';
@@ -305,21 +300,12 @@
   }
 
 
-  const selectedServer = ref<Nullable<Quake3Server>>(null)
-  const lastSelectedServer = ref<Nullable<Quake3Server>>(null)
+  const selectedServer = ref<Quake3Server | null>(null)
+  const lastSelectedServer = ref<Quake3Server | null>(null)
 
   watch(selectedServer, (_new, _old) => {
       keepSelectedDetailsOpen.value = false
-      setServerConnectArgs()
     })
-
-  const serverConnectArgs = ref<string[]>([])
-
-  function setServerConnectArgs(){
-    if (selectedServer.value != null) {
-      serverConnectArgs.value = ['+set', 'fs_game', selectedServer.value.game, '+connect', selectedServer.value.address];
-    }     
-  }
 
   const selectedServerIndex = computed(() => {
     if (selectedServer.value) {
@@ -383,11 +369,13 @@
 
   function spawnQuake(){
     if (selectedServer.value) {
+      let args = ['+set', 'fs_game', selectedServer.value.game, '+set', 'protocol', selectedServer.value.protocol?.toString() ?? '68', '+wait', '5', '+connect', selectedServer.value.address];
       if ('g_needpass' in selectedServer.value.othersettings && selectedServer.value.othersettings['g_needpass'] == '1') {
         showPopup.value = 'password'
         popupInput.value = props.appData.server_password
       } else {
-        emit('spawnQuake', serverConnectArgs.value)
+        console.log('spawning with args ', args)
+        emit('spawnQuake', args)
       }          
     }        
   }
@@ -537,7 +525,6 @@
     document.addEventListener('keydown', handleKeyDown)
     document.addEventListener('keyup', handleKeyUp)
     emitComponentName() 
-    setServerConnectArgs()
   }) 
 
   onDeactivated(() => {
@@ -684,8 +671,8 @@
   </div>   
 
 
-  <Teleport to="#popup">
-    <Popup v-if="showPopup=='add'" :popupType="'center'" @executeModal="handleAddCustomPopup(true)" @cancelModal="popupInput = '', showPopup = ''">
+  <Teleport to="#modal">
+    <Modal v-if="showPopup=='add'" :popupType="'center'" @executeModal="handleAddCustomPopup(true)" @cancelModal="popupInput = '', showPopup = ''">
       <label>Add a Custom Server</label> 
       <div>
         <input type="text" placeholder="0.0.0.0:0" v-model="popupInput" class="search" @keyup.enter="handleAddCustomPopup(false)">
@@ -698,9 +685,9 @@
           <label style="font-size: 80%;">{{ address }}</label>
         </div>
       </div>
-    </Popup>
+    </Modal>
           
-    <Popup v-if="showPopup=='trash'" :popupType="'center'" @executeModal="handleAddTrashIpPopup(true)" @cancelModal="popupInput = '', showPopup = ''">
+    <Modal v-if="showPopup=='trash'" :popupType="'center'" @executeModal="handleAddTrashIpPopup(true)" @cancelModal="popupInput = '', showPopup = ''">
       <label>Trash all servers of an IP
         <div>
           <input type="text" placeholder="0.0.0.0" v-model="popupInput" class="search"  @keyup.enter="handleAddTrashIpPopup(false)">
@@ -713,18 +700,18 @@
           <label style="font-size: 80%;">{{ ip }}</label>
         </div>
       </div>    
-    </Popup>
+    </Modal>
 
-    <Popup v-if="showPopup=='password'" :popupType="'center'" @executeModal="handleServerPasswordPopup(true)" @cancelModal="popupInput = '', showPopup = ''">
+    <Modal v-if="showPopup=='password'" :popupType="'center'" @executeModal="handleServerPasswordPopup(true)" @cancelModal="popupInput = '', showPopup = ''">
       <label>Enter server password
         <div>
           <input type="text" :placeholder="'password'" v-model="popupInput" class="search" @keyup.enter="handleServerPasswordPopup(true)">
           <span class="ok-button" @click="handleServerPasswordPopup(true)">ok</span>
           </div>      
       </label>  
-    </Popup>
+    </Modal>
       
-    <Popup v-if="showPopup=='masterSettings'" :popupType="'center'" @executeModal="handleMasterServerPopup(true)" @cancelModal="handleMasterServerPopup(true)">   
+    <Modal v-if="showPopup=='masterSettings'" :popupType="'center'" @executeModal="handleMasterServerPopup(true)" @cancelModal="handleMasterServerPopup(true)">   
       <div v-for="master in localAppData.masters" style="height: 32px;">
         <span><input type="checkbox" v-model="master.active"></span>
         <text :style="master.unreachable ? 'color: #aaa; text-decoration: line-through;' : ''" class="ml-1">{{ master.game }}: {{ master.name }} </text>
@@ -735,7 +722,7 @@
         <text class="ml-1"><input type="radio" :value="Number(68)" v-model="q3MasterProtocol">68</text>
         <text class="ml-1"><input type="radio" :value="Number(43)" v-model="q3MasterProtocol">43</text>
       </div>
-    </Popup>
+    </Modal>
   </Teleport>
 
 </template>

@@ -1,15 +1,21 @@
 import { ref } from 'vue'
-import { type Nullable } from '@/utils/util'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { type Level } from '@/models/level'
 import { invoke } from '@tauri-apps/api/core'
+import type { Q3Executable } from '@/models/client'
 
 export function useLevelshot() {
-  const levelshots = ref<Nullable<{ [key: string]: string }>>(null)
+  const levelshots = ref<{ [key: string]: string } | null>(null)
   const levels = ref<Level[]>([])
+  const activeClientPaths = ref<string[]>([])
 
-  async function getLevels(levelPath: Nullable<string>) {
-    levels.value = await invoke('get_levels', { fsHomepath: levelPath })
+  async function getClientPaths(activeClient: Q3Executable | null) {
+    console.log('getClientPaths from ', activeClient)
+    activeClientPaths.value = await invoke('get_client_paths', { activeClient: activeClient })
+  }
+  
+  async function getLevels(getAllData: boolean) {
+    levels.value = await invoke('get_levels', { searchPaths: activeClientPaths.value, getAllData: getAllData })
   }
 
   async function extractLevelshotsToCache() {
@@ -26,8 +32,9 @@ export function useLevelshot() {
     }
   }
 
-  async function syncLevelshots(levelPath: Nullable<string>) {
-    await getLevels(levelPath)
+  async function syncLevelshots(activeClient: Q3Executable | null, getAllData: boolean) {
+    await getClientPaths(activeClient)
+    await getLevels(getAllData)
     await extractLevelshotsToCache()
     await getCachedLevelshots()
   }

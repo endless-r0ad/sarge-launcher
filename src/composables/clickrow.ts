@@ -1,15 +1,14 @@
 import { ref, type Ref } from 'vue'
-import { type Nullable } from '@/utils/util'
 import { type Quake3Server } from '@/models/server'
 import { type Demo } from '@/models/demo'
 import { type Level } from '@/models/level'
 
 export function useClickRow(
-  selected: Ref<Nullable<Level> | Nullable<Demo> | Nullable<Quake3Server>>,
-  lastSelected: Ref<Nullable<Level> | Nullable<Demo> | Nullable<Quake3Server>>,
+  selected: Ref<Level | Demo | Quake3Server | null>,
+  lastSelected: Ref<Level | Demo | Quake3Server | null>,
   displayDetails: Ref<boolean> | null = null
 ) {
-  const dblClickTimer = ref<Nullable<number>>(null)
+  const dblClickTimer = ref<number | null>(null)
   const numClicks = ref(0)
   const dblClickHappenedOnSameObject = ref(false)
 

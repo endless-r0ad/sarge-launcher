@@ -4,10 +4,9 @@
   import { defineProps, defineEmits } from 'vue'
   import { ensureError } from '@/utils/util'
   import { type Q3Executable } from '@/models/client'
-  import { type Nullable } from '@/utils/util'
   import { type Config } from '@/models/config'
 
-  const props = defineProps<{ currentView: string; config: Config; activeClient: Nullable<Q3Executable> }>()
+  const props = defineProps<{ currentView: string; config: Config; activeClient: Q3Executable | null }>()
 
   const emit = defineEmits<{
     spawnQuake: [string[]]

@@ -1,32 +1,22 @@
 use crate::huffman_node::Node;
 use rayon::prelude::*;
 use std::path::Path;
-use tauri::AppHandle;
 
 use crate::demo::Demo;
-use tauri_plugin_dialog::{DialogExt, FilePath};
 
 #[tauri::command(async)]
-pub async fn pick_demo_path(app: AppHandle) -> Result<Option<FilePath>, String> {
-	let file_dialog = app.dialog().file().set_title("Select your Quake 3 demo folder");
-
-	let file = file_dialog.blocking_pick_folder();
-
-	Ok(file)
-}
-
-#[tauri::command(async)]
-pub async fn get_demos_rayon(demo_path: &Path) -> Result<Vec<Demo>, String> {
-	let mut demos: Vec<Demo>;
+pub async fn get_demos_rayon(search_paths: Vec<String>) -> Result<Vec<Demo>, tauri::Error> {
+	let mut demos: Vec<Demo> = vec![];
 	const Q3_HUFFMAN_TREE: [Node; 514] = Node::create_tree();
 
-	if demo_path.is_dir() {
-		demos = Demo::get_q3_demos(demo_path)
-			.await
-			.map_err(|e| format!("failed to parse demos in {} - {}", demo_path.display(), e))?;
-	} else {
-		return Err(format!("The specified path does not exist, or is not a directory - {}", demo_path.display()));
-	}
+    for p in search_paths {
+        let path = Path::new(&p).join("demos");
+        let demo_path = path.as_path();
+        println!("demo_path is {:#?}", demo_path);
+        if demo_path.is_dir() {
+            demos.append(&mut Demo::get_q3_demos(demo_path).await?);
+        }
+    }
 
 	demos.par_iter_mut().for_each(|re| {
 		re.parse_demo(Q3_HUFFMAN_TREE).unwrap_or_else(|error| re.issue = Some(error.to_string()));

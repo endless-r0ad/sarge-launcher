@@ -2,7 +2,7 @@
   import Loading from '@/components/Loading.vue'
   import { invoke } from '@tauri-apps/api/core'
   import { info } from '@tauri-apps/plugin-log'
-  import { type Nullable, ensureError } from '@/utils/util'
+  import { ensureError } from '@/utils/util'
   import { type Config, type AppData } from '@/models/config'
   import { type Q3Executable } from '@/models/client'
   import { type Level } from '@/models/level'
@@ -13,7 +13,7 @@
   import { type Bot } from '@/models/singleplayer'
   import { Q3_BOT_NAMES } from '@/utils/util'
 
-  const props = defineProps<{ config: Config; appData: AppData; showUnreachableServers: boolean; showTrashedServers: boolean }>()
+  const props = defineProps<{ config: Config; appData: AppData; showUnreachableServers: boolean; showTrashedServers: boolean, activeClient: Q3Executable | null }>()
 
   const emit = defineEmits<{
     mutateConfig: [Config]
@@ -26,17 +26,25 @@
   }>()
 
   const componentName = ref('Single Player')
-  const fsHomepath = ref(props.config.fs_homepath)
 
-  async function pickFsHomepath() {
-    let path: Nullable<string> = await invoke('pick_fs_homepath')
+  async function pickClient() {
+    try {
+      let new_client: Q3Executable = await invoke('pick_client')
 
-    if (path != null) {
-      fsHomepath.value = path
-      emit('mutateConfig', { ...props.config, fs_homepath: path })
-      await getLevels()
+      if (new_client != null) {
+        emit('addQ3Client', new_client)
+      }
+    } catch (err) {
+      emit('errorAlert', ensureError(err).message)
     }
   }
+
+  watch(() => props.activeClient, async(newVal, oldVal) => {
+    if (newVal?.name != oldVal?.name) {
+      await getLevels()
+    }
+  })
+
 
   const bots_team_free = ref<Bot[]>([])
   const bots_team_red = ref<Bot[]>([])
@@ -60,11 +68,32 @@
   const { levels, levelshots, syncLevelshots, levelHasLevelshot } = useLevelshot()
 
   const levelsLastRefresh = ref<Level[]>([])
-  const showPak0LevelsOnly = ref(false)
+  const showBaseLevelsOnly = ref(false)
 
-  watch(showPak0LevelsOnly, (newVal, _oldVal) => {
+  watch(showBaseLevelsOnly, (newVal, _oldVal) => {
     if (newVal) {
-      levels.value = levelsLastRefresh.value.filter((m) => m.pk3_name == 'pak0')
+      if (props.activeClient && props.activeClient.gamename) {
+        switch (props.activeClient.gamename) {
+          case "baseq3":
+            levels.value = levelsLastRefresh.value.filter((m) => m.pk3_name == 'pak0')
+            break
+          case "baseoa":
+            levels.value = levelsLastRefresh.value.filter((m) => m.pk3_name == 'pak1-maps' || m.pk3_name == 'pak6-patch085' || m.pk3_name == 'pak6-patch088')
+            break
+          case "cpma":
+            levels.value = levelsLastRefresh.value.filter((m) => m.pk3_name.includes('map_cpm'))
+            break
+          case "defrag":
+            levels.value = levelsLastRefresh.value.filter((m) => m.is_defrag)
+            break
+          case "q3ut4":
+            levels.value = levelsLastRefresh.value.filter((m) => m.level_name.includes('ut4'))
+            break
+          default:
+            levels.value = levelsLastRefresh.value.filter((m) => m.pk3_name == 'pak0')
+            break
+        }
+      }
     } else {
       levels.value = levelsLastRefresh.value
     }
@@ -72,7 +101,7 @@
   })
 
   async function getLevels() {
-    if (fsHomepath.value == null || loading.value) {
+    if (props.activeClient == null || loading.value) {
       return
     }
 
@@ -87,20 +116,21 @@
     currentSort.value = ''
 
     try {
-      await syncLevelshots(fsHomepath.value)
+      await syncLevelshots(props.activeClient, true)
       levelsLastRefresh.value = levels.value
     } catch (err) {
       emit('errorAlert', ensureError(err).message)
     }
 
-    showPak0LevelsOnly.value = false
+    console.log('levels are ', levels.value)
+    showBaseLevelsOnly.value = false
     loading.value = false
     loadingEvent.value = ''
     handleScroll()
 
     const executionTime = performance.now() - startTime
 
-    info(`${levelsLength.value} levels read from ${fsHomepath.value} in ${parseFloat((executionTime / 1000).toFixed(2))} seconds`)
+    info(`${levelsLength.value} levels read in ${parseFloat((executionTime / 1000).toFixed(2))} seconds`)
   }
 
   const searchQuery = ref('')
@@ -116,7 +146,8 @@
     let filteredMaps: Level[] = []
 
     for (let i = 0; i < levelsLastRefresh.value.length; i++) {
-      if (levelsLastRefresh.value[i].level_name.toLowerCase().includes(query)) {
+      if (levelsLastRefresh.value[i].level_name.toLowerCase().includes(query) || 
+          levelsLastRefresh.value[i].author.toLowerCase().includes(query)) {
         filteredMaps.push(levelsLastRefresh.value[i])
       }
     }
@@ -126,30 +157,43 @@
   const sortDesc = ref(false)
   const currentSort = ref('')
 
-  const selectedLevel = ref<Nullable<Level>>(null)
-  const lastSelectedLevel = ref<Nullable<Level>>(null)
+  function getArrowSort(column: string) {
+    if (currentSort.value != column) { return 'sort-arrow-default'}
+    if (sortDesc.value && currentSort.value == column) { return 'sort-arrow-desc'}
+    if (!sortDesc.value && currentSort.value == column) { return 'sort-arrow-asc'}
+  }
 
-  const gameType = ref<Nullable<number>>(2)
+  function sortMaps(column: string){
+    if (currentSort.value == column || currentSort.value == ''){
+      sortDesc.value = !sortDesc.value
+    } else {
+      sortDesc.value = true;
+    }
+
+    selectedLevel.value = null
+    currentSort.value = column
+
+    if (column == 'level_name' ) {
+      levels.value.sort((a, b) => {
+        if (a[column].toLowerCase() > b[column].toLowerCase()) {
+          return ( sortDesc.value ? -1 : 1 );
+        }
+        if (a[column].toLowerCase() < b[column].toLowerCase()) {
+          return ( sortDesc.value ? 1 : -1 );
+        }
+        return 0;
+      });
+    }
+  }
+
+  const selectedLevel = ref<Level | null>(null)
+  const lastSelectedLevel = ref<Level | null>(null)
+
+  const gameType = ref<number | null>(2)
   const teamSelect = ref<'Free' | 'Red' | 'Blue'>('Free')
   const difficulty = ref<1 | 2 | 3 | 4 | 5>(5)
   const cheats = ref(false)
   const sv_maxclients = ref(8)
-
-  function getQ3ClientType() {
-    let activeClient = props.config.q3_clients?.filter((c) => c.active)[0]
-
-    if (activeClient) {
-      if (['odfe.x64.exe', 'odfe.x64'].includes(activeClient.name.toLowerCase())) {
-        return 'df'
-      }
-      if (['cnq3-x64', 'cnq3-x64.exe', 'cnq3-x86.exe'].includes(activeClient.name.toLowerCase())) {
-        return 'cpma'
-      }
-      return 'q3'
-    } else {
-      return 'no active client'
-    }
-  }
 
   const selectedMapIndex = computed(() => {
     if (selectedLevel.value) {
@@ -186,13 +230,13 @@
       args.push(...['+set', 'sv_maxclients', sv_maxclients.value.toString()])
       args.push(...['+set', gameType.value == 2 ? 'g_spskill' : 'skill', difficulty.value.toString(), '+wait', '3'])
 
-      if (gameType.value != 3 && gameType.value != 4 && getQ3ClientType() != 'df') {
+      if (gameType.value != 3 && gameType.value != 4 && props.activeClient?.gamename != 'defrag') {
         bots_team_free.value.forEach((bot) => {
           args.push(...['+addbot', bot.name, bot.difficulty.toString()])
         })
       }
 
-      if (gameType.value == 3 || (gameType.value == 4 && getQ3ClientType() != 'df')) {
+      if (gameType.value == 3 || (gameType.value == 4 && props.activeClient?.gamename != 'defrag')) {
         bots_team_red.value.forEach((bot) => {
           args.push(...['+addbot', bot.name, bot.difficulty.toString(), bot.team])
         })
@@ -231,7 +275,12 @@
     })
   }
 
-  const { handleClick, dblClickHappenedOnSameObject, resetDblClickTimeout } = useClickRow(selectedLevel, lastSelectedLevel)
+  const { 
+    handleClick, 
+    dblClickHappenedOnSameObject, 
+    resetDblClickTimeout, 
+    rightClickToSelect 
+  } = useClickRow(selectedLevel, lastSelectedLevel)
 
   function clickLevel(clicked: Level) {
     handleClick(clicked)
@@ -266,14 +315,19 @@
 <template>
   <div class="table-header-base no-select" style="height: 40px">
     <div class="table-header-right">
-      <button class="refresh-button" :class="{ 'pak0-only': showPak0LevelsOnly }" @click="showPak0LevelsOnly = !showPak0LevelsOnly">
-        Quake 3
+      <button class="refresh-button" :class="{ 'base-only': showBaseLevelsOnly }" @click="showBaseLevelsOnly = !showBaseLevelsOnly">
+        {{ props.activeClient?.gamename }}
       </button>
       <input class="search" type="text" placeholder="search" v-model="searchQuery" />
     </div>
     <div class="table-header-left">
       <button class="connect-button" :disabled="!selectedLevel || gameType == null" @click="spawnQuake()">Connect</button>
       <button class="refresh-button" @click="getLevels()">Refresh</button>
+      <span style="margin-left: 24px; text-align: left; color: #fff;">
+        <span class="sort-header" @click="sortMaps('level_name')">map</span>
+        <span :class="getArrowSort('level_name')" @click="sortMaps('level_name')" />
+      </span>
+
     </div>
   </div>
 
@@ -286,7 +340,7 @@
     ref="levelTable"
     id="levelTable"
   >
-    <div v-if="!loading && fsHomepath" :style="{ height: virtualHeight + 'px' }">
+    <div v-if="!loading && props.activeClient" :style="{ height: virtualHeight + 'px' }">
       <div class="main" :style="{ transform: 'translateY(' + translateY + 'px)', marginTop: marginTop + 'px' }">
         <div
           v-for="level in getVirtualRows"
@@ -296,13 +350,20 @@
           :id="level === selectedLevel ? 'selected' : `level-${getLevelIndex(level)}`"
           tabindex="0"
           @click="clickLevel(level)"
+          @contextmenu.prevent="rightClickToSelect(level)"
         >
           <div class="map-row">
             <img v-if="levelHasLevelshot(level.level_name)" class="map-img" :src="levelshots![level.level_name.toLowerCase()]"/>
             <img v-else class="map-img" src="../assets/icons/q3-white.svg" />
-            <h3 style="width: 44%; text-align: left; white-space: nowrap; overflow: hidden; margin-left: 24px">
-              {{ level.level_name }}
-            </h3>
+            <div style="width: 30%; text-align: left; white-space: nowrap; overflow: hidden; margin-left: 24px">
+              <h3 style="margin: 8px 0 0 0;">{{ level.level_name }}</h3>
+              <h6 v-if="level.long_name" v-html="level.long_name" style="font-style: italic; margin: 4px 0 0 0;" />
+              <h6 v-if="level.year_created" style="font-style: italic; margin: 4px 0 0 0;" >{{ level.year_created }}</h6>
+              <h6 v-if="level.author" v-html="level.author" style="margin: 12px 0 0 0;"/>     
+            </div>
+            <div style="margin-left: -184px; margin-top: 64px;">
+              <span class="gametype-tag" v-for="l in level.gametype">{{ l }} </span>
+            </div>           
           </div>
         </div>
       </div>
@@ -311,31 +372,31 @@
       <Loading :position="'center'" :message="loadingEvent" :size="90" />
       <div v-for="(_, index) in 48" class="row" :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"></div>
     </div>
-    <div v-if="!fsHomepath">
-      <div class="center"><button class="select-path-button" @click="pickFsHomepath()">Set your Quake 3 fs_homepath</button></div>
+    <div v-if="!props.activeClient">
+      <div class="center"><button class="select-path-button" @click="pickClient()">Set a Quake 3 Client</button></div>
       <div v-for="(_, index) in 48" class="row" :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"></div>
     </div>
   </div>
 
   <div class="table-footer">
     <div class="table-footer-right">
-      <span class="footer-data-right" v-if="searchQuery.length == 0 && !showPak0LevelsOnly">maps: {{ levelsLastRefresh.length }}</span>
-      <span class="footer-data-right" v-if="searchQuery.length > 0 || showPak0LevelsOnly">maps: {{ levels.length }}</span>
+      <span class="footer-data-right" v-if="searchQuery.length == 0 && !showBaseLevelsOnly">Maps: {{ levelsLastRefresh.length }}</span>
+      <span class="footer-data-right" v-if="searchQuery.length > 0 || showBaseLevelsOnly">Maps: {{ levels.length }}</span>
     </div>
     <div class="table-footer-left">
-      <img src="../assets/icons/q3-white.svg" class="footer-icon" @click="pickFsHomepath()" />
-      <span class="footer-url">{{ fsHomepath }}</span>
+      <img src="../assets/icons/q3-white.svg" class="footer-icon" @click="pickClient()" />
+      <span class="footer-url">{{ props.activeClient?.exe_path }}</span>
     </div>
   </div>
 
   <div v-if="selectedLevel" class="game-setup no-select">
     <h2 style="text-align: center">Game Setup</h2>
     <div style="text-align: center; margin-bottom: 10px">
-      <button v-if="getQ3ClientType() != 'df'" class="setup-button" :class="{ active: gameType == 2 }" @click="gameType = 2">SP</button>
-      <button v-if="getQ3ClientType() != 'df'" class="setup-button" :class="{ active: gameType == 1 }" @click="gameType = 1">1v1</button>
-      <button v-if="getQ3ClientType() != 'df'" class="setup-button" :class="{ active: gameType == 0 }" @click="gameType = 0">FFA</button>
+      <button v-if="props.activeClient?.gamename != 'defrag'" class="setup-button" :class="{ active: gameType == 2 }" @click="gameType = 2">SP</button>
+      <button v-if="props.activeClient?.gamename != 'defrag'" class="setup-button" :class="{ active: gameType == 1 }" @click="gameType = 1">1v1</button>
+      <button v-if="props.activeClient?.gamename != 'defrag'" class="setup-button" :class="{ active: gameType == 0 }" @click="gameType = 0">FFA</button>
       <button
-        v-if="getQ3ClientType() != 'df'"
+        v-if="props.activeClient?.gamename != 'defrag'"
         class="setup-button"
         :class="{ active: gameType == 3 }"
         @click="
@@ -346,7 +407,7 @@
         TDM
       </button>
       <button
-        v-if="getQ3ClientType() != 'df'"
+        v-if="props.activeClient?.gamename != 'defrag'"
         class="setup-button"
         :class="{ active: gameType == 4 }"
         @click="
@@ -357,23 +418,23 @@
         CTF
       </button>
 
-      <button v-if="getQ3ClientType() == 'df'" class="setup-button" :class="{ active: gameType == 98 }" @click="gameType = 98">VQ3</button>
-      <button v-if="getQ3ClientType() == 'df'" class="setup-button" :class="{ active: gameType == 99 }" @click="gameType = 99">CPM</button>
+      <button v-if="props.activeClient?.gamename == 'defrag'" class="setup-button" :class="{ active: gameType == 98 }" @click="gameType = 98">VQ3</button>
+      <button v-if="props.activeClient?.gamename == 'defrag'" class="setup-button" :class="{ active: gameType == 99 }" @click="gameType = 99">CPM</button>
     </div>
     <div style="text-align: center; margin-bottom: 10px">
-      <button v-if="getQ3ClientType() != 'df'" class="dif-button" :class="{ active: difficulty == 1 }" @click="difficulty = 1">
+      <button v-if="props.activeClient?.gamename != 'defrag'" class="dif-button" :class="{ active: difficulty == 1 }" @click="difficulty = 1">
         i can win
       </button>
-      <button v-if="getQ3ClientType() != 'df'" class="dif-button" :class="{ active: difficulty == 2 }" @click="difficulty = 2">
+      <button v-if="props.activeClient?.gamename != 'defrag'" class="dif-button" :class="{ active: difficulty == 2 }" @click="difficulty = 2">
         bring it on
       </button>
-      <button v-if="getQ3ClientType() != 'df'" class="dif-button" :class="{ active: difficulty == 3 }" @click="difficulty = 3">
+      <button v-if="props.activeClient?.gamename != 'defrag'" class="dif-button" :class="{ active: difficulty == 3 }" @click="difficulty = 3">
         hurt me plenty
       </button>
-      <button v-if="getQ3ClientType() != 'df'" class="dif-button" :class="{ active: difficulty == 4 }" @click="difficulty = 4">
+      <button v-if="props.activeClient?.gamename != 'defrag'" class="dif-button" :class="{ active: difficulty == 4 }" @click="difficulty = 4">
         hardcore
       </button>
-      <button v-if="getQ3ClientType() != 'df'" class="dif-button" :class="{ active: difficulty == 5 }" @click="difficulty = 5">
+      <button v-if="props.activeClient?.gamename != 'defrag'" class="dif-button" :class="{ active: difficulty == 5 }" @click="difficulty = 5">
         nightmare!
       </button>
     </div>
@@ -469,7 +530,7 @@
 </template>
 
 <style scoped>
-  .pak0-only-button {
+  .base-only-button {
     cursor: pointer;
     padding: 4px 15px;
     margin: 0px 4px;
@@ -477,12 +538,12 @@
     background-size: 78%;
   }
 
-  .pak0-only-button:hover {
+  .base-only-button:hover {
     background-color: var(--main-bg);
     border-radius: 0.2rem;
   }
 
-  .pak0-only {
+  .base-only {
     background-color: rgba(0, 143, 168, 0.514);
     border-radius: 0.2rem;
     cursor: pointer;

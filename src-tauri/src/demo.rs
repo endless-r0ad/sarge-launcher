@@ -9,18 +9,6 @@ use crate::shared;
 
 const MAX_MESSAGE_LENGTH: i32 = 16384;
 
-pub enum _Cmds {
-	Bad,
-	Nop,
-	Gamestate,
-	ConfigString,
-	Baseline,
-	ServerCommand,
-	Download,
-	Snapshot,
-	EndOfMessage,
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Demo {
 	pub file_name: String,
@@ -94,11 +82,12 @@ impl Demo {
 			}
 
 			if let Some(ext) = path.extension() {
-				if ["dm_48", "dm_66", "dm_67", "dm_68", "dm_73", "dm_91"].contains(&ext.to_str().unwrap()) {
+                let ext_s = ext.to_string_lossy().to_string();
+				if ["dm_48", "dm_66", "dm_67", "dm_68", "dm_73", "dm_91", "dm_108", "dm_114", "urtdemo"].contains(&ext_s.as_str()) {
 					let demo = Demo::new(
 						path.file_stem().unwrap().to_str().unwrap().to_string(),
 						path.to_str().unwrap().to_string(),
-						ext.to_str().unwrap()[3..].parse::<u8>().unwrap(),
+						if ext_s.as_str() == "urtdemo" { 0 } else { ext_s.as_str()[3..].parse::<u8>().unwrap() },
 					);
 					demos.push(demo);
 				}
@@ -248,11 +237,6 @@ impl Demo {
 		let bit_offset = *bit_position & 7;
 		let byte_offset = *bit_position / 8;
 
-		// if byte_offset >= msg.len() {
-		//     //return -1;
-		//     println!("THIS SHOULD NEVER HAPPEN bit_offset is {:?} and byte_offset is {:?}", bit_offset, byte_offset);
-		// }
-
 		let result = (&msg[byte_offset] >> bit_offset) as i32;
 
 		*bit_position += 1;
@@ -343,7 +327,6 @@ impl Demo {
 			cmd = Self::huffman_read(msg, tree, bit_position);
 		}
 
-		//println!("gamestate is {:?}", gamestate);
 		gamestate
 	}
 

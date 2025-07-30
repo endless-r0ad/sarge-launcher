@@ -1,8 +1,6 @@
 import { type Config, type AppData } from '@/models/config'
 import { type Quake3Server } from '@/models/server'
 
-export type Nullable<T> = T | null
-
 export function ensureError(value: unknown): Error {
   if (value instanceof Error) return value
 
@@ -15,7 +13,7 @@ export function ensureError(value: unknown): Error {
   return error
 }
 
-export function tempConfig(): Config {
+export function defaultConfig(): Config {
   return {
     path: '',
     welcome_message: true,
@@ -24,13 +22,11 @@ export function tempConfig(): Config {
     show_unreachable: false,
     manage_q3_instance: true,
     show_trashed_servers: true,
-    demo_path: '',
-    fs_homepath: '',
     q3_clients: [],
   }
 }
 
-export function tempAppData(): AppData {
+export function defaultAppData(): AppData {
   return {
     path: '',
     pinned: new Set(),

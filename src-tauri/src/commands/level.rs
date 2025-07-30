@@ -2,27 +2,19 @@ use std::collections::HashMap;
 use std::fs::create_dir;
 use std::path::Path;
 use tauri::{AppHandle, Manager};
+use itertools::Itertools;
 
 use crate::level::Level;
 use tauri_plugin_dialog::{DialogExt, FilePath};
 
 #[tauri::command(async)]
-pub async fn pick_fs_homepath(app: AppHandle) -> Result<Option<FilePath>, String> {
-	let file_dialog = app.dialog().file().set_title("Select your fs_homepath folder");
-
-	let file = file_dialog.blocking_pick_folder();
-
-	Ok(file)
-}
-
-#[tauri::command(async)]
 pub async fn get_cached_levelshots(app: AppHandle) -> Result<Option<HashMap<String, String>>, tauri::Error> {
 	let mut levelshots: HashMap<String, String> = HashMap::new();
-	let mut cache_dir = app.path().app_cache_dir().unwrap();
+	let mut cache_dir = app.path().app_cache_dir()?;
 	cache_dir.push("levelshots");
 
 	if !cache_dir.exists() {
-		create_dir(&cache_dir).unwrap();
+		create_dir(&cache_dir)?;
 	}
 
 	for entry in std::fs::read_dir(cache_dir)? {
@@ -40,34 +32,24 @@ pub async fn get_cached_levelshots(app: AppHandle) -> Result<Option<HashMap<Stri
 }
 
 #[tauri::command(async)]
-pub async fn get_levels(fs_homepath: Option<&Path>) -> Result<Option<Vec<Level>>, String> {
-	let levels: Option<Vec<Level>>;
+pub async fn get_levels(search_paths: Vec<String>, get_all_data: bool) -> Result<Vec<Level>, tauri::Error> {
+	
+    let mut levels: Vec<Level> = vec![];
+   
+    for p in search_paths {
+        let path = Path::new(&p);
+        levels.append(&mut Level::get_q3_levels(path, get_all_data).await?);
+    }
 
-	if !fs_homepath.is_some() {
-		return Ok(None);
-	}
+   let unique_levels = levels.into_iter().unique_by(|l| l.to_owned().level_name).collect::<Vec<_>>();
 
-	let homepath = fs_homepath.unwrap();
-
-	if homepath.is_dir() {
-		levels = Some(
-			Level::get_q3_levels(homepath)
-				.await
-				.map_err(|e| format!("failed to parse levels in {} - {}", homepath.display(), e))?,
-		);
-	} else {
-		return Err(format!("The specified path does not exist, or is not a directory - {}", homepath.display()));
-	}
-
-	Ok(levels)
+	Ok(unique_levels)
 }
 
 #[tauri::command(async)]
-pub async fn extract_levelshots_to_cache(app: AppHandle, levels: Option<Vec<Level>>) -> Result<(), String> {
+pub async fn extract_levelshots_to_cache(app: AppHandle, levels: Option<Vec<Level>>) -> Result<(), tauri::Error> {
 	if levels.is_some() {
-		Level::extract_levelshots(&app, levels.unwrap())
-			.await
-			.map_err(|e| format!("failed to extract levelshots {}", e))?;
+		Level::extract_levelshots(&app, levels.unwrap()).await?;
 	}
 
 	Ok(())

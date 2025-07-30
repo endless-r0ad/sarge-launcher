@@ -1,12 +1,12 @@
 <script setup lang="ts">
-  import Popup from '@/components/Popup.vue'
+  import Modal from '@/components/Modal.vue'
   import { defineProps, defineEmits, ref, onMounted } from 'vue'
   import { invoke } from '@tauri-apps/api/core'
   import { ensureError } from '@/utils/util'
   import { type Config, type AppData } from '@/models/config'
   import { type Q3Executable } from '@/models/client'
 
-  const props = defineProps<{ config: Config; appData: AppData; showUnreachableServers: boolean; showTrashedServers: boolean }>()
+  const props = defineProps<{ config: Config; appData: AppData; showUnreachableServers: boolean; showTrashedServers: boolean, activeClient: Q3Executable }>()
 
   const emit = defineEmits<{
     mutateConfig: [Config]
@@ -51,8 +51,8 @@
 </script>
 
 <template>
-  <Teleport to="#popup">
-    <Popup v-if="showWelcomeMessage" :popupType="'center'" @cancelModal="closeWelcomeMessage">
+  <Teleport to="#modal">
+    <Modal v-if="showWelcomeMessage" :popupType="'center'" @cancelModal="closeWelcomeMessage">
       <div style="width: 400px">
         <img style="position: absolute; left: 15%; top: 4%" src="../assets/icons/sarge.svg" />
         <h2 style="position: absolute; right: 15%; top: 4%">SARGE LAUNCHER</h2>
@@ -66,7 +66,7 @@
           YOU are solely responsible for that!
         </p>
       </div>
-    </Popup>
+    </Modal>
   </Teleport>
 
   <div class="client-grid" draggable="false">

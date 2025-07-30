@@ -10,15 +10,15 @@ use std::process::Child;
 use crate::client::Q3Executable;
 use crate::master::{self, MasterServer};
 
-pub struct Q3Browser {
+pub struct SargeLauncher {
 	pub client: Mutex<Option<Child>>,
 	pub config: Mutex<Option<Config>>,
 	pub app_data: Mutex<Option<AppData>>,
 }
 
-impl Default for Q3Browser {
+impl Default for SargeLauncher {
 	fn default() -> Self {
-		Q3Browser {
+		SargeLauncher {
 			client: Mutex::new(None),
 			config: Mutex::new(None),
 			app_data: Mutex::new(None),
@@ -35,8 +35,6 @@ pub struct Config {
 	show_unreachable: bool,
 	manage_q3_instance: bool,
 	show_trashed_servers: bool,
-	demo_path: Option<String>,
-	fs_homepath: Option<String>,
 	q3_clients: Vec<Q3Executable>
 }
 
@@ -46,12 +44,10 @@ impl Config {
 			path: path,
 			welcome_message: true,
 			server_browser_threads: 50,
-			server_timeout: 400,
+			server_timeout: 300,
 			show_unreachable: false,
 			manage_q3_instance: true,
 			show_trashed_servers: true,
-			demo_path: None,
-			fs_homepath: None,
 			q3_clients: Vec::<Q3Executable>::new(),
 		}
 	}

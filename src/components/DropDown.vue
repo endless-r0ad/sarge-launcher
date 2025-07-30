@@ -1,9 +1,8 @@
 <script setup lang="ts">
-  import { type Nullable } from '@/utils/util'
   import { defineProps, defineEmits, ref, onMounted, onBeforeUnmount } from 'vue'
   import { type Q3Executable } from '@/models/client'
 
-  const props = defineProps<{ q3Clients: Nullable<Q3Executable[]>; activeClient: Nullable<Q3Executable> }>()
+  const props = defineProps<{ q3Clients: Q3Executable[] | null; activeClient: Q3Executable | null }>()
 
   const emit = defineEmits<{ q3ClientSelect: [Q3Executable]; deleteClient: [Q3Executable] }>()
 

@@ -2,12 +2,12 @@ use std::fs::create_dir;
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
 
-use crate::config::{AppData, Config, Q3Browser};
+use crate::config::{AppData, Config, SargeLauncher};
 
 
 #[tauri::command(async)]
 pub async fn save_config(app: AppHandle, updated_config: Config) -> Result<(), tauri::Error> {
-	let state = app.state::<Mutex<Q3Browser>>();
+	let state = app.state::<Mutex<SargeLauncher>>();
 	let mut config = app.path().app_config_dir()?;
 
 	if !config.exists() {
@@ -23,7 +23,7 @@ pub async fn save_config(app: AppHandle, updated_config: Config) -> Result<(), t
 
 #[tauri::command(async)]
 pub async fn save_app_data(app: AppHandle, updated_data: AppData) -> Result<(), tauri::Error> {
-	let state = app.state::<Mutex<Q3Browser>>();
+	let state = app.state::<Mutex<SargeLauncher>>();
 	let mut app_data_dir = app.path().app_data_dir()?;
 
 	if !app_data_dir.exists() {
@@ -39,7 +39,7 @@ pub async fn save_app_data(app: AppHandle, updated_data: AppData) -> Result<(), 
 
 #[tauri::command(async)]
 pub fn get_config(app: AppHandle) -> Result<Config, tauri::Error> {
-	let state = app.state::<Mutex<Q3Browser>>();
+	let state = app.state::<Mutex<SargeLauncher>>();
 	let mut config_dir = app.path().app_config_dir()?;
 
 	if !config_dir.exists() {
@@ -61,7 +61,7 @@ pub fn get_config(app: AppHandle) -> Result<Config, tauri::Error> {
 
 #[tauri::command(async)]
 pub fn get_appdata(app: AppHandle) -> Result<AppData, tauri::Error> {
-	let state = app.state::<Mutex<Q3Browser>>();
+	let state = app.state::<Mutex<SargeLauncher>>();
 	let mut app_data_dir = app.path().app_data_dir()?;
 
 	if !app_data_dir.exists() {
