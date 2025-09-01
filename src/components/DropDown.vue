@@ -1,10 +1,9 @@
 <script setup lang="ts">
-  import { defineProps, defineEmits, ref, onMounted, onBeforeUnmount } from 'vue'
+  import { ref, onMounted, onBeforeUnmount } from 'vue'
   import { type Q3Executable } from '@/models/client'
+  import { useConfig } from '@/composables/config'
 
-  const props = defineProps<{ q3Clients: Q3Executable[] | null; activeClient: Q3Executable | null }>()
-
-  const emit = defineEmits<{ q3ClientSelect: [Q3Executable]; deleteClient: [Q3Executable] }>()
+  const { config, activeClient, toggleQ3Client, deleteQ3Client } = useConfig();
 
   const isDropDownVisible = ref(false)
   const deleteHovered = ref(false)
@@ -15,13 +14,12 @@
       deleteClicked.value = false
       return
     }
-    emit('q3ClientSelect', client)
+    toggleQ3Client(client)
   }
 
   function deleteClient(client: Q3Executable) {
     deleteClicked.value = true
-    emit('deleteClient', client)
-
+    deleteQ3Client(client)
     isDropDownVisible.value = false
   }
 
@@ -33,7 +31,7 @@
 
   function handleClick(event: MouseEvent) {
     const target = event.target as HTMLTextAreaElement
-    isDropDownVisible.value = target.id == 'dropdown' && props.activeClient ? !isDropDownVisible.value : false
+    isDropDownVisible.value = target.id == 'dropdown' && activeClient ? !isDropDownVisible.value : false
   }
 
   onMounted(() => {
@@ -53,11 +51,16 @@
     :style="isDropDownVisible ? 'background-color: var(--alt-bg);' : ''"
     id="dropdown"
   >
+    <img v-if="activeClient?.gamename == 'cpma'" src="../assets/images/cpma.png" class="client-icon-h" style="margin-bottom: -6px;"/>
+    <img v-if="activeClient?.gamename == 'defrag'" src="../assets/images/defrag.svg" class="client-icon-h" style="margin-bottom: -8px;"/>
+    <img v-if="activeClient?.gamename == 'q3ut4'" src="../assets/images/q3ut4.png" class="client-icon-h" style="margin-bottom: -8px;"/>
+    <img v-if="activeClient?.gamename == 'baseq3'" src="../assets/images/contenders.png" class="client-icon-h" style="margin-bottom: -6px;"/>
+    <img v-if="activeClient?.gamename == 'baseoa'" src="../assets/images/baseoa.svg" class="client-icon-h" style="margin-bottom: -6px;"/>
     {{ activeClient?.name || 'Quake 3 Client' }}
 
     <div class="clients-wrapper" v-if="isDropDownVisible">
-      <span
-        v-for="(client, _index) in q3Clients"
+      <div
+        v-for="(client, _index) in config.q3_clients"
         class="client"
         :key="client.exe_path"
         :style="deleteHovered ? 'background-color: var(--main-bg);' : ''"
@@ -71,8 +74,14 @@
         >
           <img src="../assets/icons/x.svg" width="8px" />
         </button>
+        <img v-if="client.gamename == 'cpma'" src="../assets/images/cpma.png" class="client-icon" style="margin-bottom: -6px;"/>
+        <img v-if="client.gamename == 'defrag'" src="../assets/images/defrag.svg" class="client-icon" style="margin-bottom: -8px;"/>
+        <img v-if="client.gamename == 'q3ut4'" src="../assets/images/q3ut4.png" class="client-icon" style="margin-bottom: -8px;"/>
+        <img v-if="client.gamename == 'baseq3'" src="../assets/images/contenders.png" class="client-icon" style="margin-bottom: -6px;"/>
+        <img v-if="client.gamename == 'baseoa'" src="../assets/images/baseoa.svg" class="client-icon" style="margin-bottom: -6px;"/>
         <span>{{ client.name }}</span>
-      </span>
+        
+      </div>
     </div>
   </div>
 </template>
@@ -165,5 +174,15 @@
   .delete-button:hover {
     background: var(--alt-bg);
     cursor: pointer;
+  }
+
+  .client-icon-h {
+    width: 24px;
+    margin-left: -24px;
+  }
+
+  .client-icon {
+    width: 24px;
+    margin-right: 8px;
   }
 </style>

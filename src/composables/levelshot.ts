@@ -10,7 +10,6 @@ export function useLevelshot() {
   const activeClientPaths = ref<string[]>([])
 
   async function getClientPaths(activeClient: Q3Executable | null) {
-    console.log('getClientPaths from ', activeClient)
     activeClientPaths.value = await invoke('get_client_paths', { activeClient: activeClient })
   }
   

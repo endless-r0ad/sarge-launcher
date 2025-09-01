@@ -8,7 +8,10 @@ export interface Config {
   server_timeout: number
   show_unreachable: boolean
   manage_q3_instance: boolean
+  refresh_by_mod: boolean
   show_trashed_servers: boolean
+  autoclose_demo: boolean
+  loop_demo: boolean
   q3_clients: Q3Executable[]
 }
 

@@ -1,58 +1,42 @@
 <script setup lang="ts">
   import Modal from '@/components/Modal.vue'
-  import { defineProps, defineEmits, ref, onMounted } from 'vue'
+  import { defineEmits, ref, onMounted, onActivated } from 'vue'
   import { invoke } from '@tauri-apps/api/core'
   import { ensureError } from '@/utils/util'
-  import { type Config, type AppData } from '@/models/config'
   import { type Q3Executable } from '@/models/client'
+  import { useConfig } from '@/composables/config'
 
-  const props = defineProps<{ config: Config; appData: AppData; showUnreachableServers: boolean; showTrashedServers: boolean, activeClient: Q3Executable }>()
-
-  const emit = defineEmits<{
-    mutateConfig: [Config]
-    mutateAppData: [AppData]
-    spawnQuake: [string]
-    addQ3Client: [Q3Executable]
-    emitComponentName: [string]
-    errorAlert: [string]
-    infoAlert: [string]
-  }>()
+  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], errorAlert: [string], infoAlert: [string]}>()
 
   const componentName = ref('Sarge Launcher')
-  const showWelcomeMessage = ref<boolean>(props.config.welcome_message)
 
-  function closeWelcomeMessage() {
-    showWelcomeMessage.value = false
-
-    if (props.config.welcome_message) {
-      emit('mutateConfig', { ...props.config, welcome_message: false })
-    }
-  }
+  const { config, addQ3Client } = useConfig();
 
   const hoveredCard = ref('')
-
-  function emitComponentName() {
-    emit('emitComponentName', componentName.value)
-  }
 
   async function pickClientBlocking() {
     try {
       let new_client: Q3Executable = await invoke('pick_client')
 
       if (new_client != null) {
-        emit('addQ3Client', new_client)
+        if (config.value.q3_clients.some((c) => c.exe_path === new_client.exe_path)) {
+          emit('infoAlert', 'client already added')
+          return
+        }
+        addQ3Client(new_client)
       }
     } catch (err) {
       emit('errorAlert', ensureError(err).message)
     }
   }
 
-  onMounted(() => emitComponentName())
+  onMounted(() => emit('emitComponentName', componentName.value))
+  onActivated(() => emit('emitComponentName', componentName.value))
 </script>
 
 <template>
   <Teleport to="#modal">
-    <Modal v-if="showWelcomeMessage" :popupType="'center'" @cancelModal="closeWelcomeMessage">
+    <Modal v-if="config.welcome_message" :popupType="'center'" @cancelModal="config.welcome_message = false">
       <div style="width: 400px">
         <img style="position: absolute; left: 15%; top: 4%" src="../assets/icons/sarge.svg" />
         <h2 style="position: absolute; right: 15%; top: 4%">SARGE LAUNCHER</h2>
@@ -65,6 +49,9 @@
           Sarge Launcher is not responsible for installing any mods, modifying any configs, or downloading any content for Quake 3 Arena -
           YOU are solely responsible for that!
         </p>
+        <p style="text-align: center;">
+          v0.0.1 copyright n shit
+        </p>
       </div>
     </Modal>
   </Teleport>
@@ -74,7 +61,7 @@
       class="grid-bg welcome-bg grow"
       @mouseover="hoveredCard = 'welcome'"
       @mouseleave="hoveredCard = ''"
-      @click="showWelcomeMessage = true"
+      @click="config.welcome_message = true"
       style="grid-column: 1; grid-row: 1"
     >
       <div v-if="hoveredCard == 'welcome'" class="tint">
@@ -258,17 +245,17 @@
   }
 
   .urt-bg {
-    background-image: url('../assets/images/urt.png');
+    background-image: url('../assets/images/q3ut4.png');
     background-size: 60%;
   }
 
   .defrag-bg {
-    background-image: url('../assets/images/idfe_logo01.svg');
-    background-size: 220%;
+    background-image: url('../assets/images/defrag.svg');
+    background-size: 60%;
   }
 
   .cpma-bg {
-    background-image: url('../assets/images/cpma-2.png');
+    background-image: url('../assets/images/cpma.png');
     background-size: 60%;
   }
 
@@ -282,7 +269,7 @@
   }
 
   .oa-bg {
-    background-image: url('../assets/images/Openarena.svg');
+    background-image: url('../assets/images/baseoa.svg');
     background-size: 70%;
   }
 

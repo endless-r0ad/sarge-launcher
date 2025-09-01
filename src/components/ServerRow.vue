@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import Loading from '@/components/Loading.vue'
-  import { watch, defineProps, defineEmits, ref, computed, onMounted, onUnmounted } from 'vue'
+  import { defineProps, defineEmits, computed, onMounted, onUnmounted } from 'vue'
   import { type Quake3Server } from '@/models/server'
 
   const props = defineProps<{
@@ -8,17 +8,12 @@
     isSelected: boolean
     refreshing: boolean
     altKeyHeld: boolean
+    displayDetails: boolean
     displayDetailsOnMount?: boolean
     levelshotPath: string | null
   }>()
 
   const emit = defineEmits<{ detailsDisplayedOnUnmount: []; showDetails: []; hideDetails: [] }>()
-
-  const expandDetails = ref(false)
-
-  const displayDetails = computed(() => {
-    return props.isSelected
-  })
 
   const requiresPassword = computed(() => {
     if ('g_needpass' in props.server.othersettings && props.server.othersettings['g_needpass'] == '1') {
@@ -40,14 +35,6 @@
     return sortedList.sort()
   })
 
-  const localIsSelected = ref(props.isSelected)
-
-  watch(localIsSelected, (newVal, _oldVal) => {
-    if (!newVal) {
-      expandDetails.value = false
-    }
-  })
-
   function getServerProtocol(serv: Quake3Server) {
     if (serv.protocol) {
       return serv.protocol
@@ -59,13 +46,12 @@
 
   onMounted(async () => {
     if (props.isSelected && props.displayDetailsOnMount) {
-      expandDetails.value = true
       emit('detailsDisplayedOnUnmount')
     }
   })
 
   onUnmounted(() => {
-    if (displayDetails.value) {
+    if (props.displayDetails && props.isSelected) {
       emit('detailsDisplayedOnUnmount')
     }
   })
@@ -94,12 +80,12 @@
       <span style="width: 7%" class="data">{{ server.ping }}</span>
       <span style="width: 16%" class="data">{{ server.ip }}:{{ server.port }}</span>
       <span style="width: 2%">
-        <div v-if="!displayDetails" class="plus" id="expandDetails" @click="emit('showDetails')">+</div>
-        <div v-if="displayDetails" class="minus" id="expandDetails" @click="emit('hideDetails')">-</div>
+        <div v-if="!isSelected || (isSelected && !displayDetails)" class="plus" id="expandDetails" @click="emit('showDetails')">+</div>
+        <div v-if="displayDetails && isSelected" class="minus" id="expandDetails" @click="emit('hideDetails')">-</div>
       </span>
     </div>
 
-    <div v-if="displayDetails" class="server-details">
+    <div v-if="displayDetails && isSelected" class="server-details">
       <img v-if="levelshotPath" class="levelshot" :src="levelshotPath" />
       <img v-else class="levelshot" src="../assets/icons/q3-white.svg" />
 

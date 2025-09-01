@@ -34,7 +34,10 @@ pub struct Config {
 	server_timeout: u16,
 	show_unreachable: bool,
 	manage_q3_instance: bool,
+    refresh_by_mod: bool,
 	show_trashed_servers: bool,
+    autoclose_demo: bool,
+    loop_demo: bool,
 	q3_clients: Vec<Q3Executable>
 }
 
@@ -47,7 +50,10 @@ impl Config {
 			server_timeout: 300,
 			show_unreachable: false,
 			manage_q3_instance: true,
+            refresh_by_mod: false,
 			show_trashed_servers: true,
+            autoclose_demo: true,
+            loop_demo: false,
 			q3_clients: Vec::<Q3Executable>::new(),
 		}
 	}

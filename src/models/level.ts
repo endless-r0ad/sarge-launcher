@@ -4,6 +4,7 @@ export interface Level {
   long_name: string
   gametype: string[]
   author: string
+  author_vhtml: string
   path: string
   parent_path: string
   is_defrag: boolean

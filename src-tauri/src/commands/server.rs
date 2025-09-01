@@ -18,80 +18,69 @@ pub async fn refresh_all_servers(
 	num_threads: usize,
 	timeout: u64,
 ) -> Result<Vec<Quake3Server>, String> {
-    
-    get_appdata_servers(&app, &mut all_servers);
-	
-	let all_servers_arc = Arc::new(all_servers);
+
+    if all_servers.len() == 0 {
+        return Err(String::from("Zero servers to refresh, check network connection or master server status"))
+    }
+
+    get_saved_servers(&app, &mut all_servers);
+    let serv_chunks = all_servers.chunks(all_servers.len() / num_threads);
 	let refreshed_servers_arc: Arc<Mutex<Vec<Quake3Server>>> = Arc::new(Mutex::new(vec![]));
 
-	let mut handles = vec![];
+    thread::scope(|s| {
+        let mut handles = vec![];
 
-	for t in 0..num_threads {
-		let all_servers_arc = Arc::clone(&all_servers_arc);
-		let refreshed = Arc::clone(&refreshed_servers_arc);
+        for chunk in serv_chunks {
 
-		let servs_per_thread = (&all_servers_arc.len() / num_threads) + 1;
-		let mut remaining: isize = servs_per_thread as isize;
+            let refreshed = Arc::clone(&refreshed_servers_arc);
+            let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
+            socket.set_read_timeout(Some(Duration::from_millis(timeout))).unwrap();
 
-		if ((servs_per_thread * t) + servs_per_thread) > all_servers_arc.len() {
-			remaining = (all_servers_arc.len() as isize) - ((servs_per_thread * t) as isize);
+            handles.push(s.spawn(move || {
+                
+                for i in 0..chunk.len() {
+                    let mut queried_server: Quake3Server = chunk[i].to_owned();
 
-			if remaining <= 0 {
-				break;
-			}
-		}
+                    let ping_start = Instant::now();
 
-		handles.push(thread::spawn(move || {
-			let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
-			let servers_slice = &all_servers_arc[(servs_per_thread * t)..((servs_per_thread * t) + remaining as usize)];
-			let mut serv_counter = 0;
+                    let x = socket.send_to(GETSTATUS, queried_server.address.to_owned()).unwrap_or_else(|err| {
+                        queried_server.set_error(err);
+                        return 0;
+                    });
 
-			while serv_counter < servers_slice.len() {
-				let mut queried_server: Quake3Server = servers_slice[serv_counter].to_owned();
-				let _ = socket.set_read_timeout(Some(Duration::from_millis(timeout)));
+                    if x == 0 {
+                        refreshed.lock().unwrap().push(queried_server);
+                        continue;
+                    }
 
-				let ping_start = Instant::now();
+                    let mut response_buf: [u8; 2400] = [0; 2400];
 
-				let x = socket.send_to(GETSTATUS, queried_server.address.to_owned()).unwrap_or_else(|err| {
-					queried_server.set_error(err);
-					return 0;
-				});
+                    let response = socket.recv_from(&mut response_buf);
 
-				if x == 0 {
-					refreshed.lock().unwrap().push(queried_server);
-					serv_counter += 1;
-					continue;
-				}
+                    match response {
+                        Ok((_bytes, _src)) => {
+                            queried_server.ping = ping_start.elapsed().as_millis() as u16;
+                            queried_server
+                                .parse_status_response(&response_buf)
+                                .unwrap_or_else(|e| queried_server.errormessage = e.to_string());
+                            refreshed.lock().unwrap().push(queried_server);
+                        }
+                        Err(err) => {
+                            queried_server.set_error(err);
+                            refreshed.lock().unwrap().push(queried_server);
+                        }
+                    }
+                }
+            }));
+        }
+        for handle in handles {
+            handle.join().unwrap();
+        }
+    });
 
-				let mut response_buf: [u8; 2400] = [0; 2400];
+    let servers = Mutex::into_inner(Arc::try_unwrap(refreshed_servers_arc).unwrap()).map_err(|e| e.to_string())?;
 
-				let response = socket.recv_from(&mut response_buf);
-
-				match response {
-					Ok((_bytes, _src)) => {
-						queried_server.ping = ping_start.elapsed().as_millis() as u16;
-						queried_server
-							.parse_server_response(&response_buf)
-							.unwrap_or_else(|e| queried_server.errormessage = e);
-						refreshed.lock().unwrap().push(queried_server);
-					}
-					Err(err) => {
-						queried_server.set_error(err);
-						refreshed.lock().unwrap().push(queried_server);
-					}
-				}
-				serv_counter += 1;
-			}
-		}));
-	}
-
-	for handle in handles {
-		handle.join().unwrap();
-	}
-
-	let q3_servers = refreshed_servers_arc.lock().unwrap().clone();
-
-	Ok(q3_servers)
+	Ok(servers)
 }
 
 #[tauri::command(async)]
@@ -125,8 +114,8 @@ pub async fn refresh_single_server(mut refresh_server: Quake3Server, timeout: u6
 			refresh_server.ping = ping_start.elapsed().as_millis() as u16;
 
 			refresh_server
-				.parse_server_response(&response_buf)
-				.unwrap_or_else(|e| refresh_server.errormessage = e);
+				.parse_status_response(&response_buf)
+				.unwrap_or_else(|e| refresh_server.errormessage = e.to_string());
 		}
 		Err(err) => {
 			refresh_server.set_error(err);
@@ -136,7 +125,7 @@ pub async fn refresh_single_server(mut refresh_server: Quake3Server, timeout: u6
 	Ok(refresh_server)
 }
 
-fn get_appdata_servers(app: &AppHandle, servers: &mut Vec<Quake3Server>) -> () {
+fn get_saved_servers(app: &AppHandle, servers: &mut Vec<Quake3Server>) -> () {
 	let all_servers_addresses: Vec<String> = servers.iter().map(|x| x.address.clone()).collect();
 
     let state = app.state::<Mutex<SargeLauncher>>();

@@ -2,13 +2,14 @@ use image::EncodableLayout;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use zip::ZipArchive;
+use std::collections::HashMap;
 use std::fs::{create_dir, File};
 use std::io::Read;
 use std::path::Path;
 use tauri::AppHandle;
 use tauri::Manager;
 
-use crate::shared::parse_q3_colorstring;
+use crate::q3_util::parse_colorstring;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Level {
@@ -17,6 +18,7 @@ pub struct Level {
     pub long_name: String,
     pub gametype: Vec<String>,
     pub author: String,
+    pub author_vhtml: String,
 	pub path: String,
 	pub parent_path: String,
     pub is_defrag: bool,
@@ -41,30 +43,45 @@ impl Level {
 				if ext == "pk3" {
                     let mut pk3_maps: Vec<Level> = vec![];
                     let pk3_name = path.file_stem().unwrap().to_str().unwrap().to_string();
+                    let mut arena_files: Vec<String> = vec![];
+                    let mut defi_files: Vec<String> = vec![];
 
 					let file = std::fs::File::open(&path).unwrap();
 					let mut archive: ZipArchive<File> = zip::ZipArchive::new(file).unwrap();
 
 					for name in archive.file_names() {
-						if name.to_lowercase().starts_with("maps") && name.to_lowercase().ends_with(".bsp") {
-		
-							pk3_maps.push(
-                                Level {
-                                    pk3_name: pk3_name.clone(),
-                                    level_name: name[5..name.len() - 4].to_string(),
-                                    long_name: String::from(""),
-                                    gametype: vec![],
-                                    author: String::from(""),
-                                    path: path.to_str().unwrap().to_string(),
-                                    parent_path: path.parent().unwrap().to_str().unwrap().to_string(),
-                                    is_defrag: false,
-                                    year_created: 1901
-							    }
-                            );
-						}
+                        let name_lowered = name.to_lowercase();
+                        match name_lowered {
+                            x if x.starts_with("maps") && x.ends_with(".bsp") => {
+                                pk3_maps.push(
+                                    Level {
+                                        pk3_name: pk3_name.clone(),
+                                        level_name: name[5..name.len() - 4].to_string(),
+                                        long_name: String::from(""),
+                                        gametype: vec![],
+                                        author: String::from(""),
+                                        author_vhtml: String::from(""),
+                                        path: path.to_str().unwrap().to_string(),
+                                        parent_path: path.parent().unwrap().to_str().unwrap().to_string(),
+                                        is_defrag: false,
+                                        year_created: 1901
+                                    }
+                                );
+                            }
+                            x if x.starts_with("scripts") && x.ends_with("arenas.txt") => {
+                                arena_files.push(name.to_string());
+                            }
+                            x if x.starts_with("scripts") && x.ends_with(".arena") => {
+                                arena_files.push(name.to_string());
+                            }
+                            x if x.starts_with("scripts") && x.ends_with(".defi") => {
+                                defi_files.push(name.to_string());
+                            }
+                            _ => continue
+                        }
 					}
                     if get_all_data {
-                        Level::get_remaining_data(&mut pk3_maps, pk3_name, &mut archive);
+                        Level::get_remaining_data(&mut pk3_maps, arena_files, defi_files, &mut archive);
                     }                 
                     maps.append(&mut pk3_maps);          
 				}
@@ -73,22 +90,38 @@ impl Level {
 		Ok(maps)
 	}
 
-    pub fn get_remaining_data(pk3_maps: &mut Vec<Level>, pk3_name: String, archive: &mut ZipArchive<File>) {
-        if pk3_name == "pak0" {
-            let arena_file = archive.by_name("scripts/arenas.txt");
+    pub fn get_remaining_data(pk3_maps: &mut Vec<Level>, arena_files: Vec<String>, defi_files: Vec<String>, archive: &mut ZipArchive<File>) {
+        
+        let mut arena_data: Vec<HashMap<String, String>> = vec![];
+        let mut defi_data: Vec<HashMap<String, String>> = vec![];
+
+        for arena in arena_files {
+            let arena_file = archive.by_name(&arena);
             if let Ok(mut file) = arena_file {
                 let mut contents = String::from("");
                 let x = file.read_to_string(&mut contents);
                 if let Ok(_good_read) = x {
-                    for i in 0..pk3_maps.len() {
-                        pk3_maps[i].author = String::from("id Software");
-                        pk3_maps[i].parse_arena_data(contents.clone());
-                    }
+                    arena_data.extend(Self::parse_arena_data(contents.clone()));
                 }
-            } 
+            }
+        }
+
+        for defi in defi_files {
+            let defi_file = archive.by_name(&defi);
+            if let Ok(mut file) = defi_file {
+                let mut contents = String::from("");
+                let x = file.read_to_string(&mut contents);
+                if let Ok(_good_read) = x {
+                    defi_data.extend(Self::parse_arena_data(contents.clone()));
+                }
+            }
         }
 
         for m in pk3_maps.iter_mut() {
+            if m.pk3_name == "pak0" && m.parent_path.contains("baseq3") {
+                m.author = String::from("id Software");
+                m.author_vhtml = String::from("id Software");
+            }
             let bsp = archive.by_name(format!("maps/{}.bsp", m.level_name).as_str());
             if let Ok(bsp_map) = bsp {
                 let last_date = bsp_map.last_modified();
@@ -96,76 +129,62 @@ impl Level {
                     m.year_created = date.year();
                 }
             }
+            for d in &arena_data {
+                if *d.get("map").unwrap() == m.level_name.to_lowercase() {
+                    if d.contains_key("longname") {
+                        m.long_name = d.get("longname").unwrap().to_owned();
+                    }
+                    if d.contains_key("author") {
+                        m.author = d.get("author").unwrap().to_owned();
+                    }
+                    if d.contains_key("gametype") {
+                        let gametypes: Vec<String> = d.get("gametype").unwrap().to_owned().split(" ").map(String::from).collect();
+                        m.gametype = gametypes.into_iter().filter(|t| !t.trim().is_empty()).collect();
+                    }
+                    break
+                }
+            }
+            for d in &defi_data {
+                if *d.get("map").unwrap() == m.level_name.to_lowercase() {
+                    m.is_defrag = true;
+                    m.gametype = vec![String::from("race")];
+                    if d.contains_key("longname") {
+                        m.long_name = d.get("longname").unwrap().to_owned();
+                    }
+                    if d.contains_key("author") {
+                        m.author = d.get("author").unwrap().to_owned();
+                        m.author_vhtml = d.get("author_vhtml").unwrap().to_owned();
+                    }
+                    if d.contains_key("gametype") {
+                        let gametypes: Vec<String> = d.get("gametype").unwrap().to_owned().split(" ").map(String::from).collect();
+                        m.gametype = gametypes.into_iter().filter(|t| !t.trim().is_empty()).collect();
+                    }
+                    break
+                }
+            }
         }
 
-        {
-            let arena_file = archive.by_name(format!("scripts/{}.arena", pk3_name).as_str());
-            if let Ok(mut file) = arena_file {
-                let mut contents = String::from("");
-                let x = file.read_to_string(&mut contents);
-                if let Ok(_good_read) = x {
-                    for i in 0..pk3_maps.len() {
-                        pk3_maps[i].parse_arena_data(contents.clone());
-                    }
-                }
-            } 
-        }
-        {
-            let defi_file = archive.by_name(format!("scripts/{}.defi", pk3_name).as_str());
-            if let Ok(mut file) = defi_file {
-                pk3_maps.iter_mut().for_each(|m| { m.is_defrag = true; });
-                let mut contents = String::from("");
-                let x = file.read_to_string(&mut contents);
-                if let Ok(_good_read) = x {
-                    for i in 0..pk3_maps.len() {
-                        pk3_maps[i].parse_arena_data(contents.clone());
-                    }
-                    pk3_maps.iter_mut().for_each(|m| { m.gametype = vec![String::from("race")]; });
-                }
-            }
-        }
-        // if the data file wasnt found by pk3_name, try each level_name
-        for i in 0..pk3_maps.len() {
-            if pk3_maps[i].long_name != "" {
-                continue;
-            }
-
-            {
-                let arena_file = archive.by_name(format!("scripts/{}.arena", pk3_maps[i].level_name).as_str());
-                if let Ok(mut file) = arena_file {
-                    let mut contents = String::from("");
-                    let x = file.read_to_string(&mut contents);
-                    if let Ok(_good_read) = x {
-                        for i in 0..pk3_maps.len() {
-                            pk3_maps[i].parse_arena_data(contents.clone());
-                        }
-                    }
-                } 
-            }
-            {
-                let defi_file = archive.by_name(format!("scripts/{}.defi", pk3_maps[i].level_name).as_str());
-                if let Ok(mut file) = defi_file {
-                    pk3_maps.iter_mut().for_each(|m| { m.is_defrag = true; });
-                    let mut contents = String::from("");
-                    let x = file.read_to_string(&mut contents);
-                    if let Ok(_good_read) = x {
-                        for i in 0..pk3_maps.len() {
-                            pk3_maps[i].parse_arena_data(contents.clone());
-                        }
-                        pk3_maps.iter_mut().for_each(|m| { m.gametype = vec![String::from("race")]; });
-                    }
-                }
-            }
-        }
     }
 
-    pub fn parse_arena_data(&mut self, contents: String) {
-        let mut contents_map = self.pk3_name.clone();
+    pub fn parse_arena_data(contents: String) -> Vec<HashMap<String, String>> {
+        let mut arenas: Vec<HashMap<String, String>> = vec![];
+        let mut current_arena_data: HashMap<String, String> = HashMap::new();
 
         for l in contents.lines() {
             let new_l = l.replace("\t", "");
 
-            if new_l.len() == 0 || new_l == "{" || new_l == "}" || new_l.starts_with("//") {
+            if new_l.len() == 0 || new_l.starts_with("//") {
+                continue;
+            }
+
+            if new_l == "{" {
+                current_arena_data.clear();
+            }
+
+            if new_l == "}" {
+                if current_arena_data.contains_key("map") {
+                    arenas.push(current_arena_data.clone());
+                }
                 continue;
             }
 
@@ -173,28 +192,19 @@ impl Level {
 
             if key_val.len() > 1 {
                 match key_val[0].to_lowercase().trim() {
-                    "map" => contents_map = key_val[1].trim().to_lowercase().to_string(),
-                    "type" => {
-                        if contents_map == self.level_name.to_lowercase() {
-                            let gametypes: Vec<String> = key_val[1].trim().split(" ").map(String::from).collect();
-                            self.gametype = gametypes.into_iter().filter(|t| !t.trim().is_empty()).collect();
-                        }
-                    },
-                    "longname" => {
-                        if contents_map == self.level_name.to_lowercase() {
-                            self.long_name = parse_q3_colorstring(key_val[1].trim().to_string()).1
-                        }
-                    },
+                    "map" => current_arena_data.entry(String::from("map")).or_insert(key_val[1].trim().to_lowercase().to_string()),
+                    "type" => current_arena_data.entry(String::from("gametype")).or_insert(key_val[1].trim().to_string()),
+                    "longname" => current_arena_data.entry(String::from("longname")).or_insert(parse_colorstring(key_val[1].trim().to_string()).1),
                     "author" => {
-                        if contents_map == self.level_name.to_lowercase() {
-                            self.author = parse_q3_colorstring(key_val[1].trim().to_string()).1
-                        }
-                    },
+                        let parsed = parse_colorstring(key_val[1].trim().to_string());
+                        current_arena_data.entry(String::from("author")).or_insert(parsed.0);
+                        current_arena_data.entry(String::from("author_vhtml")).or_insert(parsed.1)
+                    }
                     _ => continue
-                }
-            }
-            
+                };
+            }      
         }
+        arenas
 
     }
 

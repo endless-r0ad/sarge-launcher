@@ -5,7 +5,6 @@ use tauri::{AppHandle, Manager};
 use itertools::Itertools;
 
 use crate::level::Level;
-use tauri_plugin_dialog::{DialogExt, FilePath};
 
 #[tauri::command(async)]
 pub async fn get_cached_levelshots(app: AppHandle) -> Result<Option<HashMap<String, String>>, tauri::Error> {

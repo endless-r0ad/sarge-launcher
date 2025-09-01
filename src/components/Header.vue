@@ -4,16 +4,15 @@
   import { defineProps, defineEmits } from 'vue'
   import { ensureError } from '@/utils/util'
   import { type Q3Executable } from '@/models/client'
-  import { type Config } from '@/models/config'
+  import { useConfig } from '@/composables/config'
 
-  const props = defineProps<{ currentView: string; config: Config; activeClient: Q3Executable | null }>()
+  defineProps<{ currentView: string; }>()
+  const { config, activeClient, addQ3Client } = useConfig();
 
   const emit = defineEmits<{
     spawnQuake: [string[]]
-    addQ3Client: [Q3Executable]
-    toggleQ3Client: [Q3Executable]
-    deleteQ3Client: [Q3Executable]
     errorAlert: [string]
+    infoAlert: [string]
   }>()
 
   async function pickClient() {
@@ -21,32 +20,30 @@
       let new_client: Q3Executable = await invoke('pick_client')
 
       if (new_client != null) {
-        emit('addQ3Client', new_client)
+        if (config.value.q3_clients.some((c) => c.exe_path === new_client.exe_path)) {
+          emit('infoAlert', 'client already added')
+          return
+        }
+        addQ3Client(new_client)
       }
     } catch (err) {
       emit('errorAlert', ensureError(err).message)
     }
   }
-  function q3ClientSelect(client: Q3Executable) {
-    emit('toggleQ3Client', client)
-  }
 
-  function deleteClient(client: Q3Executable) {
-    emit('deleteQ3Client', client)
-  }
 </script>
 
 <template>
   <div class="navbar no-select">
     <div>
-      <h3 class="page-title">{{ currentView }}</h3>
+      <h3 class="page-title" v-html="currentView"></h3>
     </div>
 
     <div class="nav-right">
-      <div v-if="props.activeClient" class="launch-client-button" @click="emit('spawnQuake', [])" />
+      <div v-if="activeClient" class="launch-client-button" @click="emit('spawnQuake', [])" />
       <div class="add-client-button" @click="pickClient"></div>
 
-      <DropDown :q3Clients="config.q3_clients" :activeClient="activeClient" @q3ClientSelect="q3ClientSelect" @deleteClient="deleteClient" />
+      <DropDown />
     </div>
   </div>
 </template>

@@ -6,11 +6,12 @@
    id="Layer_1"
    x="0px"
    y="0px"
-   viewBox="0 0 1024 1024"
-   style="enable-background:new 0 0 1024 1024;"
+   viewBox="0 0 269.30075 269.20001"
    xml:space="preserve"
-   sodipodi:docname="idfe_logo01.svg"
+   sodipodi:docname="defrag.svg"
    inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   width="269.30075"
+   height="269.20001"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -25,14 +26,19 @@
    inkscape:pagecheckerboard="0"
    showgrid="false"
    inkscape:zoom="0.81933594"
-   inkscape:cx="512"
-   inkscape:cy="511.38975"
-   inkscape:window-width="1050"
-   inkscape:window-height="749"
-   inkscape:window-x="715"
-   inkscape:window-y="103"
-   inkscape:window-maximized="0"
-   inkscape:current-layer="Layer_1" />
+   inkscape:cx="125.71156"
+   inkscape:cy="237.99762"
+   inkscape:window-width="1848"
+   inkscape:window-height="1011"
+   inkscape:window-x="0"
+   inkscape:window-y="32"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="Layer_1"
+   fit-margin-top="16"
+   fit-margin-left="16"
+   fit-margin-right="16"
+   fit-margin-bottom="16"
+   lock-margins="true" />
 <style
    type="text/css"
    id="style2">
@@ -40,7 +46,8 @@
 </style>
 <g
    id="g12"
-   style="fill:#000000;fill-opacity:1;stroke-width:1">
+   style="fill:#000000;fill-opacity:1;stroke-width:1"
+   transform="translate(-376.6,-377.1)">
 	<g
    id="g6"
    style="fill:#000000;fill-opacity:1;stroke-width:1">

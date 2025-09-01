@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::master::MasterServer;
-use crate::shared;
+use crate::q3_util;
 use std::collections::HashMap;
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
@@ -14,7 +14,7 @@ pub struct ServerPlayer {
 
 impl ServerPlayer {
 	fn new(name: String, frags: String, ping: String) -> Self {
-		let parsed_name = shared::parse_q3_colorstring(name);
+		let parsed_name = q3_util::parse_colorstring(name);
 		Self {
 			name: parsed_name.0,
 			namecolored: parsed_name.1,
@@ -72,14 +72,11 @@ impl Quake3Server {
 		}
 	}
 
-	pub fn parse_server_response(&mut self, &response_buf: &[u8; 2400]) -> Result<(), String> {
+	pub fn parse_status_response(&mut self, &response_buf: &[u8; 2400]) -> Result<(), tauri::Error> {
 		let mut index = 0;
 
 		if &response_buf[index..(index + 19)] != b"\xff\xff\xff\xffstatusResponse\n" {
-			return Err(format!(
-				"Invalid status response: {:?} ",
-				String::from_utf8_lossy(&response_buf[index..(index + 19)])
-			));
+            return Err(tauri::Error::FailedToReceiveMessage)
 		}
 
 		index += 20;
@@ -87,17 +84,35 @@ impl Quake3Server {
 		let mut reverse_response = response_buf;
 		reverse_response.reverse();
 
-		let end_index: usize = response_buf.len() - reverse_response.iter().position(|&r| r == 0x0a).unwrap();
-		let last_gamestate_delimiter = response_buf.len() - reverse_response.iter().position(|&r| r == 0x5c).unwrap();
-		let to_gamestate_end: usize = response_buf[last_gamestate_delimiter..].iter().position(|&r| r == 0x0a).unwrap();
+        let resp_end = reverse_response.iter().position(|&r| r == 0x0a);
 
-		let gamestate = String::from_utf8_lossy(&response_buf[index..last_gamestate_delimiter + to_gamestate_end]);
+        if resp_end.is_none() {
+            return Err(tauri::Error::AssetNotFound(String::from("status response end")))
+        }
+
+		let end_index: usize = response_buf.len() - resp_end.unwrap();
+
+        let last_gamestate_end = reverse_response.iter().position(|&r| r == 0x5c);
+
+        if last_gamestate_end.is_none() {
+            return Err(tauri::Error::AssetNotFound(String::from("last gamestate delimiter")))
+        }
+
+		let last_gamestate_delimiter = response_buf.len() - last_gamestate_end.unwrap();
+
+		let last_gamestate_len= response_buf[last_gamestate_delimiter..].iter().position(|&r| r == 0x0a);
+
+        if last_gamestate_len.is_none() {
+            return Err(tauri::Error::AssetNotFound(String::from("last gamestate length")))
+        }
+
+		let gamestate = String::from_utf8_lossy(&response_buf[index..last_gamestate_delimiter + last_gamestate_len.unwrap()]);
 		let gamestate_list: Vec<&str> = gamestate.split("\\").collect();
 
 		for i in (0..gamestate_list.len()).step_by(2) {
 			match gamestate_list[i] {
 				"sv_hostname" => {
-					let parsed_host = shared::parse_q3_colorstring(gamestate_list[i + 1].to_owned());
+					let parsed_host = q3_util::parse_colorstring(gamestate_list[i + 1].to_owned());
 					self.host = parsed_host.0;
 					self.hostcolored = parsed_host.1;
 				}
@@ -119,7 +134,7 @@ impl Quake3Server {
 			}
 		}
 
-		index = last_gamestate_delimiter + to_gamestate_end;
+		index = last_gamestate_delimiter + last_gamestate_len.unwrap();
 
 		if index == end_index - 1 {
 			return Ok(());

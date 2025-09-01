@@ -5,7 +5,7 @@ use std::path::Path;
 use std::vec;
 
 use crate::huffman_node::Node;
-use crate::shared;
+use crate::q3_util;
 
 const MAX_MESSAGE_LENGTH: i32 = 16384;
 
@@ -30,6 +30,14 @@ pub struct Demo {
 	pub issue: Option<String>,
 	pub version: String,
 }
+
+impl PartialEq for Demo {
+    fn eq(&self, other: &Self) -> bool {
+        self.file_name == other.file_name && self.path == other.path
+    }
+}
+
+impl Eq for Demo {} // Marker trait
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct DemoPlayer {
@@ -70,7 +78,7 @@ impl Demo {
 		}
 	}
 
-	pub async fn get_q3_demos(dir: &Path) -> Result<Vec<Demo>, std::io::Error> {
+	pub async fn get_q3_demos(dir: &Path, cache: &HashMap<String, String>) -> Result<Vec<Demo>, std::io::Error> {
 		let mut demos: Vec<Demo> = vec![];
 
 		for entry in std::fs::read_dir(dir)? {
@@ -78,19 +86,38 @@ impl Demo {
 			let path = entry.path();
 
 			if path.is_dir() {
-				demos.append(&mut Box::pin(Self::get_q3_demos(&path)).await?);
+				demos.append(&mut Box::pin(Self::get_q3_demos(&path, cache)).await?);
 			}
+
+            let demo_p = path.to_str().unwrap();
+
+            if cache.contains_key(demo_p) {
+                continue;
+            }
 
 			if let Some(ext) = path.extension() {
                 let ext_s = ext.to_string_lossy().to_string();
-				if ["dm_48", "dm_66", "dm_67", "dm_68", "dm_73", "dm_91", "dm_108", "dm_114", "urtdemo"].contains(&ext_s.as_str()) {
-					let demo = Demo::new(
-						path.file_stem().unwrap().to_str().unwrap().to_string(),
-						path.to_str().unwrap().to_string(),
-						if ext_s.as_str() == "urtdemo" { 0 } else { ext_s.as_str()[3..].parse::<u8>().unwrap() },
-					);
-					demos.push(demo);
-				}
+                let mut protocol: u8 = 0;
+
+                if !ext_s.starts_with("dm_") && ext_s != "urtdemo" {
+                    continue;
+                }
+
+                if ext_s.starts_with("dm_") {
+                    let p = ext_s.as_str()[3..].parse::<u8>();
+                    if p.is_err() {
+                        continue;
+                    }
+                    protocol = p.unwrap();
+                }
+
+                let demo = Demo::new(
+                    path.file_stem().unwrap().to_str().unwrap().to_string(),
+                    demo_p.to_string(),
+                    protocol,
+                );
+
+                demos.push(demo);
 			}
 		}
 		Ok(demos)
@@ -181,34 +208,27 @@ impl Demo {
 
 						match &value {
 							x if x.starts_with(&"print \"") || x.starts_with(&"tchat \"") => {
-								let parsed = shared::parse_q3_colorstring(x[7..x.len() - 1].to_string());
+								let parsed = q3_util::parse_colorstring(x[7..x.len() - 1].to_string());
 								value = parsed.1;
 							}
 							x if x.starts_with(&"chat \"") || x.starts_with(&"cpsm \"") => {
-								let parsed = shared::parse_q3_colorstring(x[6..x.len() - 1].to_string());
+								let parsed = q3_util::parse_colorstring(x[6..x.len() - 1].to_string());
 								value = parsed.1;
 							}
 							x if x.starts_with(&"cp \"") => {
-								let parsed = shared::parse_q3_colorstring(x[4..x.len() - 1].to_string());
+								let parsed = q3_util::parse_colorstring(x[4..x.len() - 1].to_string());
 								value = parsed.1;
 							}
 							x if x.starts_with(&"pcp \"") => {
-								let parsed = shared::parse_q3_colorstring(x[5..x.len() - 1].to_string());
+								let parsed = q3_util::parse_colorstring(x[5..x.len() - 1].to_string());
 								value = parsed.1;
 							}
 							x if x.starts_with(&"cwhisper \"") => {
-								let parsed = shared::parse_q3_colorstring(x[10..x.len() - 1].to_string());
+								let parsed = q3_util::parse_colorstring(x[10..x.len() - 1].to_string());
 								value = parsed.1;
 							}
-							// x if x.starts_with(&"accs ") | x.starts_with(&"pings ") | x.starts_with(&"cs ") | x.starts_with(&"scores ")
-							// | x.starts_with(&"mstats ") | x.starts_with(&"dmscores ") => {
-							//     continue
-							// }
-							_ => (),
+							_ => continue, // ()
 						}
-						// if demo.server_info.gamename == "defrag" {
-						// get the defrag finish time
-						// }
 						self.server_commands.entry(index).or_insert(value);
 					}
 					_ => {
@@ -219,8 +239,8 @@ impl Demo {
 				}
 			}
 
+            // realignment (1 in 10k demos needed this?)
 			if bit_position != msg_start_pos + msg_length_bits as usize {
-				// realign (1 in 10,000 demos needed this..?)
 				bit_position = msg_start_pos + msg_length_bits as usize;
 			}
 
@@ -303,18 +323,16 @@ impl Demo {
 				let config_string = Self::huffman_readstring(msg, tree, bit_position);
 				gamestate.entry(index).or_insert(config_string.clone());
 
-				// player crap
 				if config_string.starts_with("n\\") {
 					let mut new_player = DemoPlayer::new();
 					let player_stuff: Vec<&str> = config_string.split("\\").collect();
-					let parsed = shared::parse_q3_colorstring(player_stuff[1].to_string());
+					let parsed = q3_util::parse_colorstring(player_stuff[1].to_string());
 					new_player.namecolored = parsed.1;
 					new_player.name = parsed.0;
 
 					if let Some(player_vec) = self.players.as_mut() {
 						player_vec.push(new_player);
 					} else {
-						// treating first seen as pov
 						self.player_pov = new_player.clone();
 						let _ = self.players.insert(vec![new_player]);
 					}
@@ -367,7 +385,7 @@ impl Demo {
 		for i in (0..server_stuff.len()).step_by(2) {
 			match server_stuff[i] {
 				"sv_hostname" => {
-					let parsed_host = shared::parse_q3_colorstring(server_stuff[i + 1].to_string());
+					let parsed_host = q3_util::parse_colorstring(server_stuff[i + 1].to_string());
 					self.sv_hostname = parsed_host.0;
 					self.sv_hostname_color = parsed_host.1;
 				}
@@ -390,11 +408,7 @@ impl Demo {
 		}
 
 		if self.gamename == "" {
-			// if self.server_info.contains_key("protocol") && self.server_info["protocol"] == "91" {
-			//     self.gamename = String::from("quakelive");
-			// } else {
 			self.gamename = String::from("unknown");
-			//}
 		}
 
 		for i in (0..system_stuff.len()).step_by(2) {

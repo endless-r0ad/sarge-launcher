@@ -5,34 +5,56 @@
   import { sep } from '@tauri-apps/api/path'
   import { info } from '@tauri-apps/plugin-log'
   import { ensureError } from '@/utils/util'
-  import { type Config, type AppData } from '@/models/config'
   import { type Q3Executable } from '@/models/client'
   import { type Demo } from '@/models/demo'
-  import { watch, nextTick, defineProps, defineEmits, ref, computed, onMounted, onActivated } from 'vue'
+  import { type WatchHandle, watch, nextTick, defineEmits, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
   import { useVirtualScroll } from '@/composables/virtualscroll'
   import { useClickRow } from '@/composables/clickrow'
   import { useLevelshot } from '@/composables/levelshot'
+  import { useConfig } from '@/composables/config'
 
-  const props = defineProps<{ config: Config, appData: AppData, showUnreachableServers: boolean, showTrashedServers: boolean, activeClient: Q3Executable | null }>()
-
-  const emit = defineEmits<{
-    mutateConfig: [Config]
-    mutateAppData: [AppData]
-    spawnQuake: [string[]]
-    addQ3Client: [Q3Executable]
-    emitComponentName: [string]
-    errorAlert: [string]
-    infoAlert: [string]
-  }>()
+  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], errorAlert: [string], infoAlert: [string]}>()
 
   const componentName = ref('Demo Browser')
+  const { config, activeClient, addQ3Client } = useConfig();
+
+  onMounted(async () => {
+    emit('emitComponentName', componentName.value)
+    await getDemos(true)
+  })
+
+  let stopWatchingClient: WatchHandle; 
+  const clientWhenDeactivated = ref(activeClient.value)
+
+  onActivated(async () => {
+    if (clientWhenDeactivated.value != activeClient.value) { 
+      await getDemos(true) 
+    }
+    emit('emitComponentName', componentName.value)
+    stopWatchingClient = watch(activeClient, async(newVal, oldVal) => {
+      if (newVal?.name != oldVal?.name) {
+        await getDemos(true)
+      }
+    })
+  });
+
+  onDeactivated(async () => {
+    clientWhenDeactivated.value = activeClient.value
+    if (stopWatchingClient) {
+      stopWatchingClient();
+    }
+  });
 
   async function pickClient() {
     try {
       let new_client: Q3Executable = await invoke('pick_client')
 
       if (new_client != null) {
-        emit('addQ3Client', new_client)
+        if (config.value.q3_clients.some((c) => c.exe_path === new_client.exe_path)) {
+          emit('infoAlert', 'client already added')
+          return
+        }
+        addQ3Client(new_client)
       }
     } catch (err) {
       emit('errorAlert', ensureError(err).message)
@@ -44,38 +66,51 @@
 
   const { levelshots, syncLevelshots, levelHasLevelshot } = useLevelshot()
 
-  watch(() => props.activeClient, async(newVal, oldVal) => {
-    if (newVal?.name != oldVal?.name) {
-      await getDemos()
-    }
-  })
-
   const demos = ref<Demo[]>([])
   const demosLastRefresh = ref<Demo[]>([])
+  const demosCache = ref<Map<string, string>>(new Map)
+
   const searchPaths = ref<string[]>([])
 
-  async function getDemos() {
-    if (props.activeClient == null || loading.value) {
+  async function getDemos(fullRefresh: boolean) {
+    if (activeClient.value == null || loading.value) {
       return
     }
 
     const startTime = performance.now()
+    let num_got = 0
 
     loading.value = true
     loadingEvent.value = 'parsing demos...'
     selectedDemo.value = null
-    demosLastRefresh.value = []
-    demos.value = []
+
+    if (fullRefresh) {
+      demosLastRefresh.value = []
+      demos.value = []
+      demosCache.value.clear
+    }
+    
     searchQuery.value = ''
     sortDesc.value = false
     currentSort.value = ''
 
     try {
-      await syncLevelshots(props.activeClient, false)
-      searchPaths.value = await invoke('get_client_paths', { activeClient: props.activeClient })
+      await syncLevelshots(activeClient.value, false)
+      searchPaths.value = await invoke('get_client_paths', { activeClient: activeClient.value })
 
-      demosLastRefresh.value = await invoke('get_demos_rayon', { searchPaths: searchPaths.value })
+      let new_demos: Demo[] = await invoke('get_demos_rayon', { searchPaths: searchPaths.value, cache: demosCache.value })
+      num_got = new_demos.length
+
+      console.log('new_demos are', new_demos)
+
+      demosLastRefresh.value = demosLastRefresh.value.concat(new_demos)
       demos.value = demosLastRefresh.value
+
+      demosCache.value.clear()
+      demosLastRefresh.value.forEach((d) => {
+        demosCache.value.set(d.path, 'exists')
+      })
+
     } catch (err) {
       emit('errorAlert', ensureError(err).message)
     }
@@ -83,10 +118,9 @@
     loading.value = false
     loadingEvent.value = ''
     handleScroll()
-
     const executionTime = performance.now() - startTime
 
-    info(`${totalDemos.value} demos read in ${parseFloat((executionTime / 1000).toFixed(2))} seconds`)
+    info(`${num_got} demos added in ${parseFloat((executionTime / 1000).toFixed(2))} seconds`)
   }
 
   const searchQuery = ref('')
@@ -176,15 +210,22 @@
     selectedDemo.value = null
   }
 
-  function spawnQuake() {
-    if (selectedDemo.value != null) {
-      let relative_index = selectedDemo.value.path.indexOf(sep() + 'demos')
-      let relative_path = selectedDemo.value.path.substring(relative_index + 7)
-      let args = ['+set', 'fs_game', selectedDemo.value.gamename, '+demo', `\"${relative_path}\"`]
-      emit('spawnQuake', args)
-    }
-  }
+  async function spawnQuake() {
+    if (selectedDemo.value == null) { return }
 
+    try {
+      let args = ['+set', 'fs_game', selectedDemo.value.gamename, '+exec', 'sarge-launcher-demo.cfg']
+      let demos_index = selectedDemo.value.path.indexOf(sep() + 'demos')
+      let relative_path = selectedDemo.value.path.substring(demos_index + 7)
+      let path = relative_path.substring(0, relative_path.lastIndexOf('.'))
+  
+      await invoke('create_demo_script', {activeClient: activeClient.value, demoPath: path, close: config.value.autoclose_demo, loopD: config.value.loop_demo})      
+      emit('spawnQuake', args)
+    } catch (err) {
+      emit('errorAlert', ensureError(err).message)
+    }   
+  }
+  
   const totalDemos = computed(() => {
     return demos.value.length
   })
@@ -250,14 +291,7 @@
 
   const keepSelectedDetailsOpen = ref(false)
 
-  onMounted(async () => {
-    emit('emitComponentName', componentName.value)
-    await getDemos()
-  })
-
-  onActivated(async () => {
-    emit('emitComponentName', componentName.value)
-  })
+  
 </script>
 
 <template>
@@ -267,7 +301,7 @@
     </div>
     <div class="table-header-left">
       <button class="connect-button" :disabled="selectedDemo == null" @click="spawnQuake()">Connect</button>
-      <button class="refresh-button" @click="getDemos()">Refresh</button>
+      <button class="refresh-button" @click="getDemos(false)">Refresh</button>
     </div>
 
     <div class="table-column-header">
@@ -293,7 +327,7 @@
     ref="demoTable"
     id="demoTable"
   >
-    <div v-if="!loading && props.activeClient" :style="{ height: virtualHeight + 'px' }">
+    <div v-if="!loading && activeClient" :style="{ height: virtualHeight + 'px' }">
       <div
         class="main"
         :style="{ transform: 'translateY(' + translateY + 'px)', marginTop: marginTop + 'px' }"
@@ -321,7 +355,7 @@
       <Loading :position="'center'" :message="loadingEvent" :size="90" />
       <div v-for="(_, index) in 48" class="row" :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"></div>
     </div>
-    <div v-if="!props.activeClient">
+    <div v-if="!activeClient">
       <div class="center"><button class="select-path-button" @click="pickClient()">Set a Quake 3 Client</button></div>
       <div v-for="(_, index) in 48" class="row" :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"></div>
     </div>

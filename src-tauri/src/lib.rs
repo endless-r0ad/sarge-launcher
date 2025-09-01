@@ -1,4 +1,6 @@
 use std::sync::Mutex;
+use std::panic;
+use log::error;
 
 mod client;
 mod commands;
@@ -8,7 +10,7 @@ mod huffman_node;
 mod level;
 mod master;
 mod server;
-mod shared;
+mod q3_util;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -33,9 +35,16 @@ pub fn run() {
 			commands::client::kill_q3_client,
             commands::client::get_client_paths,
 			commands::demo::get_demos_rayon,
+            commands::demo::create_demo_script,
+            commands::demo::delete_temp_script,
 			commands::util::exit_app,
-			commands::util::print_frontend_message
 		])
+        .setup(move |_app| {
+            panic::set_hook(Box::new(move |info| {
+                error!("Panic! {:?}", info);
+            }));
+            Ok(())
+        })
 		.run(tauri::generate_context!())
 		.expect("error while running tauri application");
 }

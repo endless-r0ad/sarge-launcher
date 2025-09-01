@@ -33,16 +33,6 @@
   height: calc(100% - 94px);
 }
 
-.item {
-  padding-bottom: 8px;
-  text-align: left;
-}
-
-.conf-plus {
-  margin: 0px 4px 0px 2px;
-  text-align: left;
-}
-
 .router-active {
   background: var(--secondary-bg);
 }

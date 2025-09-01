@@ -5,35 +5,55 @@
   import Loading from '@/components/Loading.vue'
   import { invoke } from '@tauri-apps/api/core'
   import { info } from '@tauri-apps/plugin-log'
-  import { ensureError, newCustomServer, validServerAddress, validIp } from '@/utils/util';
-  import { type Config, type AppData } from '@/models/config'
-  import { type Q3Executable } from '@/models/client'
+  import { ensureError, newCustomServer, validServerAddress, validIp } from '@/utils/util'
   import { type Quake3Server } from '@/models/server'
   import { type MasterServer } from '@/models/master'
-  import { useVirtualScroll } from '@/composables/virtualscroll';
-  import { useClickRow } from '@/composables/clickrow';
+  import { useVirtualScroll } from '@/composables/virtualscroll'
+  import { useClickRow } from '@/composables/clickrow'
   import { useLevelshot } from '@/composables/levelshot'
-  import { watch, nextTick, defineProps, defineEmits, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
-
-  const props = defineProps<{ config: Config, appData: AppData, showUnreachableServers: boolean, showTrashedServers: boolean, activeClient: Q3Executable }>()
+  import { useConfig } from '@/composables/config'
+  import { useAppData } from '@/composables/appdata'
+  import { watch, nextTick, defineEmits, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
   
-  const emit = defineEmits<{
-    mutateConfig: [Config],
-    mutateAppData: [AppData],
-    spawnQuake: [string[]],
-    addQ3Client: [Q3Executable],
-    emitComponentName: [string],
-    errorAlert: [string],
-    infoAlert: [string],
-  }>();
-
-  const localAppData = ref(props.appData)
+  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], errorAlert: [string], infoAlert: [string]}>()
 
   const componentName = ref('Server Browser')
 
-  async function emitComponentName(){
-    emit('emitComponentName', componentName.value)
+  const handleKeyUp = (event: KeyboardEvent) => {
+    if (event.key == 'Alt') { altKeyHeld.value = false } 
   }
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key == 'Alt') { altKeyHeld.value = true } 
+    if (event.key == 'Escape') { escapeButton() }
+  }
+
+  onActivated(() => {
+    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('keyup', handleKeyUp)
+    emit('emitComponentName', componentName.value)
+  }) 
+
+  onDeactivated(() => {
+    document.removeEventListener('keydown', handleKeyDown)
+    document.removeEventListener('keyup', handleKeyUp)
+  })
+
+  onMounted(async () => {
+    emit('emitComponentName', componentName.value) 
+    await refreshServers(true)
+  })
+
+
+  const { config, activeClient } = useConfig();
+
+  watch(activeClient, async(newVal, oldVal) => {
+    if (config.value.refresh_by_mod && newVal?.gamename != oldVal?.gamename) {
+      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game == activeClient.value!.gamename || x.list == 'pinned')
+      toggleShowUnreachableServers()
+    }
+  })
+
+  const { appdata, addAppData, removeAppData, writeAppData } = useAppData();
 
   const loading = ref(false)
   const loadingEvent = ref('')
@@ -49,9 +69,22 @@
     return serverDetails.value.filter((s) => s.master?.address == master.address && s.master?.game == master.game).length
   }
 
-  const { levelshots, syncLevelshots, levelHasLevelshot } = useLevelshot()
+  const { levelshots, levelHasLevelshot } = useLevelshot()
 
   const refreshingSingle = ref(false)
+
+  async function queryMasterServers() {
+    loadingEvent.value = 'querying master servers...'
+    serverIPs.value = []
+
+    try {
+      serverIPs.value = await invoke('get_q3_server_ips', { q3Protocol: q3MasterProtocol.value})
+      info(`${serverIPs.value.length} servers pulled from ${activeMasterServers.value.length} active master servers`)
+    }
+    catch(err) {
+      emit('errorAlert', ensureError(err).message)
+    }
+  }
 
   async function refreshServers(fullRefresh: boolean){
 
@@ -61,48 +94,41 @@
     loading.value = true
 
     currentSort.value = ''
-    
     sortDesc.value = false
     selectedServer.value = null      
     serverDetails.value = []
     serverDetailsLastRefresh.value = []
     searchQuery.value = ''
-    sortDesc.value = false 
-    currentSort.value = ''
       
+    let refreshByMod = activeClient.value && config.value.refresh_by_mod && !fullRefresh
+
     if (fullRefresh) {
-      loadingEvent.value = 'querying master servers...'
-      serverIPs.value = []
-      
-      try{
-        serverIPs.value = await invoke('get_q3_server_ips', { q3Protocol: q3MasterProtocol.value })
-        info(`${serverIPs.value.length} servers pulled from ${activeMasterServers.value.length} active master servers`)
-      }
-      catch(err){
-        emit('errorAlert', ensureError(err).message)
-      }
+      await queryMasterServers()
     }
       
-    loadingEvent.value = 'querying servers...'
+    loadingEvent.value = `querying ${refreshByMod ? activeClient.value!.gamename : ''}servers...`
 
     try {
-      await syncLevelshots(props.activeClient, false)
 
       serverDetailsLastRefresh.value = await invoke('refresh_all_servers', 
-                { allServers: serverIPs.value, 
-                  numThreads: (props.config.server_browser_threads == 0 ? 1 : props.config.server_browser_threads),
-                  timeout: props.config.server_timeout
+                { 
+                  allServers: serverIPs.value.filter((x) => refreshByMod ? x.game == activeClient.value!.gamename : true), 
+                  numThreads: (config.value.server_browser_threads == 0 ? 1 : config.value.server_browser_threads),
+                  timeout: config.value.server_timeout
                 })
     }
     catch(err) {
       emit('errorAlert', ensureError(err).message)
     }
-    
-    if (props.showUnreachableServers) {
-      serverDetails.value = serverDetailsLastRefresh.value
-    } else {
-      serverDetails.value = serverDetailsLastRefresh.value.filter((x) => x.errormessage == '' || x.list == 'pinned')
+
+    if (fullRefresh) {
+      serverIPs.value = serverDetailsLastRefresh.value
+      if (activeClient.value && config.value.refresh_by_mod) {
+        serverDetailsLastRefresh.value = serverDetailsLastRefresh.value.filter((x) => x.game == activeClient.value!.gamename || x.list == 'pinned')
+      }
     }
+    
+    toggleShowUnreachableServers()
 
     loadingEvent.value = ''
     loading.value = false
@@ -111,9 +137,17 @@
     const executionTime = performance.now() - startTime;
 
     let logMsg = `${serverDetailsLastRefresh.value.length} servers refreshed in ${parseFloat((executionTime/1000).toFixed(2))} seconds `
-    logMsg += `using ${props.config.server_browser_threads} threads and ${props.config.server_timeout}ms timeout`
+    logMsg += `using ${config.value.server_browser_threads} threads and ${config.value.server_timeout}ms timeout`
 
     info(logMsg)
+  }
+
+  function toggleShowUnreachableServers() {
+    if (config.value.show_unreachable) {
+      serverDetails.value = serverDetailsLastRefresh.value
+    } else {
+      serverDetails.value = serverDetailsLastRefresh.value.filter((x) => x.errormessage == '' || x.list == 'pinned')
+    }
   }
 
   async function refreshSingleServer() {
@@ -138,6 +172,16 @@
     }
   }
 
+  watch(() => config.value.refresh_by_mod, (newVal, _oldVal) => {
+    if (newVal && activeClient.value) {
+      serverDetailsLastRefresh.value = serverDetailsLastRefresh.value.filter((x) => x.game == activeClient.value!.gamename || x.list == 'pinned')
+      toggleShowUnreachableServers()
+    }
+    if (!newVal) {
+      serverDetailsLastRefresh.value = serverIPs.value
+      toggleShowUnreachableServers()
+    }
+  })
 
   const pinnedServers = computed(() => { return serverDetails.value.filter((s) => s.list == 'pinned') }) 
       
@@ -159,12 +203,10 @@
      handleScroll
   } = useVirtualScroll('serverTable', mainLength, pinnedLength)
 
-
   const getVirtualRows = computed(() => {
     return serverDetails.value.filter((s) => s.list == 'main').slice(virtualStartIndex.value, virtualEndIndex.value)
   })
 
-  
   const addtlHeight = computed(() => {
     let extra = 0
     if (pinnedLength.value == 0) { extra += 48 }
@@ -175,67 +217,79 @@
   const showPopup = ref('')
 
   async function handleAddCustomPopup(closeAfterHandle: boolean) {
-    if (popupInput.value != '') {
-      if (validServerAddress(popupInput.value)) {
-        if (!props.appData.pinned.has(popupInput.value)) {
-          try{
-            addCustom(popupInput.value)
-  
-            let ip_and_port = popupInput.value.split(':')
-            let customServer: Quake3Server = newCustomServer(ip_and_port, popupInput.value)
-
-            lastSelectedServer.value = selectedServer.value
-            selectedServer.value = customServer
-            refreshingSingle.value = true
-
-            serverDetails.value.push(customServer)
-            serverDetailsLastRefresh.value.push(customServer) 
-            
-            try{
-              let refreshed: Quake3Server = await invoke('refresh_single_server', {refreshServer: selectedServer.value, timeout: 1000})
-
-              serverDetails.value[serverDetails.value.length-1] = refreshed
-              serverDetailsLastRefresh.value[serverDetailsLastRefresh.value.length-1] = refreshed
-              selectedServer.value = refreshed
-
-              refreshingSingle.value = false;
-            }
-            catch(err){
-              emit('errorAlert', ensureError(err).message)
-            }
-          }
-          catch(err){
-            emit('errorAlert', ensureError(err).message)
-          }
-        } else {
-          emit('infoAlert', 'custom server is already a pinned server')
-        }
-      } else {
-        emit('errorAlert', 'not a valid IP:Port')
-        popupInput.value = '', showPopup.value = '';
-      }
-    }
-    if (closeAfterHandle) {
+    if (popupInput.value == '') { return }
+    if (!validServerAddress(popupInput.value)) {
+      emit('errorAlert', 'not a valid IP:Port')
       popupInput.value = '', showPopup.value = '';
-    } else {
-      popupInput.value = ''
+      return
+    }
+    if (appdata.value.pinned.has(popupInput.value)) {
+      emit('infoAlert', 'custom server is already a pinned server')
+      popupInput.value = '', showPopup.value = '';
+      return
+    }
+
+    let alreadyOnMaster = serverDetailsLastRefresh.value.find((s) => s.address == popupInput.value)
+
+    try{
+
+      addAppData('custom', popupInput.value)
+      await writeAppData()
+
+      if (alreadyOnMaster) {
+        alreadyOnMaster.list = 'pinned'
+        popupInput.value = ''
+        return
+      } 
+
+      let ip_and_port = popupInput.value.split(':')
+      let customServer: Quake3Server = newCustomServer(ip_and_port, popupInput.value)
+      
+      lastSelectedServer.value = selectedServer.value
+      selectedServer.value = customServer
+      refreshingSingle.value = true
+
+      serverDetails.value.push(customServer)
+      serverDetailsLastRefresh.value.push(customServer) 
+      
+      let refreshed: Quake3Server = await invoke('refresh_single_server', {refreshServer: selectedServer.value, timeout: 1000})
+
+      serverDetails.value[serverDetails.value.length-1] = refreshed
+      serverDetailsLastRefresh.value[serverDetailsLastRefresh.value.length-1] = refreshed
+      selectedServer.value = refreshed
+
+      refreshingSingle.value = false;
+
+      if (closeAfterHandle) {
+        popupInput.value = '', showPopup.value = '';
+      } else {
+        popupInput.value = ''
+      }
+
+    }
+    catch(err){
+      emit('errorAlert', ensureError(err).message)
     }
   }
 
   async function handleAddTrashIpPopup(closeAfterHandle: boolean) {
-    if (popupInput.value != '') {
-      if (validIp(popupInput.value)) {
-        try{
-          addTrashIP(popupInput.value)
-          serverDetails.value.map((serv: Quake3Server) => { if (serv.ip == popupInput.value){ serv.list = 'trash' } });
-        }
-        catch(err){
-          emit('errorAlert', ensureError(err).message)
-        }
-      } else {
-        emit('errorAlert', 'not a valid IP')
-      }
+    if (popupInput.value == '') { return }
+
+    if (!validIp(popupInput.value)) {
+      emit('errorAlert', 'not a valid IP')
+      popupInput.value = '', showPopup.value = '';
+      return
     }
+
+    try{
+      addAppData('trash_ip', popupInput.value)
+      serverDetails.value.map((serv: Quake3Server) => { if (serv.ip == popupInput.value){ serv.list = 'trash' } });
+      await writeAppData()
+    }
+    catch(err){
+      emit('errorAlert', ensureError(err).message)
+    }
+ 
     if (closeAfterHandle) {
       popupInput.value = '', showPopup.value = '';
     } else {
@@ -244,9 +298,11 @@
   }
 
   async function handleServerPasswordPopup(closeAfterHandle: boolean) {
-    if (popupInput.value != '') {
-      localAppData.value.server_password = popupInput.value
-      emit('mutateAppData', localAppData.value)
+    if (popupInput.value == '') { return }
+
+    try {
+      appdata.value.server_password = popupInput.value
+      await writeAppData()
       let args = ['+set', 'fs_game', selectedServer.value!.game, '+password', popupInput.value, '+connect', selectedServer.value!.address];
       emit('spawnQuake', args)   
 
@@ -255,15 +311,22 @@
       } else {
         popupInput.value = ''
       } 
+    } catch(err) {
+      emit('errorAlert', ensureError(err).message)
     }
   }
 
-  function handleMasterServerPopup(closeAfterHandle: boolean) {
-    emit('mutateAppData', localAppData.value)
-    if (closeAfterHandle) {
-      popupInput.value = '', showPopup.value = '';
-    } else {
-      popupInput.value = ''
+  async function handleMasterServerPopup(closeAfterHandle: boolean) {
+    try {
+      await writeAppData()
+      if (closeAfterHandle) {
+        popupInput.value = '', showPopup.value = '';
+      } else {
+        popupInput.value = ''
+      }
+      await refreshServers(true)
+    } catch(err) {
+      emit('errorAlert', ensureError(err).message)
     }
   }
 
@@ -299,7 +362,6 @@
     }
   }
 
-
   const selectedServer = ref<Quake3Server | null>(null)
   const lastSelectedServer = ref<Quake3Server | null>(null)
 
@@ -320,7 +382,7 @@
   function keySelectOutOfBound(proposedIndex: number) {
     if ((proposedIndex < 0 && selectedServer.value?.list == 'pinned') || 
         (proposedIndex > trashLength.value-1 && selectedServer.value?.list == 'trash') ||
-        (proposedIndex > mainLength.value-1 && selectedServer.value?.list == 'main' && (trashLength.value == 0 || !props.showTrashedServers)) ||
+        (proposedIndex > mainLength.value-1 && selectedServer.value?.list == 'main' && (trashLength.value == 0 || !config.value.show_trashed_servers)) ||
         (proposedIndex < 0 && selectedServer.value?.list == 'main' && pinnedLength.value == 0))
         {
         return true
@@ -368,29 +430,32 @@
   }
 
   function spawnQuake(){
-    if (selectedServer.value) {
-      let args = ['+set', 'fs_game', selectedServer.value.game, '+set', 'protocol', selectedServer.value.protocol?.toString() ?? '68', '+wait', '5', '+connect', selectedServer.value.address];
+    if (selectedServer.value == null) { return }
+
+    try {
+      let args = ['+set', 'fs_game', selectedServer.value.game, '+set', 'protocol', selectedServer.value.protocol?.toString() ?? '68', '+connect', selectedServer.value.address];
       if ('g_needpass' in selectedServer.value.othersettings && selectedServer.value.othersettings['g_needpass'] == '1') {
         showPopup.value = 'password'
-        popupInput.value = props.appData.server_password
+        popupInput.value = appdata.value.server_password
       } else {
-        console.log('spawning with args ', args)
         emit('spawnQuake', args)
-      }          
-    }        
+      }
+    } catch(err) {
+      emit('errorAlert', ensureError(err).message)
+    }       
   }
 
   const popupInput = ref('')
   const masterServerHover = ref(false)
 
   const activeMasterServers = computed(() => {
-    return props.appData.masters.filter((m) => m.active);
+    return appdata.value.masters.filter((m) => m.active);
   })
 
   const altKeyHeld = ref(false)
   const keepSelectedDetailsOpen = ref(false)
 
-  watch(() => props.showUnreachableServers, (newVal, _oldVal) => {
+  watch(() => config.value.show_unreachable, (newVal, _oldVal) => {
     let search = searchQuery.value
 
     if (newVal) {
@@ -421,7 +486,7 @@
     let query = newSearch.toLowerCase()
     let filteredServers = []
     
-    if (!props.showUnreachableServers) {
+    if (!config.value.show_unreachable) {
       serversFrom = serverDetailsLastRefresh.value.filter((x) => x.errormessage == '')
     }
     
@@ -438,22 +503,20 @@
     serverDetails.value = filteredServers
   })
 
-  function addCustom(address: string) { localAppData.value.custom.add(address), emit('mutateAppData', localAppData.value) }
-  function removeCustom(address: string) { localAppData.value.custom.delete(address), emit('mutateAppData', localAppData.value) }
+  async function removeFromCustom(address: string) {
+    let server = serverDetailsLastRefresh.value.find((s) => s.address == address)
 
-  function addTrash(address: string) { localAppData.value.trash.add(address), emit('mutateAppData', localAppData.value) }
-  function removeTrash(address: string) { localAppData.value.trash.delete(address), emit('mutateAppData', localAppData.value) }
-
-  function addTrashIP(ip: string) { localAppData.value.trash_ip.add(ip), emit('mutateAppData', localAppData.value) }
-  function removeTrashIP(ip: string) { localAppData.value.trash_ip.delete(ip), emit('mutateAppData', localAppData.value) }
-
-  function addPinned(address: string) { localAppData.value.pinned.add(address), emit('mutateAppData', localAppData.value) }
-  function removePinned(address: string) { localAppData.value.pinned.delete(address), emit('mutateAppData', localAppData.value) }
+    if (server) {
+      server.list = 'main'
+    }
+    removeAppData('custom', address)
+    writeAppData()
+  }
 
   function escapeButton() { lastSelectedServer.value = null, selectedServer.value = null }
 
   function displayTrashedServers() {
-    emit('mutateConfig', { ...props.config, show_trashed_servers: true})
+    config.value.show_trashed_servers = true
   }
 
   const displayDetails = ref(false)
@@ -473,16 +536,25 @@
       if (selectedServ.list == 'main') {
         if (event.altKey) {
           toList = 'trash'
+          addAppData('trash', selectedServ.address)    
         } else {
           toList = 'pinned'
+          addAppData('pinned', selectedServ.address)
         }
-      } else {
+      } 
+      if (selectedServ.list == 'pinned') {
         toList = 'main'
+        removeAppData('pinned', selectedServ.address)
       }
-      await updateAppDataWithList(selectedServ, toList)
-
+      if (selectedServ.list == 'trash') {
+        toList = 'main'
+        removeAppData('trash', selectedServ.address)     
+      }
+      
+      await writeAppData()
       selectedServ.list = toList
       selectedServer.value = null
+
       return
     }
 
@@ -493,50 +565,6 @@
       resetDblClickTimeout()
     }
   }
-
-  async function updateAppDataWithList(server: Quake3Server, toList: string){
-    if (toList == 'pinned' && !props.appData.custom.has(server.address)) {
-      addPinned(server.address)
-    }
-    if (toList == 'trash' 
-        && !props.appData.trash.has(server.address)
-        && !props.appData.trash_ip.has(server.ip)
-      ) {
-      addTrash(server.address)
-    }
-    if (toList == 'main' && server.list == 'pinned') {
-      removePinned(server.address)
-    }
-    if (toList == 'main' && server.list == 'trash') {
-      removeTrash(server.address)
-    }
-  }
-
-  const handleKeyUp = (event: KeyboardEvent) => {
-    if (event.key == 'Alt') { altKeyHeld.value = false } 
-  }
-
-  const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key == 'Alt') { altKeyHeld.value = true } 
-    if (event.key == 'Escape') { escapeButton() }
-  }
-
-  onActivated(() => {
-    document.addEventListener('keydown', handleKeyDown)
-    document.addEventListener('keyup', handleKeyUp)
-    emitComponentName() 
-  }) 
-
-  onDeactivated(() => {
-    document.removeEventListener('keydown', handleKeyDown)
-    document.removeEventListener('keyup', handleKeyUp)
-  })
-
-  onMounted(async () => {
-    emitComponentName()    
-    await refreshServers(true)
-  })
-
 
 </script>
 
@@ -595,7 +623,8 @@
           :key="server.address"      
           :id="server === selectedServer ? 'selected' : `pinned-${index}`"
           :server="server"
-          :isSelected="server === selectedServer && displayDetails"
+          :isSelected="server === selectedServer"
+          :displayDetails="displayDetails"
           :refreshing="refreshingSingle"
           :altKeyHeld="altKeyHeld"
           :levelshotPath="levelHasLevelshot(server.map) ? levelshots![server.map.toLowerCase()] : null"
@@ -611,7 +640,8 @@
           :key="server.address"    
           :id="server === selectedServer ? 'selected' : ''"
           :server="server"
-          :isSelected="server === selectedServer && displayDetails"
+          :isSelected="server === selectedServer"
+          :displayDetails="displayDetails"
           :refreshing="refreshingSingle"
           :altKeyHeld="altKeyHeld"
           :displayDetailsOnMount="keepSelectedDetailsOpen"
@@ -623,13 +653,14 @@
           @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer();"
           @detailsDisplayedOnUnmount="keepSelectedDetailsOpen = !keepSelectedDetailsOpen"
           />    
-        <div v-if="showTrashedServers">
+        <div v-if="config.show_trashed_servers">
           <ServerRow v-for="(server, index) in trashServers" 
           class="row trash"
           :key="server.address" 
           :id="server === selectedServer ? 'selected' : `trash-${index}`"
           :server="server"
-          :isSelected="server === selectedServer && displayDetails"
+          :isSelected="server === selectedServer"
+          :displayDetails="displayDetails"
           :refreshing="refreshingSingle"
           :altKeyHeld="altKeyHeld"
           :levelshotPath="levelHasLevelshot(server.map) ? levelshots![server.map.toLowerCase()] : null"
@@ -640,7 +671,7 @@
           @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer();"
           /> 
         </div> 
-        <div v-if="!showTrashedServers && trashLength > 0" class="hidden-trash" @click="displayTrashedServers()">
+        <div v-if="!config.show_trashed_servers && trashLength > 0" class="hidden-trash" @click="displayTrashedServers()">
           ...
         </div>                
         <div v-if="trashLength == 0" class="empty-trash">
@@ -662,7 +693,7 @@
             @click="showPopup='masterSettings'">
       <span class="footer-url">master.quake3arena.com</span>
       <div v-if="masterServerHover" class="master-servers">
-        <div v-for="master in appData.masters" style="padding-right: 40px;">
+        <div v-for="master in appdata.masters" style="padding-right: 40px;">
           <div v-if="master.active" style="display: inline-block; width: 15%;">{{ numServersByMaster(master) }} </div>
           <div v-if="master.active" style="display: inline-block;">{{ master.game }}: {{ master.name }}</div>                 
         </div>
@@ -680,8 +711,8 @@
       </div>
     
       <div style="overflow: auto; max-height: 200px; margin-right: -16px;">
-        <div v-for="address in appData.custom"> 
-          <button @click="removeCustom(address)" class="close-button"><img src="../assets/icons/x.svg" width="8px" /></button>
+        <div v-for="address in appdata.custom"> 
+          <button @click="removeFromCustom(address)" class="close-button"><img src="../assets/icons/x.svg" width="8px" /></button>
           <label style="font-size: 80%;">{{ address }}</label>
         </div>
       </div>
@@ -695,8 +726,8 @@
         </div>      
       </label>  
       <div style="overflow: auto; max-height: 200px; margin-right: -16px;">
-        <div v-for="ip in appData.trash_ip">
-          <button @click="removeTrashIP(ip)" class="close-button"><img src="../assets/icons/x.svg" width="8px" /></button>
+        <div v-for="ip in appdata.trash_ip">
+          <button @click="removeAppData('trash_ip', ip); writeAppData();" class="close-button"><img src="../assets/icons/x.svg" width="8px" /></button>
           <label style="font-size: 80%;">{{ ip }}</label>
         </div>
       </div>    
@@ -712,7 +743,7 @@
     </Modal>
       
     <Modal v-if="showPopup=='masterSettings'" :popupType="'center'" @executeModal="handleMasterServerPopup(true)" @cancelModal="handleMasterServerPopup(true)">   
-      <div v-for="master in localAppData.masters" style="height: 32px;">
+      <div v-for="master in appdata.masters" style="height: 32px;">
         <span><input type="checkbox" v-model="master.active"></span>
         <text :style="master.unreachable ? 'color: #aaa; text-decoration: line-through;' : ''" class="ml-1">{{ master.game }}: {{ master.name }} </text>
       </div>

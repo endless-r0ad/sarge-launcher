@@ -3,71 +3,37 @@
   import Header from '@/components/Header.vue'
   import Modal from '@/components/Modal.vue'
   import Sidebar from '@/components/Sidebar.vue'
-  import { ensureError, defaultConfig, defaultAppData } from '@/utils/util'
+  import Settings from '@/components/Settings.vue'
+  import { ensureError } from '@/utils/util'
   import { ref, onMounted } from 'vue'
   import { invoke } from '@tauri-apps/api/core'
   import { info, error } from '@tauri-apps/plugin-log'
-  import { type Config, type AppData } from '@/models/config'
-  import { type Q3Executable } from '@/models/client'
+  import { useConfig } from './composables/config'
 
-  const config = ref<Config>(defaultConfig())
-  const appData = ref<AppData>(defaultAppData())
+  const { config, activeClient, writeConfig } = useConfig();
+
+  const isMounted = ref(false)
 
   onMounted(async () => {
-    try {
-      config.value = await invoke('get_config')
-      appData.value = await invoke('get_appdata')
-      appData.value.pinned = new Set(appData.value.pinned)
-      appData.value.custom = new Set(appData.value.custom)
-      appData.value.trash = new Set(appData.value.trash)
-      appData.value.trash_ip = new Set(appData.value.trash_ip)
-
-      if (config.value.q3_clients.length > 0) {
-        let client: Q3Executable = config.value.q3_clients[0]
-        client.active = true
-        activeClient.value = client
-      }
-
       await new Promise((r) => setTimeout(r, 500))
       isMounted.value = true
-    } catch (err) {
-      showErrorAlert(ensureError(err).message)
-    }
   })
 
   async function saveConfig() {
     try {
-      console.log('updated config is ', config.value)
       showSettings.value = false
-      await invoke('save_config', { updatedConfig: config.value })
+      await writeConfig()
     } catch (err) {
-      showErrorAlert(ensureError(err).message)
+      errorAlert(ensureError(err).message)
     }
   }
-
-  async function mutateConfig(newConfig: Config) {
-    config.value = newConfig
-    await saveConfig()
-  }
-
-  async function mutateAppData(newAppData: AppData) {
-    appData.value = newAppData
-
-    const appDataForBackend = {
-      ...newAppData,
-      pinned: Array.from(newAppData.pinned),
-      custom: Array.from(newAppData.custom),
-      trash: Array.from(newAppData.trash),
-      trash_ip: Array.from(newAppData.trash_ip),
-    }
-    await invoke('save_app_data', { updatedData: appDataForBackend })
-  }
-
-  const isMounted = ref(false)
+  
   const q3ClientProcessId = ref<number | null>(null)
   const currentComponent = ref('')
 
-  function getComponentName(componentName: string) { currentComponent.value = componentName }
+  function getComponentName(componentName: string) { 
+    currentComponent.value = componentName 
+  }
 
   const showSettings = ref(false)
 
@@ -77,14 +43,14 @@
   const popupType = ref('')
   const alertMessage = ref('')
 
-  function showInfoAlert(infoMsg: string) {
+  function infoAlert(infoMsg: string) {
     info(infoMsg)
     showAlertPopup.value = true 
     popupType.value = 'info'
     alertMessage.value = infoMsg
   }
 
-  function showErrorAlert(err: string) {
+  function errorAlert(err: string) {
     error(err)
     showAlertPopup.value = true
     popupType.value = 'error'
@@ -95,50 +61,6 @@
     showAlertPopup.value = false
     popupType.value = ''
     alertMessage.value = '' 
-  }
-
-  const activeClient = ref<Q3Executable | null>(null)
-
-  async function addQ3Client(client: Q3Executable) {
-    if (config.value.q3_clients.length > 0) {
-      if (config.value.q3_clients.some((c) => c.exe_path === client.exe_path)) {
-        showInfoAlert('client already added')
-        return
-      }
-      config.value.q3_clients.map((client) => (client.active = false))
-    }
-    client.active = true
-    config.value.q3_clients.push(client)
-    activeClient.value = client
-    await saveConfig()
-  }
-
-  async function toggleQ3Client(client: Q3Executable) {
-    if (client == activeClient.value) {
-      return
-    }
-    config.value.q3_clients.map((c) => {
-      c.active = c.exe_path == client.exe_path
-    })
-    activeClient.value = client
-    console.log('activeClient is ', activeClient.value)
-    await saveConfig()
-  }
-
-  async function deleteQ3Client(client: Q3Executable) {
-    if (config.value.q3_clients.length == 0) {
-      return
-    }
-
-    config.value.q3_clients = config.value.q3_clients.filter((c) => c.exe_path != client.exe_path)
-    if (config.value.q3_clients.length == 0) {
-      activeClient.value = null
-    }
-    if (config.value.q3_clients.length > 0 && !config.value.q3_clients.some((x) => x.active)) {
-      config.value.q3_clients[0].active = true
-      activeClient.value = config.value.q3_clients[0]
-    }
-    await saveConfig()
   }
 
   async function spawnQuake(launchArgs: string[]) {
@@ -153,9 +75,9 @@
     } catch (err) {
       const e: Error = ensureError(err)
       if (e.message.includes('expected struct Q3Executable') || e.message.includes('missing required key activeClient')) {
-        showInfoAlert('Please configure a Quake 3 client to launch')
+        infoAlert('Please configure a Quake 3 client to launch')
       } else {
-        showErrorAlert(e.message)
+        errorAlert(e.message)
       }
     }
   }
@@ -168,13 +90,9 @@
   <Header
     v-if="isMounted"
     :currentView="currentComponent"
-    :config="config"
-    :activeClient="activeClient"
     @spawnQuake="spawnQuake"
-    @addQ3Client="addQ3Client"
-    @toggleQ3Client="toggleQ3Client"
-    @deleteQ3Client="deleteQ3Client"
-    @errorAlert="showErrorAlert"
+    @errorAlert="errorAlert"
+    @infoAlert="infoAlert"
   />
 
   <Sidebar v-if="isMounted" :showSettings="showSettings" @toggleSettings="toggleSettings" @exitApp="invoke('exit_app')" />
@@ -184,36 +102,22 @@
       <KeepAlive>
         <component
           :is="Component"
-          :config="config"
-          :appData="appData"
-          :showUnreachableServers="config.show_unreachable"
-          :showTrashedServers="config.show_trashed_servers"
-          :activeClient="activeClient"
-          @mutateConfig="mutateConfig"
-          @mutateAppData="mutateAppData"
           @spawnQuake="spawnQuake"
-          @addQ3Client="addQ3Client"
           @emitComponentName="getComponentName"
-          @errorAlert="showErrorAlert"
-          @infoAlert="showInfoAlert"
+          @errorAlert="errorAlert"
+          @infoAlert="infoAlert"
         />
       </KeepAlive>
     </router-view>
   </div>
 
   <div id="modal">
-    <Modal v-if="showAlertPopup" :popupType="popupType" @cancelModal="closeAlert" @executeModal="closeAlert">{{ alertMessage }}</Modal>
-
+    <Modal v-if="showAlertPopup" :popupType="popupType" @cancelModal="closeAlert" @executeModal="closeAlert">
+      {{ alertMessage }}
+    </Modal>
+    
     <Modal v-if="showSettings" :popupType="'center'" @executeModal="saveConfig" @cancelModal="saveConfig">
-      <div class="item"><input type="checkbox" v-model="config.manage_q3_instance" /><label class="ml-1">Manage Q3 Instance</label></div>
-      <div class="item"><input type="checkbox" v-model="config.show_unreachable" /><label class="ml-1">Show Unreachable Servers</label></div>
-      <div class="item"><input type="checkbox" v-model="config.show_trashed_servers" /><label class="ml-1">Show Trashed Servers</label></div>
-
-      <div class="conf-plus">+<label class="ml-1">Browser Threads - {{ config.server_browser_threads == 0 ? 1 : config.server_browser_threads }}</label></div>
-      <div class="item"><input type="range" min="0" max="120" step="5" value="60" class="slider" v-model.number="config.server_browser_threads" /></div>
-
-      <div class="conf-plus">+<label class="ml-1">Server Timeout - {{ config.server_timeout }}ms</label></div>
-      <div class="item"><input type="range" min="200" max="1000" step="100" value="400" class="slider" v-model.number="config.server_timeout" /></div>
+      <Settings />
     </Modal>
   </div>
 </template>
