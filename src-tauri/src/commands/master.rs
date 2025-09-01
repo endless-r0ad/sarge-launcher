@@ -84,7 +84,6 @@ fn send_to_master(socket: &UdpSocket, game: &String, q3_protocol: &u8) -> Result
 		},
 		"Urban Terror" => socket.send(b"\xff\xff\xff\xffgetservers 68 full empty")?,
 		"OpenArena" => socket.send(b"\xff\xff\xff\xffgetservers 71 full empty")?,
-		"Bloodrun" => socket.send(b"\xff\xff\xff\xffgetservers Quake3Champions 114 full empty")?,
 		_ => socket.send(b"\xff\xff\xff\xffgetservers 68 full empty")?,
 	};
 
@@ -98,7 +97,6 @@ fn get_used_protocol(game: &String, q3_protocol: &u8) -> u8 {
 		"Quake 3" => used_protocol = q3_protocol.to_owned(),
 		"Urban Terror" => used_protocol = 68,
 		"OpenArena" => used_protocol = 71,
-		"Bloodrun" => used_protocol = 114,
 		_ => used_protocol = 68,
 	};
 

@@ -249,8 +249,6 @@
     switch (activeClient.value!.gamename) {
       case "baseq3":
         return ["FFA", "1v1", "SP", "TDM", "CTF"]
-      case "base":
-        return ["FFA", "1v1", "SP", "TDM", "T2v2", "Bloodrun"]
       case "cpma":
         return ["1v1", "TDM", "FFA", "CTF", "CA", "DA", "FT", "CTFS", "NTF", "HM", "2v2"]
       case "q3ut4":

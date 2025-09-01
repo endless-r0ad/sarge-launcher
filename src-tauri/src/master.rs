@@ -98,14 +98,7 @@ impl MasterServer {
 				game: String::from("OpenArena"),
 				active: true,
 				unreachable: false,
-			},
-			MasterServer {
-				name: String::from("bloodrun master"), // "getservers Quake3Champions 108 full empty"
-				address: String::from("164.90.203.227:27950"),
-				game: String::from("Bloodrun"),
-				active: true,
-				unreachable: false,
-			},
+			}
 		];
 
 		initial

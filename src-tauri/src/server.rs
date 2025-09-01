@@ -120,7 +120,7 @@ impl Quake3Server {
 					self.version = gamestate_list[i + 1].to_owned();
 				}
 				"gamename" => {
-					self.game = if self.protocol == Some(114) { String::from("base") } else { gamestate_list[i + 1].to_owned() } 
+					self.game = gamestate_list[i + 1].to_owned();
 				}
 				"sv_maxclients" => {
 					self.maxclients = gamestate_list[i + 1].to_owned();

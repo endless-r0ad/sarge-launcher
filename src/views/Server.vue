@@ -48,7 +48,7 @@
 
   watch(activeClient, async(newVal, oldVal) => {
     if (config.value.refresh_by_mod && newVal?.gamename != oldVal?.gamename) {
-      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game == activeClient.value!.gamename || x.list == 'pinned')
+      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(activeClient.value!.gamename) || x.list == 'pinned')
       toggleShowUnreachableServers()
     }
   })
@@ -112,7 +112,7 @@
 
       serverDetailsLastRefresh.value = await invoke('refresh_all_servers', 
                 { 
-                  allServers: serverIPs.value.filter((x) => refreshByMod ? x.game == activeClient.value!.gamename : true), 
+                  allServers: serverIPs.value.filter((x) => refreshByMod ? x.game.includes(activeClient.value!.gamename) : true), 
                   numThreads: (config.value.server_browser_threads == 0 ? 1 : config.value.server_browser_threads),
                   timeout: config.value.server_timeout
                 })
@@ -124,12 +124,13 @@
     if (fullRefresh) {
       serverIPs.value = serverDetailsLastRefresh.value
       if (activeClient.value && config.value.refresh_by_mod) {
-        serverDetailsLastRefresh.value = serverDetailsLastRefresh.value.filter((x) => x.game == activeClient.value!.gamename || x.list == 'pinned')
+        serverDetailsLastRefresh.value = serverDetailsLastRefresh.value.filter((x) => x.game.includes(activeClient.value!.gamename) || x.list == 'pinned')
       }
     }
     
     toggleShowUnreachableServers()
 
+    console.log('serverIPs is ', serverIPs.value)
     loadingEvent.value = ''
     loading.value = false
     handleScroll()
@@ -174,7 +175,7 @@
 
   watch(() => config.value.refresh_by_mod, (newVal, _oldVal) => {
     if (newVal && activeClient.value) {
-      serverDetailsLastRefresh.value = serverDetailsLastRefresh.value.filter((x) => x.game == activeClient.value!.gamename || x.list == 'pinned')
+      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(activeClient.value!.gamename) || x.list == 'pinned')
       toggleShowUnreachableServers()
     }
     if (!newVal) {
