@@ -5,18 +5,19 @@
   import { sep } from '@tauri-apps/api/path'
   import { info } from '@tauri-apps/plugin-log'
   import { ensureError } from '@/utils/util'
-  import { type Q3Executable } from '@/models/client'
   import { type Demo } from '@/models/demo'
   import { type WatchHandle, watch, nextTick, defineEmits, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
   import { useVirtualScroll } from '@/composables/virtualscroll'
   import { useClickRow } from '@/composables/clickrow'
   import { useLevelshot } from '@/composables/levelshot'
   import { useConfig } from '@/composables/config'
+  import { useClient } from '@/composables/client'
 
   const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], errorAlert: [string], infoAlert: [string]}>()
 
   const componentName = ref('Demo Browser')
-  const { config, activeClient, addQ3Client } = useConfig();
+  const { config } = useConfig()
+  const { activeClient, pickClient } = useClient()
 
   onMounted(async () => {
     emit('emitComponentName', componentName.value)
@@ -45,16 +46,11 @@
     }
   });
 
-  async function pickClient() {
+  async function pickQ3Client() {
     try {
-      let new_client: Q3Executable = await invoke('pick_client')
-
-      if (new_client != null) {
-        if (config.value.q3_clients.some((c) => c.exe_path === new_client.exe_path)) {
-          emit('infoAlert', 'client already added')
-          return
-        }
-        addQ3Client(new_client)
+      let isNewClient = await pickClient()
+      if (!isNewClient) {
+        emit('infoAlert', 'client already added')
       }
     } catch (err) {
       emit('errorAlert', ensureError(err).message)
@@ -356,7 +352,7 @@
       <div v-for="(_, index) in 48" class="row" :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"></div>
     </div>
     <div v-if="!activeClient">
-      <div class="center"><button class="select-path-button" @click="pickClient()">Set a Quake 3 Client</button></div>
+      <div class="center"><button class="select-path-button" @click="pickQ3Client()">Set a Quake 3 Client</button></div>
       <div v-for="(_, index) in 48" class="row" :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"></div>
     </div>
   </div>
@@ -367,7 +363,7 @@
       <span class="footer-data-right" v-if="searchQuery.length > 0">Demos: {{ demos.length }}</span>
     </div>
     <div class="table-footer-left">
-      <img src="../assets/icons/q3-white.svg" class="footer-icon" @click="pickClient()" />
+      <img src="../assets/icons/q3-white.svg" class="footer-icon" @click="pickQ3Client()" />
       <span v-if="searchPaths.length" class="footer-url">{{ searchPaths[0] + sep() + 'demos' }}</span>
     </div>
   </div>

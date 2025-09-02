@@ -1,29 +1,24 @@
 <script setup lang="ts">
   import Modal from '@/components/Modal.vue'
   import { defineEmits, ref, onMounted, onActivated } from 'vue'
-  import { invoke } from '@tauri-apps/api/core'
   import { ensureError } from '@/utils/util'
-  import { type Q3Executable } from '@/models/client'
   import { useConfig } from '@/composables/config'
+  import { useClient } from '@/composables/client'
 
   const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], errorAlert: [string], infoAlert: [string]}>()
 
   const componentName = ref('Sarge Launcher')
 
-  const { config, addQ3Client } = useConfig();
+  const { config } = useConfig()
+  const { pickClient } = useClient()
 
   const hoveredCard = ref('')
 
-  async function pickClientBlocking() {
+  async function pickQ3Client() {
     try {
-      let new_client: Q3Executable = await invoke('pick_client')
-
-      if (new_client != null) {
-        if (config.value.q3_clients.some((c) => c.exe_path === new_client.exe_path)) {
-          emit('infoAlert', 'client already added')
-          return
-        }
-        addQ3Client(new_client)
+      let isNewClient = await pickClient()
+      if (!isNewClient) {
+        emit('infoAlert', 'client already added')
       }
     } catch (err) {
       emit('errorAlert', ensureError(err).message)
@@ -87,7 +82,7 @@
       @mouseleave="hoveredCard = ''"
       style="cursor: pointer; background-color: var(--secondary-bg); grid-column: 5; grid-row: 1"
     >
-      <div v-if="hoveredCard == 'add client'" class="tint" @click="pickClientBlocking">
+      <div v-if="hoveredCard == 'add client'" class="tint" @click="pickQ3Client()">
         <span class="center card-name">{{ hoveredCard }}</span>
       </div>
     </div>

@@ -9,8 +9,10 @@
   import { invoke } from '@tauri-apps/api/core'
   import { info, error } from '@tauri-apps/plugin-log'
   import { useConfig } from './composables/config'
+  import { useClient } from './composables/client'
 
-  const { config, activeClient, writeConfig } = useConfig();
+  const { config, writeConfig } = useConfig()
+  const { activeClient } = useClient()
 
   const isMounted = ref(false)
 

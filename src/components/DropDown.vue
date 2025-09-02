@@ -2,8 +2,10 @@
   import { ref, onMounted, onBeforeUnmount } from 'vue'
   import { type Q3Executable } from '@/models/client'
   import { useConfig } from '@/composables/config'
+  import { useClient } from '@/composables/client'
 
-  const { config, activeClient, toggleQ3Client, deleteQ3Client } = useConfig();
+  const { config,  } = useConfig()
+  const { activeClient, toggleQ3Client, deleteQ3Client } = useClient()
 
   const isDropDownVisible = ref(false)
   const deleteHovered = ref(false)

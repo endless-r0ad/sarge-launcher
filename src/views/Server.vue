@@ -13,6 +13,7 @@
   import { useLevelshot } from '@/composables/levelshot'
   import { useConfig } from '@/composables/config'
   import { useAppData } from '@/composables/appdata'
+  import { useClient } from '@/composables/client'
   import { watch, nextTick, defineEmits, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
   
   const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], errorAlert: [string], infoAlert: [string]}>()
@@ -43,12 +44,12 @@
     await refreshServers(true)
   })
 
-
-  const { config, activeClient } = useConfig();
+  const { config } = useConfig()
+  const { activeClient, clientGame } = useClient()
 
   watch(activeClient, async(newVal, oldVal) => {
     if (config.value.refresh_by_mod && newVal?.gamename != oldVal?.gamename) {
-      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(activeClient.value!.gamename) || x.list == 'pinned')
+      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientGame.value!) || x.list == 'pinned')
       toggleShowUnreachableServers()
     }
   })
@@ -100,19 +101,19 @@
     serverDetailsLastRefresh.value = []
     searchQuery.value = ''
       
-    let refreshByMod = activeClient.value && config.value.refresh_by_mod && !fullRefresh
+    let refreshByMod = clientGame.value && config.value.refresh_by_mod && !fullRefresh
 
     if (fullRefresh) {
       await queryMasterServers()
     }
       
-    loadingEvent.value = `querying ${refreshByMod ? activeClient.value!.gamename : ''}servers...`
+    loadingEvent.value = `querying ${refreshByMod ? clientGame.value : 'all'} servers...`
 
     try {
 
       serverDetailsLastRefresh.value = await invoke('refresh_all_servers', 
                 { 
-                  allServers: serverIPs.value.filter((x) => refreshByMod ? x.game.includes(activeClient.value!.gamename) : true), 
+                  allServers: serverIPs.value.filter((x) => refreshByMod ? x.game.includes(clientGame.value!) : true), 
                   numThreads: (config.value.server_browser_threads == 0 ? 1 : config.value.server_browser_threads),
                   timeout: config.value.server_timeout
                 })
@@ -124,7 +125,7 @@
     if (fullRefresh) {
       serverIPs.value = serverDetailsLastRefresh.value
       if (activeClient.value && config.value.refresh_by_mod) {
-        serverDetailsLastRefresh.value = serverDetailsLastRefresh.value.filter((x) => x.game.includes(activeClient.value!.gamename) || x.list == 'pinned')
+        serverDetailsLastRefresh.value = serverDetailsLastRefresh.value.filter((x) => x.game.includes(clientGame.value!) || x.list == 'pinned')
       }
     }
     
@@ -175,7 +176,7 @@
 
   watch(() => config.value.refresh_by_mod, (newVal, _oldVal) => {
     if (newVal && activeClient.value) {
-      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(activeClient.value!.gamename) || x.list == 'pinned')
+      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientGame.value!) || x.list == 'pinned')
       toggleShowUnreachableServers()
     }
     if (!newVal) {
