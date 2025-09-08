@@ -69,7 +69,7 @@
       @mouseleave="hoveredCard = ''"
       style="grid-column: 2 / 5; grid-row: 1 / 3"
     >
-      <a class="link" href="https://www.youtube.com/watch?v=wC10pyS0Gyk&list=PLGGojOY6nta5NmPMshZE9l5y3WOaQtU7O&index=1" target="_blank">
+      <a class="link" href="https://www.youtube.com/watch?v=SgvrOGmJFbg&list=PLGGojOY6nta5NmPMshZE9l5y3WOaQtU7O&index=1" target="_blank">
         <img src="../assets/images/contenders.png" class="q3-video" />
         <div v-if="hoveredCard == 'quake 3 arena'" class="center card-name tint">
           <span class="center">{{ hoveredCard }}</span>

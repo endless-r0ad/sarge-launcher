@@ -1,56 +1,54 @@
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { convertFileSrc } from '@tauri-apps/api/core'
-import { type Level } from '@/models/level'
 import { invoke } from '@tauri-apps/api/core'
-import type { Q3Executable } from '@/models/client'
+import { ensureError } from '@/utils/util'
+import { error } from '@tauri-apps/plugin-log'
+
+const levelshots = ref<{ [key: string]: string } >({})
+const loaded = ref(false)
 
 export function useLevelshot() {
-  const levelshots = ref<{ [key: string]: string } | null>(null)
-  const levels = ref<Level[]>([])
-  const activeClientPaths = ref<string[]>([])
-
-  async function getClientPaths(activeClient: Q3Executable | null) {
-    activeClientPaths.value = await invoke('get_client_paths', { activeClient: activeClient })
-  }
-  
-  async function getLevels(getAllData: boolean) {
-    levels.value = await invoke('get_levels', { searchPaths: activeClientPaths.value, getAllData: getAllData })
-  }
-
-  async function extractLevelshotsToCache() {
-    await invoke('extract_levelshots_to_cache', { levels: levels.value })
-  }
 
   async function getCachedLevelshots() {
-    levelshots.value = await invoke('get_cached_levelshots')
+    try {
+      levelshots.value = await invoke('get_cached_levelshots')
 
-    if (levelshots.value) {
-      for (var key in levelshots.value) {
-        levelshots.value[key] = convertFileSrc(levelshots.value[key])
+      if (levelshots.value) {
+        for (var key in levelshots.value) {
+          levelshots.value[key] = convertFileSrc(levelshots.value[key])
+        }
       }
+    } catch (err) {
+      error(`Error getting levelshots: ${ensureError(err).message}`)
     }
+    
   }
 
-  async function syncLevelshots(activeClient: Q3Executable | null, getAllData: boolean) {
-    await getClientPaths(activeClient)
-    await getLevels(getAllData)
-    await extractLevelshotsToCache()
-    await getCachedLevelshots()
+  async function extractLevelshots(paths: string[]): Promise<number> {
+    let extracted = 0
+    try {
+      extracted = await invoke('extract_levelshots_to_cache', { searchPaths: paths })
+    } catch (err) {
+      error(`Error extracting levelshots: ${ensureError(err).message}`)
+    }
+    return extracted
   }
 
   function levelHasLevelshot(levelName: string) {
-    if (levelshots.value) {
-      if (levelName.toLowerCase() in levelshots.value) {
-        return true
-      }
-    }
-    return false
+    return levelName.toLowerCase() in levelshots.value
   }
 
+  onMounted(async() => {
+    if (!loaded.value) {
+      loaded.value = true
+      await getCachedLevelshots() 
+    }
+  })
+
   return {
-    levels,
     levelshots,
     levelHasLevelshot,
-    syncLevelshots,
+    getCachedLevelshots,
+    extractLevelshots
   }
 }

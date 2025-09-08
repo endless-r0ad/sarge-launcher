@@ -70,7 +70,7 @@
     return serverDetails.value.filter((s) => s.master?.address == master.address && s.master?.game == master.game).length
   }
 
-  const { levelshots, levelHasLevelshot } = useLevelshot()
+  const { levelshots } = useLevelshot()
 
   const refreshingSingle = ref(false)
 
@@ -131,7 +131,6 @@
     
     toggleShowUnreachableServers()
 
-    console.log('serverIPs is ', serverIPs.value)
     loadingEvent.value = ''
     loading.value = false
     handleScroll()
@@ -629,7 +628,7 @@
           :displayDetails="displayDetails"
           :refreshing="refreshingSingle"
           :altKeyHeld="altKeyHeld"
-          :levelshotPath="levelHasLevelshot(server.map) ? levelshots![server.map.toLowerCase()] : null"
+          :levelshotPath="levelshots[server.map.toLowerCase()]"
           tabindex="0"
           @click="clickServer(server, index, $event);"
           @showDetails="displayDetails = true"
@@ -647,7 +646,7 @@
           :refreshing="refreshingSingle"
           :altKeyHeld="altKeyHeld"
           :displayDetailsOnMount="keepSelectedDetailsOpen"
-          :levelshotPath="levelHasLevelshot(server.map) ? levelshots![server.map.toLowerCase()] : null"
+          :levelshotPath="levelshots[server.map.toLowerCase()]"
           tabindex="0"
           @click="clickServer(server, index, $event);"
           @showDetails="displayDetails = true"
@@ -665,7 +664,7 @@
           :displayDetails="displayDetails"
           :refreshing="refreshingSingle"
           :altKeyHeld="altKeyHeld"
-          :levelshotPath="levelHasLevelshot(server.map) ? levelshots![server.map.toLowerCase()] : null"
+          :levelshotPath="levelshots[server.map.toLowerCase()]"
           tabindex="0"
           @click="clickServer(server, index, $event);"
           @showDetails="displayDetails = true"
@@ -688,13 +687,13 @@
       <span class="footer-data-right">Servers: {{ serverDetails.length }}</span>    
     </div>
     <div class="table-footer-left">  
-      <img @mouseover="masterServerHover=true"
+      <button @mouseover="masterServerHover=true"
             @mouseleave="masterServerHover=false" 
-            src="../assets/icons/q3-white.svg" 
-            class="footer-icon"
+            class="refresh-button"
             @click="showPopup='masterSettings'">
-      <span class="footer-url">master.quake3arena.com</span>
-      <div v-if="masterServerHover" class="master-servers">
+        Master Servers
+      </button>
+      <div v-if="masterServerHover" class="footer-popup">
         <div v-for="master in appdata.masters" style="padding-right: 40px;">
           <div v-if="master.active" style="display: inline-block; width: 15%;">{{ numServersByMaster(master) }} </div>
           <div v-if="master.active" style="display: inline-block;">{{ master.game }}: {{ master.name }}</div>                 
@@ -744,16 +743,21 @@
       </label>  
     </Modal>
       
-    <Modal v-if="showPopup=='masterSettings'" :popupType="'center'" @executeModal="handleMasterServerPopup(true)" @cancelModal="handleMasterServerPopup(true)">   
+    <Modal v-if="showPopup=='masterSettings'" :popupType="'center'" @executeModal="handleMasterServerPopup(true)" @cancelModal="popupInput = '', showPopup = ''">   
+      <h3 style="text-align: center; margin-top: -10px;">Master Servers Settings</h3>
       <div v-for="master in appdata.masters" style="height: 32px;">
         <span><input type="checkbox" v-model="master.active"></span>
         <text :style="master.unreachable ? 'color: #aaa; text-decoration: line-through;' : ''" class="ml-1">{{ master.game }}: {{ master.name }} </text>
       </div>
-      <div style="margin: 0px 4px 0px 2px; text-align: left;">
+      <div style="height: 32px; margin: 0px 4px 0px 2px; text-align: left;">
         <text>+</text>
         <text class="ml-1">Quake 3 Master Protocol</text>
         <text class="ml-1"><input type="radio" :value="Number(68)" v-model="q3MasterProtocol">68</text>
         <text class="ml-1"><input type="radio" :value="Number(43)" v-model="q3MasterProtocol">43</text>
+      </div>
+      <div style="height: 32px; text-align: center;">
+        <span>Refresh Master List: </span>
+        <span class="refresh-master-button" @click="handleMasterServerPopup(true)"></span>
       </div>
     </Modal>
   </Teleport>
@@ -866,21 +870,6 @@
     background-color: var(--main-bg);
     border-radius: 0.2rem;
     cursor: pointer;
-  }
-
-  .master-servers {
-    padding: 14px;
-    background-color: var(--alt-bg);
-    color: #fff;
-    position: absolute;
-    bottom: 44px;
-    left: 12px;
-    border-radius: 0.2rem;
-    font-size: 100%;
-    max-width: max-content;
-    max-height: max-content;
-    white-space: nowrap;
-    border: 1px solid var(--main-bg);
   }
 
   .master-hover-right {

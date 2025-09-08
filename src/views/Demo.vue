@@ -17,7 +17,7 @@
 
   const componentName = ref('Demo Browser')
   const { config } = useConfig()
-  const { activeClient, pickClient } = useClient()
+  const { activeClient, clientPaths, pickClient } = useClient()
 
   onMounted(async () => {
     emit('emitComponentName', componentName.value)
@@ -60,13 +60,11 @@
   const loading = ref(false)
   const loadingEvent = ref('')
 
-  const { levelshots, syncLevelshots, levelHasLevelshot } = useLevelshot()
+  const { levelshots } = useLevelshot()
 
   const demos = ref<Demo[]>([])
   const demosLastRefresh = ref<Demo[]>([])
   const demosCache = ref<Map<string, string>>(new Map)
-
-  const searchPaths = ref<string[]>([])
 
   async function getDemos(fullRefresh: boolean) {
     if (activeClient.value == null || loading.value) {
@@ -83,7 +81,7 @@
     if (fullRefresh) {
       demosLastRefresh.value = []
       demos.value = []
-      demosCache.value.clear
+      demosCache.value.clear()
     }
     
     searchQuery.value = ''
@@ -91,13 +89,8 @@
     currentSort.value = ''
 
     try {
-      await syncLevelshots(activeClient.value, false)
-      searchPaths.value = await invoke('get_client_paths', { activeClient: activeClient.value })
-
-      let new_demos: Demo[] = await invoke('get_demos_rayon', { searchPaths: searchPaths.value, cache: demosCache.value })
+      let new_demos: Demo[] = await invoke('get_demos_rayon', { searchPaths: clientPaths.value, cache: demosCache.value })
       num_got = new_demos.length
-
-      console.log('new_demos are', new_demos)
 
       demosLastRefresh.value = demosLastRefresh.value.concat(new_demos)
       demos.value = demosLastRefresh.value
@@ -275,7 +268,7 @@
 
   function clickDemo(clicked: Demo, event: MouseEvent) {
     let target = event.target as HTMLTextAreaElement;
-    if (target.id == 'moreButton') { return }
+    if (target.id == 'moreButton' || target.id == 'levelshot') { return }
 
     handleClick(clicked, target)
 
@@ -286,7 +279,7 @@
   }
 
   const keepSelectedDetailsOpen = ref(false)
-
+  const showSearchPaths = ref(false)
   
 </script>
 
@@ -337,7 +330,7 @@
           :demo="demo"
           :isSelected="demo === selectedDemo && displayDetails"
           :displayDetailsOnMount="keepSelectedDetailsOpen"
-          :levelshotPath="levelHasLevelshot(demo.mapname) ? levelshots![demo.mapname.toLowerCase()] : null"
+          :levelshotPath="levelshots[demo.mapname.toLowerCase()]"
           tabindex="0"
           @click="clickDemo(demo, $event)"
           @contextmenu.prevent="rightClickToSelect(demo)"
@@ -363,8 +356,16 @@
       <span class="footer-data-right" v-if="searchQuery.length > 0">Demos: {{ demos.length }}</span>
     </div>
     <div class="table-footer-left">
-      <img src="../assets/icons/q3-white.svg" class="footer-icon" @click="pickQ3Client()" />
-      <span v-if="searchPaths.length" class="footer-url">{{ searchPaths[0] + sep() + 'demos' }}</span>
+      <button @mouseover="showSearchPaths=true"
+            @mouseleave="showSearchPaths=false" 
+            class="search-paths">
+        Search Paths
+      </button>
+      <div v-if="clientPaths && showSearchPaths" class="footer-popup">
+        <div v-for="p in clientPaths" style="padding-right: 40px;">
+          <div style="display: inline-block; width: 15%;">{{ p }} </div>
+        </div>
+      </div> 
     </div>
   </div>
 </template>

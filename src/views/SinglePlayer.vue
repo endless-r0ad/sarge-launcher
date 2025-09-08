@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import Loading from '@/components/Loading.vue'
   import { info } from '@tauri-apps/plugin-log'
+  import { invoke } from '@tauri-apps/api/core'
   import { ensureError } from '@/utils/util'
   import { type Level } from '@/models/level'
   import { useVirtualScroll } from '@/composables/virtualscroll'
@@ -15,7 +16,7 @@
 
   const componentName = ref('Single Player')
 
-  const { activeClient, pickClient } = useClient()
+  const { activeClient, pickClient, clientPaths } = useClient()
 
   onMounted(async () => {
     emit('emitComponentName', componentName.value)
@@ -112,8 +113,38 @@
   const loading = ref(false)
   const loadingEvent = ref('')
 
-  const { levels, levelshots, syncLevelshots, levelHasLevelshot } = useLevelshot()
+  const { levelshots, levelHasLevelshot, extractLevelshots, getCachedLevelshots } = useLevelshot()
 
+  async function extractQ3Levelshots() {
+    if (!activeClient.value || loading.value) {
+      return
+    }
+
+    const startTime = performance.now()
+    loading.value = true
+    loadingEvent.value = `${activeClient.value.name}: extracting levelshots to cache...`
+    selectedLevel.value = null
+    searchQuery.value = ''
+    sortDesc.value = false
+    currentSort.value = ''
+
+    let num_extracted = 0
+
+    try {
+      num_extracted = await extractLevelshots(clientPaths.value)
+      await getCachedLevelshots()
+    } catch(err) {
+      emit('errorAlert', ensureError(err).message)
+    }
+    loadingEvent.value = ''
+    loading.value = false
+
+    const executionTime = performance.now() - startTime
+
+    info(`${num_extracted} levelshots extracted in ${parseFloat((executionTime / 1000).toFixed(2))} seconds`)
+  }
+
+  const levels = ref<Level[]>([])
   const levelsLastRefresh = ref<Level[]>([])
   const showBaseLevelsOnly = ref(false)
 
@@ -163,7 +194,7 @@
     currentSort.value = ''
 
     try {
-      await syncLevelshots(activeClient.value, true)
+      levels.value = await invoke('get_levels', { searchPaths: clientPaths.value, getAllData: true })
       levelsLastRefresh.value = levels.value
     } catch (err) {
       emit('errorAlert', ensureError(err).message)
@@ -353,7 +384,6 @@
 
       args.push(...['+wait', '5'])
       args.push(...['+team', teamSelect.value])
-      //console.log('launching with args ', args)
 
       emit('spawnQuake', args)
     }
@@ -408,11 +438,13 @@
 
   setScroller({ rowHeight: 96, overscan: 8 })
 
+  const showSearchPaths = ref(false)
+
 </script>
 
 <template>
   <div class="table-header-base no-select" style="height: 40px">
-    <div class="table-header-right">
+    <div class="table-header-right">     
       <button v-if="activeClient" class="refresh-button" :class="{ 'base-only': showBaseLevelsOnly }" @click="showBaseLevelsOnly = !showBaseLevelsOnly">
         {{ activeClient?.gamename }}
       </button>
@@ -451,7 +483,7 @@
           @contextmenu.prevent="rightClickToSelect(level)"
         >
           <div class="map-row">
-            <img v-if="levelHasLevelshot(level.level_name)" class="map-img" :src="levelshots![level.level_name.toLowerCase()]"/>
+            <img v-if="levelHasLevelshot(level.level_name)" class="map-img" :src="levelshots[level.level_name.toLowerCase()]"/>
             <img v-else class="map-img" src="../assets/icons/q3-white.svg" />
             <div style="width: 50%; text-align: left; white-space: nowrap; overflow: hidden; margin-left: 24px">
               <h3 style="margin: 8px 0 0 0;">{{ level.level_name }} 
@@ -486,8 +518,19 @@
       <span class="footer-data-right" v-if="searchQuery.length > 0 || showBaseLevelsOnly">Maps: {{ levels.length }}</span>
     </div>
     <div class="table-footer-left">
-      <img src="../assets/icons/q3-white.svg" class="footer-icon" @click="pickQ3Client()" />
-      <span class="footer-url">{{ activeClient?.exe_path }}</span>
+      <button @mouseover="showSearchPaths=true"
+            @mouseleave="showSearchPaths=false" 
+            class="search-paths">
+        Search Paths
+      </button>
+      <button v-if="activeClient" class="refresh-button" @click="extractQ3Levelshots()">
+        Extract Levelshots
+      </button>
+      <div v-if="clientPaths && showSearchPaths" class="footer-popup">
+        <div v-for="p in clientPaths" style="padding-right: 40px;">
+          <div style="display: inline-block; width: 15%;">{{ p }} </div>
+        </div>
+      </div> 
     </div>
   </div>
 
@@ -508,7 +551,7 @@
       <img
         v-if="levelHasLevelshot(selectedLevel.level_name)"
         style="width: 50%"
-        :src="levelshots![selectedLevel.level_name.toLowerCase()]"
+        :src="levelshots[selectedLevel.level_name.toLowerCase()]"
       />
       <img v-else style="width: 50%" src="../assets/icons/q3-white.svg" />
       <div style="width: 50%; text-align: center; overflow: hidden scroll; padding: 4px 0px 4px 4px" v-if="teamFreeBotsAllowed()">

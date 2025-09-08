@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { watch, defineProps, defineEmits, ref, computed, onMounted, onUnmounted } from 'vue'
   import { type Demo } from '@/models/demo'
+  import { invoke } from '@tauri-apps/api/core'
 
   const props = defineProps<{ demo: Demo; isSelected: boolean; displayDetailsOnMount: boolean; levelshotPath: string | null }>()
 
@@ -149,8 +150,8 @@
     </div>
 
     <div v-if="displayDetails" class="demo-details">
-      <img v-if="levelshotPath" class="levelshot" :src="levelshotPath" />
-      <img v-else class="levelshot" src="../assets/icons/q3-white.svg" />
+      <img v-if="levelshotPath" class="levelshot" id="levelshot" :src="levelshotPath" @click="invoke('open_folder', {path: demo.path})"/>
+      <img v-else class="levelshot" id="levelshot" src="../assets/icons/q3-white.svg" @click="invoke('open_folder', {path: demo.path})"/>
 
       <div style="width: 46%; text-align: left; white-space: nowrap; padding: 8px; overflow: hidden">
         <div>Path: {{ demo.path.slice(0, demo.path.indexOf(demo.file_name)) }}</div>
@@ -308,5 +309,6 @@
     height: 188px;
     object-fit: contain;
     overflow: hidden;
+    cursor: pointer;
   }
 </style>

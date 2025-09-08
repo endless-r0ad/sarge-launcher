@@ -1,4 +1,4 @@
-import { onBeforeMount, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import type { AppData } from '@/models/config'
 import { ensureError, defaultAppData } from '@/utils/util'
@@ -57,9 +57,10 @@ export function useAppData() {
     await invoke('save_app_data', { updatedData: appDataForBackend })
   }
 
-  onBeforeMount( async() => {
+  onMounted( async() => {
     if (!loaded.value) {
       try {
+        loaded.value = true
         appdata.value = await invoke('get_appdata')
         appdata.value.pinned = new Set(appdata.value.pinned)
         appdata.value.custom = new Set(appdata.value.custom)
@@ -69,7 +70,6 @@ export function useAppData() {
         error(`Error loading appdata: ${ensureError(err).message}`)
         appdata.value = defaultAppData()
       }
-      loaded.value = true
     }
     
   })

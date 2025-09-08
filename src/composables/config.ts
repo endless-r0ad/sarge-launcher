@@ -1,4 +1,4 @@
-import { onBeforeMount, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import type { Config } from '@/models/config'
 import { ensureError, defaultConfig } from '@/utils/util'
@@ -13,15 +13,16 @@ export function useConfig() {
     await invoke('save_config', { updatedConfig: config.value })
   }
 
-  onBeforeMount( async()=>{
+  onMounted( async()=>{
     if (!loaded.value) {
       try {
+        loaded.value = true
         config.value = await invoke('get_config')
       } catch(err) {
         error(`Error loading config: ${ensureError(err).message}`)
         config.value = defaultConfig()
       }
-      loaded.value = true
+      
     }
   })
 
