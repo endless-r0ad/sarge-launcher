@@ -1,9 +1,8 @@
-use std::sync::Mutex;
 use std::path::Path;
-use std::process::Stdio;
+use std::sync::Mutex;
 
-use std::process::Command;
 use is_executable::IsExecutable;
+use std::process::Command;
 
 use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::DialogExt;
@@ -17,7 +16,7 @@ pub async fn pick_client(app: AppHandle) -> Result<Option<Q3Executable>, String>
     let exe_path: &Path;
 
 	let mut file_path = app.dialog().file().set_title("Select a Quake 3 Client").blocking_pick_file();
-    
+
 	if let Some(picked_file) = &mut file_path {
 		let file_name = picked_file.as_path().unwrap().file_stem().unwrap().to_string_lossy().into_owned();
         exe_path = picked_file.as_path().unwrap();
@@ -44,12 +43,9 @@ pub async fn spawn_client(app: AppHandle, active_client: Q3Executable, q3_args: 
 	let process_id: u32;
     let mut new_command = Command::new(active_client.exe_path);
 
-    new_command.args(q3_args)
-                .stdin(Stdio::inherit())
-			.stderr(Stdio::inherit())
-			.stdout(Stdio::inherit());
+	new_command.args(q3_args);
 
-    let new = new_command.spawn()?;	
+    let new = new_command.spawn()?;
     process_id = new.id();
 	state.lock().unwrap().client.lock().unwrap().replace(new);
 

@@ -1,6 +1,4 @@
 use std::sync::Mutex;
-use std::panic;
-use log::error;
 
 mod client;
 mod commands;
@@ -15,6 +13,7 @@ mod q3_util;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
 	tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
 		.plugin(tauri_plugin_dialog::init())
 		.plugin(tauri_plugin_log::Builder::new().build())
 		.plugin(tauri_plugin_shell::init())
@@ -38,11 +37,14 @@ pub fn run() {
             commands::demo::create_demo_script,
             commands::demo::delete_temp_script,
 			commands::util::exit_app,
+            commands::util::open_folder
 		])
         .setup(move |_app| {
-            panic::set_hook(Box::new(move |info| {
-                error!("Panic! {:?}", info);
+            #[cfg(not(debug_assertions))]
+            std::panic::set_hook(Box::new(move |info| {
+                log::error!("Panic! {:?}", info);
             }));
+
             Ok(())
         })
 		.run(tauri::generate_context!())

@@ -18,13 +18,22 @@ pub async fn refresh_all_servers(
 	num_threads: usize,
 	timeout: u64,
 ) -> Result<Vec<Quake3Server>, String> {
+	if all_servers.len() == 0 {
+		return Err(String::from("Zero servers to refresh, check network connection or master server status"))
+	}
 
-    if all_servers.len() == 0 {
-        return Err(String::from("Zero servers to refresh, check network connection or master server status"))
-    }
+	for s in &mut all_servers {
+		s.reset_data();
+	}
 
-    get_saved_servers(&app, &mut all_servers);
-    let serv_chunks = all_servers.chunks(all_servers.len() / num_threads);
+	get_saved_servers(&app, &mut all_servers);
+
+	let mut chunk_size = all_servers.len() / num_threads;
+	if chunk_size == 0 {
+		chunk_size = 1;
+	}
+
+	let serv_chunks = all_servers.chunks(chunk_size);
 	let refreshed_servers_arc: Arc<Mutex<Vec<Quake3Server>>> = Arc::new(Mutex::new(vec![]));
 
     thread::scope(|s| {

@@ -72,6 +72,23 @@ impl Quake3Server {
 		}
 	}
 
+	pub fn reset_data(&mut self) {
+		self.ping = 0;
+		self.errormessage = String::new();
+		self.host = String::new();
+		self.hostcolored = String::new();
+		self.game = String::new();
+		self.playersconnected = 0;
+		self.maxclients = String::from("0");
+		self.bots = 0;
+		self.map = String::new();
+		self.othersettings = HashMap::new();
+		self.players = None;
+		self.list = String::from("main");
+		self.custom = false;
+		self.version = String::new();
+	}
+
 	pub fn parse_status_response(&mut self, &response_buf: &[u8; 2400]) -> Result<(), tauri::Error> {
 		let mut index = 0;
 
