@@ -123,7 +123,7 @@ impl Demo {
 		Ok(demos)
 	}
 
-	pub fn parse_demo(&mut self, huffman_tree: [Node; 514]) -> Result<(), std::io::Error> {
+	pub fn parse_demo(&mut self, huffman_tree: [Node; 514], get_all_data: bool) -> Result<(), std::io::Error> {
 		let mut demo_bytes = std::fs::read(Path::new(&self.path))?;
 		let demo_length_bits = demo_bytes.len() * 8;
 
@@ -189,6 +189,11 @@ impl Demo {
 						let mut gamestate =
 							self.load_gamestate(&mut demo_bytes, huffman_tree, &mut bit_position, msg_length, &mut msg_start_pos);
 						self.parse_gamestate(&mut gamestate);
+
+                        if !get_all_data {
+                            return Ok(());
+                        }
+
 						break;
 					}
 					7 => {

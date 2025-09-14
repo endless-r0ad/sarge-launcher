@@ -12,6 +12,7 @@ export interface Config {
   show_trashed_servers: boolean
   autoclose_demo: boolean
   loop_demo: boolean
+  get_full_demo_data: boolean
   q3_clients: Q3Executable[]
 }
 

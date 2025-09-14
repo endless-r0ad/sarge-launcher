@@ -35,17 +35,18 @@
       <div style="width: 400px">
         <img style="position: absolute; left: 15%; top: 4%" src="../assets/icons/sarge.svg" />
         <h2 style="position: absolute; right: 15%; top: 4%">SARGE LAUNCHER</h2>
+        <a class="link" href="https://www.github.com/endless-r0ad/Sarge-Launcher" target="_blank">
+          <p style="position: absolute; right: 15%; top: 16%; font-size: 75%;">
+            v0.1.0
+          </p>
+        </a>
         <p style="margin-top: 72px">
-          Sarge Launcher is a utility for Quake 3 Arena and Quake 3 Arena mods that provides some useful features for both n00bs and
+          Sarge Launcher is a utility for Quake 3 Arena and Q3A mods that provides some useful features for both n00bs and
           veterans. If you are new, you should purchase the game first, then update your client to ioquake3 or quake3e.
         </p>
-        <p>Once you have Q3A you can link the client or mod client using +</p>
         <p>
-          Sarge Launcher is not responsible for installing any mods, modifying any configs, or downloading any content for Quake 3 Arena -
+          Sarge Launcher is not responsible for installing any mods or downloading any content for Q3A -
           YOU are solely responsible for that!
-        </p>
-        <p style="text-align: center;">
-          v0.0.1 copyright n shit
         </p>
       </div>
     </Modal>
@@ -69,7 +70,7 @@
       @mouseleave="hoveredCard = ''"
       style="grid-column: 2 / 5; grid-row: 1 / 3"
     >
-      <a class="link" href="https://www.youtube.com/watch?v=SgvrOGmJFbg&list=PLGGojOY6nta5NmPMshZE9l5y3WOaQtU7O&index=1" target="_blank">
+      <a class="link" href="https://www.youtube.com/watch?v=SgvrOGmJFbg&list=PLGGojOY6nta5NmPMshZE9l5y3WOaQtU7O" target="_blank">
         <img src="../assets/images/contenders.png" class="q3-video" />
         <div v-if="hoveredCard == 'quake 3 arena'" class="center card-name tint">
           <span class="center">{{ hoveredCard }}</span>
@@ -346,4 +347,5 @@
   .q3-video:hover {
     background-color: rgba(0, 0, 0, 0.7);
   }
+
 </style>

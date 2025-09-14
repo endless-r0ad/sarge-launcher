@@ -38,6 +38,7 @@ pub struct Config {
 	show_trashed_servers: bool,
     autoclose_demo: bool,
     loop_demo: bool,
+    get_full_demo_data: bool,
 	q3_clients: Vec<Q3Executable>
 }
 
@@ -54,6 +55,7 @@ impl Config {
 			show_trashed_servers: true,
             autoclose_demo: true,
             loop_demo: false,
+            get_full_demo_data: true,
 			q3_clients: Vec::<Q3Executable>::new(),
 		}
 	}

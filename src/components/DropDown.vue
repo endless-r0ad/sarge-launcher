@@ -23,6 +23,7 @@
     deleteClicked.value = true
     deleteQ3Client(client)
     isDropDownVisible.value = false
+    deleteHovered.value = false
   }
 
   function handleKeyPress(event: KeyboardEvent) {
@@ -31,18 +32,11 @@
     }
   }
 
-  function handleClick(event: MouseEvent) {
-    const target = event.target as HTMLTextAreaElement
-    isDropDownVisible.value = target.id == 'dropdown' && activeClient ? !isDropDownVisible.value : false
-  }
-
   onMounted(() => {
     document.addEventListener('keydown', handleKeyPress)
-    document.addEventListener('click', handleClick)
   })
   onBeforeUnmount(() => {
     document.removeEventListener('keydown', handleKeyPress)
-    document.removeEventListener('click', handleClick)
   })
 </script>
 
@@ -52,18 +46,16 @@
     :class="activeClient ? 'not-empty' : 'empty'"
     :style="isDropDownVisible ? 'background-color: var(--alt-bg);' : ''"
     id="dropdown"
+    @click.prevent="isDropDownVisible = activeClient ? !isDropDownVisible : false"
   >
-    <img v-if="activeClient?.gamename == 'cpma'" src="../assets/images/cpma.png" class="client-icon-h" style="margin-bottom: -6px;"/>
-    <img v-if="activeClient?.gamename == 'defrag'" src="../assets/images/defrag.svg" class="client-icon-h" style="margin-bottom: -8px;"/>
-    <img v-if="activeClient?.gamename == 'q3ut4'" src="../assets/images/q3ut4.png" class="client-icon-h" style="margin-bottom: -8px;"/>
-    <img v-if="activeClient?.gamename == 'baseq3'" src="../assets/images/contenders.png" class="client-icon-h" style="margin-bottom: -6px;"/>
-    <img v-if="activeClient?.gamename == 'baseoa'" src="../assets/images/baseoa.svg" class="client-icon-h" style="margin-bottom: -6px;"/>
+
     {{ activeClient?.name || 'Quake 3 Client' }}
 
     <div class="clients-wrapper" v-if="isDropDownVisible">
       <div
         v-for="(client, _index) in config.q3_clients"
         class="client"
+        :class="client.gamename"
         :key="client.exe_path"
         :style="deleteHovered ? 'background-color: var(--main-bg);' : ''"
         @click.prevent="toggleClientSelect(client)"
@@ -76,11 +68,7 @@
         >
           <img src="../assets/icons/x.svg" width="8px" />
         </button>
-        <img v-if="client.gamename == 'cpma'" src="../assets/images/cpma.png" class="client-icon" style="margin-bottom: -6px;"/>
-        <img v-if="client.gamename == 'defrag'" src="../assets/images/defrag.svg" class="client-icon" style="margin-bottom: -8px;"/>
-        <img v-if="client.gamename == 'q3ut4'" src="../assets/images/q3ut4.png" class="client-icon" style="margin-bottom: -8px;"/>
-        <img v-if="client.gamename == 'baseq3'" src="../assets/images/contenders.png" class="client-icon" style="margin-bottom: -6px;"/>
-        <img v-if="client.gamename == 'baseoa'" src="../assets/images/baseoa.svg" class="client-icon" style="margin-bottom: -6px;"/>
+
         <span>{{ client.name }}</span>
         
       </div>
@@ -139,7 +127,32 @@
   }
 
   .client:hover {
-    background: var(--alt-bg);
+    background-color: var(--alt-bg);
+  }
+
+  .defrag {
+    background: url('../assets/images/defrag.svg') 90% center no-repeat;
+    background-size: 30%;
+  }
+
+  .cpma {
+    background: url('../assets/images/cpma.png') 90% center no-repeat;
+    background-size: 30%;
+  }
+
+  .baseoa {
+    background: url('../assets/images/baseoa.svg') 90% center no-repeat;
+    background-size: 30%;
+  }
+
+  .q3ut4 {
+    background: url('../assets/images/q3ut4.png') 90% center no-repeat;
+    background-size: 28%;
+  }
+
+  .baseq3 {
+    background: url('../assets/images/baseq3.png') 90% center no-repeat;
+    background-size: 30%;
   }
 
   .client:first-of-type {

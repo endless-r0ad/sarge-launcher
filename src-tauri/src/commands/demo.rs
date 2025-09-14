@@ -12,7 +12,7 @@ use crate::client::Q3Executable;
 const SARGE_CFG: &str = "sarge-launcher-demo.cfg";
 
 #[tauri::command(async)]
-pub async fn get_demos_rayon(search_paths: Vec<String>, cache: HashMap<String, String>) -> Result<Vec<Demo>, tauri::Error> {
+pub async fn get_demos(search_paths: Vec<String>, cache: HashMap<String, String>, all_data: bool) -> Result<Vec<Demo>, tauri::Error> {
 	let mut demos: Vec<Demo> = vec![];
 	const Q3_HUFFMAN_TREE: [Node; 514] = Node::create_tree();
 
@@ -25,7 +25,7 @@ pub async fn get_demos_rayon(search_paths: Vec<String>, cache: HashMap<String, S
     }
 
 	demos.par_iter_mut().for_each(|re| {
-		re.parse_demo(Q3_HUFFMAN_TREE).unwrap_or_else(|error| re.issue = Some(error.to_string()));
+		re.parse_demo(Q3_HUFFMAN_TREE, all_data).unwrap_or_else(|error| re.issue = Some(error.to_string()));
 	});
 
 	Ok(demos)

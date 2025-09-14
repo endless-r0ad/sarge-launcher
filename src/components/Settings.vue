@@ -45,6 +45,9 @@
   <div class="item"><input type="checkbox" v-model="config.loop_demo" />
     <label class="ml-1">Loop demo</label>
   </div>
+  <div class="item"><input type="checkbox" v-model="config.get_full_demo_data" />
+    <label class="ml-1">Parse full demo data</label>
+  </div>
 </template>
 
 <style scoped>

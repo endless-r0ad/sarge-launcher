@@ -518,7 +518,8 @@
       <span class="footer-data-right" v-if="searchQuery.length > 0 || showBaseLevelsOnly">Maps: {{ levels.length }}</span>
     </div>
     <div class="table-footer-left">
-      <button @mouseover="showSearchPaths=true"
+      <button v-if="activeClient"
+            @mouseover="showSearchPaths=true"
             @mouseleave="showSearchPaths=false" 
             class="search-paths">
         Search Paths

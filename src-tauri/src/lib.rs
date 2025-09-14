@@ -33,7 +33,7 @@ pub fn run() {
 			commands::client::pick_client,
 			commands::client::kill_q3_client,
             commands::client::get_client_paths,
-			commands::demo::get_demos_rayon,
+			commands::demo::get_demos,
             commands::demo::create_demo_script,
             commands::demo::delete_temp_script,
 			commands::util::exit_app,

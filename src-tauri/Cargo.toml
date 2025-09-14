@@ -1,6 +1,6 @@
 [package]
 name = "sarge-launcher"
-version = "0.0.1"
+version = "0.1.0"
 description = "A Quake 3 Arena Utility"
 authors = ["endless-r0ad"]
 license = "GPL-2.0"

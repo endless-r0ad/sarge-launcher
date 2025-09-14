@@ -89,7 +89,12 @@
     currentSort.value = ''
 
     try {
-      let new_demos: Demo[] = await invoke('get_demos_rayon', { searchPaths: clientPaths.value, cache: demosCache.value })
+      let new_demos: Demo[] = await invoke('get_demos', { 
+                      searchPaths: clientPaths.value, 
+                      cache: demosCache.value, 
+                      allData: config.value.get_full_demo_data 
+                    })
+                    
       num_got = new_demos.length
 
       demosLastRefresh.value = demosLastRefresh.value.concat(new_demos)
@@ -356,7 +361,8 @@
       <span class="footer-data-right" v-if="searchQuery.length > 0">Demos: {{ demos.length }}</span>
     </div>
     <div class="table-footer-left">
-      <button @mouseover="showSearchPaths=true"
+      <button v-if="activeClient" 
+            @mouseover="showSearchPaths=true"
             @mouseleave="showSearchPaths=false" 
             class="search-paths">
         Search Paths
