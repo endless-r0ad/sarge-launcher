@@ -1,6 +1,12 @@
 # Sarge Launcher
 
-## Project setup
+
+Sarge Launcher is a cross platform utility for Quake 3 Arena and Q3A mods
+
+It provides some useful features like a
+quick server browser, unlimited demo/level browsing, and Q3A client management among other things.
+
+## Development setup
 
 ### install all [Tauri v2](https://v2.tauri.app/start/prerequisites/) prerequisites for your system
 
@@ -19,5 +25,6 @@ cargo tauri dev
 cargo tauri build
 ```
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+
+
+![](./docs/static/sarge-launcher.gif)

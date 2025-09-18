@@ -25,6 +25,7 @@ export function defaultConfig(): Config {
     show_trashed_servers: true,
     autoclose_demo: true,
     loop_demo: false,
+    get_full_demo_data: true,
     q3_clients: [],
   }
 }

@@ -192,6 +192,7 @@
     searchQuery.value = ''
     sortDesc.value = false
     currentSort.value = ''
+    showBaseLevelsOnly.value = false
 
     try {
       levels.value = await invoke('get_levels', { searchPaths: clientPaths.value, getAllData: true })
