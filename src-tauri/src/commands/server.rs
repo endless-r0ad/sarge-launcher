@@ -54,7 +54,7 @@ pub async fn refresh_all_servers(
                     }
 
                     let ping_start = Instant::now();
-                    let _ = serv.query_server(ping_start, &socket, 0).unwrap();
+                    serv.query_server(ping_start, &socket, 0);
 
                     refreshed.lock().unwrap().push(serv);
                 }
@@ -72,18 +72,16 @@ pub async fn refresh_all_servers(
 
 #[tauri::command(async)]
 pub async fn refresh_single_server(mut refresh_server: Quake3Server, timeout: u64) -> Result<Quake3Server, String> {
-	refresh_server.players = None;
-	refresh_server.playersconnected = 0;
-	refresh_server.bots = 0;
-	refresh_server.errormessage = String::from("");
+
+    let server_list = refresh_server.list.clone();
+	refresh_server.reset_data();
+    refresh_server.list = server_list;
 
 	let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
-
 	let _ = socket.set_read_timeout(Some(Duration::from_millis(timeout)));
-
 	let ping_start = Instant::now();
-
-	let _ = refresh_server.query_server(ping_start, &socket, 0).unwrap();
+    
+	refresh_server.query_server(ping_start, &socket, 0);
 
 	Ok(refresh_server)
 }

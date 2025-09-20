@@ -26,5 +26,6 @@ cargo tauri build
 ```
 
 
-
 ![](./docs/static/sarge-launcher.gif)
+
+Thanks to everyone who helped test, as well as [mwvdev/q3demo](https://github.com/mwvdev/q3demo) which I used as a reference

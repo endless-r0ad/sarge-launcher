@@ -35,7 +35,7 @@
       <div style="width: 400px">
         <img style="position: absolute; left: 15%; top: 4%" src="../assets/icons/sarge.svg" />
         <h2 style="position: absolute; right: 15%; top: 4%">SARGE LAUNCHER</h2>
-        <a class="link" href="https://www.github.com/endless-r0ad/Sarge-Launcher" target="_blank">
+        <a class="link" href="https://github.com/endless-r0ad/sarge-launcher" target="_blank">
           <p style="position: absolute; right: 15%; top: 16%; font-size: 75%;">
             v0.1.0
           </p>
