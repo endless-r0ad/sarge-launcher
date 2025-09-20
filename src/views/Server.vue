@@ -49,7 +49,7 @@
 
   watch(activeClient, async(newVal, oldVal) => {
     if (config.value.refresh_by_mod && newVal?.gamename != oldVal?.gamename) {
-      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientGame.value!) || x.list == 'pinned')
+      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientGame.value!) || x.list == 'pinned' || x.list == 'trash')
       toggleShowUnreachableServers()
     }
   })
@@ -113,7 +113,7 @@
 
       serverDetailsLastRefresh.value = await invoke('refresh_all_servers', 
                 { 
-                  allServers: serverIPs.value.filter((x) => refreshByMod ? x.game.includes(clientGame.value!) : true), 
+                  allServers: serverIPs.value.filter((x) => refreshByMod ? x.game.includes(clientGame.value!) || x.list == 'trash' : true), 
                   numThreads: (config.value.server_browser_threads == 0 ? 1 : config.value.server_browser_threads),
                   timeout: config.value.server_timeout
                 })
@@ -125,7 +125,7 @@
     if (fullRefresh) {
       serverIPs.value = serverDetailsLastRefresh.value
       if (activeClient.value && config.value.refresh_by_mod) {
-        serverDetailsLastRefresh.value = serverDetailsLastRefresh.value.filter((x) => x.game.includes(clientGame.value!) || x.list == 'pinned')
+        serverDetailsLastRefresh.value = serverDetailsLastRefresh.value.filter((x) => x.game.includes(clientGame.value!) || x.list == 'pinned' || x.list == 'trash')
       }
     }
     
@@ -137,9 +137,8 @@
 
     const executionTime = performance.now() - startTime;
 
-    let logMsg = `${serverDetailsLastRefresh.value.length} servers refreshed in ${parseFloat((executionTime/1000).toFixed(2))} seconds `
-    logMsg += `using ${config.value.server_browser_threads} threads and ${config.value.server_timeout}ms timeout`
-
+    let logMsg = `${serverDetailsLastRefresh.value.length - trashLength.value} servers refreshed in ${parseFloat((executionTime/1000).toFixed(2))}`
+    logMsg += ` seconds using ${config.value.server_browser_threads} threads and ${config.value.server_timeout}ms timeout`
     info(logMsg)
   }
 
@@ -172,17 +171,6 @@
       emit('errorAlert', ensureError(err).message)
     }
   }
-
-  watch(() => config.value.refresh_by_mod, (newVal, _oldVal) => {
-    if (newVal && activeClient.value) {
-      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientGame.value!) || x.list == 'pinned')
-      toggleShowUnreachableServers()
-    }
-    if (!newVal) {
-      serverDetailsLastRefresh.value = serverIPs.value
-      toggleShowUnreachableServers()
-    }
-  })
 
   const pinnedServers = computed(() => { return serverDetails.value.filter((s) => s.list == 'pinned') }) 
       
@@ -475,6 +463,17 @@
     }
   })
 
+  watch(() => config.value.refresh_by_mod, (newVal, _oldVal) => {
+    if (newVal && activeClient.value) {
+      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientGame.value!) || x.list == 'pinned' || x.list == 'trash')
+      toggleShowUnreachableServers()
+    }
+    if (!newVal) {
+      serverDetailsLastRefresh.value = serverIPs.value
+      toggleShowUnreachableServers()
+    }
+  })
+
   const searchQuery = ref('')
 
   watch(searchQuery, (newSearch, _old) => { 
@@ -628,7 +627,7 @@
           :displayDetails="displayDetails"
           :refreshing="refreshingSingle"
           :altKeyHeld="altKeyHeld"
-          :levelshotPath="levelshots[server.map.toLowerCase()]"
+          :levelshotPath="levelshots[server.map.toLowerCase()] ?? null"
           tabindex="0"
           @click="clickServer(server, index, $event);"
           @showDetails="displayDetails = true"
@@ -646,7 +645,7 @@
           :refreshing="refreshingSingle"
           :altKeyHeld="altKeyHeld"
           :displayDetailsOnMount="keepSelectedDetailsOpen"
-          :levelshotPath="levelshots[server.map.toLowerCase()]"
+          :levelshotPath="levelshots[server.map.toLowerCase()] ?? null"
           tabindex="0"
           @click="clickServer(server, index, $event);"
           @showDetails="displayDetails = true"
@@ -664,7 +663,7 @@
           :displayDetails="displayDetails"
           :refreshing="refreshingSingle"
           :altKeyHeld="altKeyHeld"
-          :levelshotPath="levelshots[server.map.toLowerCase()]"
+          :levelshotPath="levelshots[server.map.toLowerCase()] ?? null"
           tabindex="0"
           @click="clickServer(server, index, $event);"
           @showDetails="displayDetails = true"
@@ -684,7 +683,8 @@
 
   <div class="table-footer">
     <div class="table-footer-right">
-      <span class="footer-data-right">Servers: {{ serverDetails.length }}</span>    
+      <span v-if="config.show_trashed_servers" class="footer-data-right">Servers: {{ serverDetails.length }}</span>
+      <span v-else class="footer-data-right">Servers: {{ serverDetails.length - trashLength }}</span>   
     </div>
     <div class="table-footer-left">  
       <button @mouseover="masterServerHover=true"

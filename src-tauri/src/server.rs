@@ -1,8 +1,13 @@
 use serde::{Deserialize, Serialize};
+use std::io::{Error, ErrorKind};
+use std::net::UdpSocket;
 
+use std::time::Instant;
 use crate::master::MasterServer;
 use crate::q3_util;
 use std::collections::HashMap;
+
+const GETSTATUS: &[u8] = b"\xff\xff\xff\xffgetstatus\x00";
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct ServerPlayer {
@@ -88,6 +93,38 @@ impl Quake3Server {
 		self.custom = false;
 		self.version = String::new();
 	}
+
+    pub fn query_server(&mut self, ping_start: Instant, socket: &UdpSocket, attempts: usize) -> Result<(), String> {
+        if attempts > 1 {
+            self.set_error(Error::new(ErrorKind::TimedOut, "No response from server after max retries"));
+            return Ok(())
+        }
+
+        match socket.send_to(GETSTATUS, self.address.to_owned()) {
+            Ok(_bytes) => (),
+            Err(err) => {
+                self.set_error(err);
+                return Ok(())
+            }
+        }
+
+        let mut response_buf: [u8; 2400] = [0; 2400];
+
+        let response = socket.recv_from(&mut response_buf);
+
+        match response {
+            Ok((_bytes, _src)) => {
+                self.ping = ping_start.elapsed().as_millis() as u16;
+                self
+                    .parse_status_response(&response_buf)
+                    .unwrap_or_else(|e| self.errormessage = e.to_string());
+                Ok(())
+            }
+            Err(_err) => {
+                return self.query_server(ping_start, &socket, attempts+1)
+            }
+        }
+    }
 
 	pub fn parse_status_response(&mut self, &response_buf: &[u8; 2400]) -> Result<(), tauri::Error> {
 		let mut index = 0;
@@ -195,5 +232,13 @@ impl Quake3Server {
 		self.hostcolored = err.to_string();
 		self.game = String::from("unreachable");
 		self.map = String::from("unreachable");
+	}
+
+    pub fn set_trash(&mut self) -> () {
+		self.ping = 999;
+		self.host = String::from("Remove from trash to refresh");
+		self.hostcolored = String::from("Remove from trash to refresh");
+		self.game = String::from("unknown");
+		self.map = String::from("unknown");
 	}
 }

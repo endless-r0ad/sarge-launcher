@@ -335,7 +335,7 @@
           :demo="demo"
           :isSelected="demo === selectedDemo && displayDetails"
           :displayDetailsOnMount="keepSelectedDetailsOpen"
-          :levelshotPath="levelshots[demo.mapname.toLowerCase()]"
+          :levelshotPath="levelshots[demo.mapname.toLowerCase()] ?? null"
           tabindex="0"
           @click="clickDemo(demo, $event)"
           @contextmenu.prevent="rightClickToSelect(demo)"

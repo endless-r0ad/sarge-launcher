@@ -3,13 +3,10 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
-
 use tauri::{AppHandle, Manager};
 
 use crate::config::SargeLauncher;
 use crate::server::Quake3Server;
-
-const GETSTATUS: &[u8] = b"\xff\xff\xff\xffgetstatus\x00";
 
 #[tauri::command(async)]
 pub async fn refresh_all_servers(
@@ -41,44 +38,25 @@ pub async fn refresh_all_servers(
 
         for chunk in serv_chunks {
 
-            let refreshed = Arc::clone(&refreshed_servers_arc);
+            let refreshed: Arc<Mutex<Vec<Quake3Server>>> = Arc::clone(&refreshed_servers_arc);
             let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
             socket.set_read_timeout(Some(Duration::from_millis(timeout))).unwrap();
 
             handles.push(s.spawn(move || {
                 
                 for i in 0..chunk.len() {
-                    let mut queried_server: Quake3Server = chunk[i].to_owned();
+                    let mut serv: Quake3Server = chunk[i].to_owned();
 
-                    let ping_start = Instant::now();
-
-                    let x = socket.send_to(GETSTATUS, queried_server.address.to_owned()).unwrap_or_else(|err| {
-                        queried_server.set_error(err);
-                        return 0;
-                    });
-
-                    if x == 0 {
-                        refreshed.lock().unwrap().push(queried_server);
+                    if serv.list == "trash" {
+                        serv.set_trash();
+                        refreshed.lock().unwrap().push(serv);
                         continue;
                     }
 
-                    let mut response_buf: [u8; 2400] = [0; 2400];
+                    let ping_start = Instant::now();
+                    let _ = serv.query_server(ping_start, &socket, 0).unwrap();
 
-                    let response = socket.recv_from(&mut response_buf);
-
-                    match response {
-                        Ok((_bytes, _src)) => {
-                            queried_server.ping = ping_start.elapsed().as_millis() as u16;
-                            queried_server
-                                .parse_status_response(&response_buf)
-                                .unwrap_or_else(|e| queried_server.errormessage = e.to_string());
-                            refreshed.lock().unwrap().push(queried_server);
-                        }
-                        Err(err) => {
-                            queried_server.set_error(err);
-                            refreshed.lock().unwrap().push(queried_server);
-                        }
-                    }
+                    refreshed.lock().unwrap().push(serv);
                 }
             }));
         }
@@ -105,31 +83,7 @@ pub async fn refresh_single_server(mut refresh_server: Quake3Server, timeout: u6
 
 	let ping_start = Instant::now();
 
-	let x = socket.send_to(GETSTATUS, refresh_server.address.to_string()).unwrap_or_else(|err| {
-		refresh_server.set_error(err);
-		return 0;
-	});
-
-	if x == 0 {
-        return Ok(refresh_server)
-	}
-
-	let mut response_buf: [u8; 2400] = [0; 2400];
-
-	let response = socket.recv_from(&mut response_buf);
-
-	match response {
-		Ok((_bytes, _src)) => {
-			refresh_server.ping = ping_start.elapsed().as_millis() as u16;
-
-			refresh_server
-				.parse_status_response(&response_buf)
-				.unwrap_or_else(|e| refresh_server.errormessage = e.to_string());
-		}
-		Err(err) => {
-			refresh_server.set_error(err);
-		}
-	}
+	let _ = refresh_server.query_server(ping_start, &socket, 0).unwrap();
 
 	Ok(refresh_server)
 }

@@ -96,9 +96,12 @@
         Players:
         <div style="margin: -17px 150px 0 60px; height: 126px; overflow-y: auto">
           <div v-for="(player, _index) in server.players">
-            <div style="display: inline-block; width: 65%" v-html="player.namecolored" />
+            <div v-if="player.ping > 0" style="display: inline-block; width: 65%" v-html="player.namecolored" />
             <div v-if="player.ping > 0" style="display: inline-block">{{ player.ping }}</div>
-            <div v-else style="display: inline-block">BOT</div>
+          </div>
+          <div v-for="(player, _index) in server.players">
+            <div v-if="player.ping == 0" style="display: inline-block; width: 65%" v-html="player.namecolored" />
+            <div v-if="player.ping == 0" style="display: inline-block">BOT</div>
           </div>
         </div>
         <br /><br />
