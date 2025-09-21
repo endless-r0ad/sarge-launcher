@@ -37,7 +37,7 @@
         <h2 style="position: absolute; right: 15%; top: 4%">SARGE LAUNCHER</h2>
         <a class="link" href="https://github.com/endless-r0ad/sarge-launcher" target="_blank">
           <p style="position: absolute; right: 15%; top: 16%; font-size: 75%;">
-            v0.1.0
+            v0.1.1
           </p>
         </a>
         <p style="margin-top: 72px">

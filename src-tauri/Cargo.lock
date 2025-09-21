@@ -3951,7 +3951,7 @@ dependencies = [
 
 [[package]]
 name = "sarge-launcher"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "image",
  "is_executable",
