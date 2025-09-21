@@ -15,7 +15,7 @@ export function useLevelshot() {
 
       if (levelshots.value) {
         for (var key in levelshots.value) {
-          levelshots.value[key] = convertFileSrc(levelshots.value[key])
+          levelshots.value[key] = convertFileSrc(levelshots.value[key]!)
         }
       }
     } catch (err) {

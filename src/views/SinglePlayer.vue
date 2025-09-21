@@ -224,10 +224,10 @@
     let filteredMaps: Level[] = []
 
     for (let i = 0; i < levelsLastRefresh.value.length; i++) {
-      if (levelsLastRefresh.value[i].level_name.toLowerCase().includes(query) || 
-          levelsLastRefresh.value[i].author.toLowerCase().includes(query) || 
-          levelsLastRefresh.value[i].pk3_name.toLowerCase().includes(query)) {
-        filteredMaps.push(levelsLastRefresh.value[i])
+      if (levelsLastRefresh.value[i]!.level_name.toLowerCase().includes(query) || 
+          levelsLastRefresh.value[i]!.author.toLowerCase().includes(query) || 
+          levelsLastRefresh.value[i]!.pk3_name.toLowerCase().includes(query)) {
+        filteredMaps.push(levelsLastRefresh.value[i]!)
       }
     }
     levels.value = filteredMaps
@@ -293,7 +293,7 @@
     let gametypeName = getGameTypes()[gameType.value]
     if (['TDM', 'CTF', 'T2v2', 'CA', 'FT', 
          'CTFS', '2v2', 'TS', '1FLAG', 'OVER',
-         'HARV', 'ELIM', 'CTFE', 'DD', 'DOM'].includes(gametypeName)) {
+         'HARV', 'ELIM', 'CTFE', 'DD', 'DOM'].includes(gametypeName!)) {
       return true
     }
     return false
@@ -303,7 +303,7 @@
     if (gameType.value == null) { return false }
 
     let gametypeName = getGameTypes()[gameType.value]
-    if (['FFA', '1V1', 'SP', 'LMS', 'DA'].includes(gametypeName)) {
+    if (['FFA', '1V1', 'SP', 'LMS', 'DA'].includes(gametypeName!)) {
       return true
     }
     return false
@@ -352,7 +352,7 @@
 
       if (activeClient.value?.gamename != 'defrag') {
         if (activeClient.value?.gamename == 'cpma') {
-          args.push(...['+set', 'mode_start', getGameTypes()[gametype]])
+          args.push(...['+set', 'mode_start', getGameTypes()[gametype]!])
         } else {
           args.push(...['+set', 'g_gametype', gametype.toString()])
         }
@@ -399,7 +399,7 @@
       return
     }
 
-    selectedLevel.value = levels.value[selectedMapIndex.value + increment]
+    selectedLevel.value = levels.value[selectedMapIndex.value + increment]!
 
     nextTick(() => {
       // the real dom is now updated (document.)
@@ -562,7 +562,7 @@
           <button @click="bots_team_free.splice(bots_team_free.indexOf(b), 1)" class="close-button">
             <img src="../assets/icons/x.svg" width="8px" />
           </button>
-          <label class="bot-button" @click="b.name = cycleBotNames(b.name)">{{ b.name }}</label>
+          <label class="bot-button" @click="b.name = cycleBotNames(b.name)!">{{ b.name }}</label>
           <label class="bot-button" style="margin-left: 6px" @click="b.difficulty = (b.difficulty % 5) + 1">{{ b.difficulty }}</label>
         </div>
       </div>
@@ -572,7 +572,7 @@
           <button @click="bots_team_red.splice(bots_team_red.indexOf(b), 1)" class="close-button">
             <img src="../assets/icons/x.svg" width="8px" />
           </button>
-          <label class="bot-button" @click="b.name = cycleBotNames(b.name)">{{ b.name }}</label>
+          <label class="bot-button" @click="b.name = cycleBotNames(b.name)!">{{ b.name }}</label>
           <label class="bot-button" style="margin-left: 6px" @click="b.difficulty = (b.difficulty % 5) + 1">{{ b.difficulty }}</label>
         </div>
       </div>
@@ -582,7 +582,7 @@
           <button @click="bots_team_blue.splice(bots_team_blue.indexOf(b), 1)" class="close-button">
             <img src="../assets/icons/x.svg" width="8px" />
           </button>
-          <label class="bot-button" @click="b.name = cycleBotNames(b.name)">{{ b.name }}</label>
+          <label class="bot-button" @click="b.name = cycleBotNames(b.name)!">{{ b.name }}</label>
           <label class="bot-button" style="margin-left: 6px" @click="b.difficulty = (b.difficulty % 5) + 1">{{ b.difficulty }}</label>
         </div>
       </div>

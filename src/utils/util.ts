@@ -45,8 +45,8 @@ export function defaultAppData(): AppData {
 export function newCustomServer(ip_and_port: string[], address: string): Quake3Server {
   return {
     master: null,
-    ip: ip_and_port[0],
-    port: ip_and_port[1],
+    ip: ip_and_port[0]!,
+    port: ip_and_port[1]!,
     address: address,
     protocol: null,
     ping: 0,
@@ -72,10 +72,10 @@ export function validServerAddress(input: string): boolean {
   }
 
   let split_s = input.split(':')
-  let stripped = split_s[0].replaceAll('.', '')
+  let stripped = split_s[0]!.replaceAll('.', '')
 
   // port
-  if (split_s.length > 2 || split_s[1].length == 0 || split_s[1].length > 5 || !/^\d+$/.test(split_s[1])) {
+  if (split_s.length > 2 || split_s[1]!.length == 0 || split_s[1]!.length > 5 || !/^\d+$/.test(split_s[1]!)) {
     return false
   }
 

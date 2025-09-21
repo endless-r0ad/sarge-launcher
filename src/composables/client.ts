@@ -67,9 +67,9 @@ export function useClient() {
       clientPaths.value = []
     }
     if (config.value.q3_clients.length > 0 && !config.value.q3_clients.some((x) => x.active)) {
-      config.value.q3_clients[0].active = true
-      clientPaths.value = await getClientPaths(config.value.q3_clients[0])
-      activeClient.value = config.value.q3_clients[0]
+      config.value.q3_clients[0]!.active = true
+      clientPaths.value = await getClientPaths(config.value.q3_clients[0]!)
+      activeClient.value = config.value.q3_clients[0]!
     }
   }
 
@@ -96,7 +96,7 @@ export function useClient() {
 
   onMounted( async()=>{
     if (config.value.q3_clients.length > 0 && !clientAlreadyActivated()) {
-      let client: Q3Executable = config.value.q3_clients[0]
+      let client: Q3Executable = config.value.q3_clients[0]!
       client.active = true
       clientPaths.value = await getClientPaths(client)
       activeClient.value = client

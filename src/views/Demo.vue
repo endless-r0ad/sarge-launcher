@@ -131,10 +131,10 @@
 
     for (let i = 0; i < demosLastRefresh.value.length; i++) {
       if (
-        demosLastRefresh.value[i].file_name.toLowerCase().includes(query) ||
-        demosLastRefresh.value[i].gamename.toLowerCase().includes(query)
+        demosLastRefresh.value[i]!.file_name.toLowerCase().includes(query) ||
+        demosLastRefresh.value[i]!.gamename.toLowerCase().includes(query)
       ) {
-        filteredDemos.push(demosLastRefresh.value[i])
+        filteredDemos.push(demosLastRefresh.value[i]!)
       }
     }
     demos.value = filteredDemos
@@ -249,7 +249,7 @@
       return
     }
 
-    selectedDemo.value = demos.value[selectedDemoIndex.value + increment]
+    selectedDemo.value = demos.value[selectedDemoIndex.value + increment]!
 
     nextTick(() => {
       // the real dom is now updated (document.)

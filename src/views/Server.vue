@@ -390,19 +390,19 @@
     lastSelectedServer.value = selectedServer.value
 
     if (proposedIndex < 0 && selectedServer.value.list == 'main'){
-      selectedServer.value = pinnedServers.value[pinnedLength.value-1]
+      selectedServer.value = pinnedServers.value[pinnedLength.value-1]!
     }
     else if (proposedIndex < 0 && selectedServer.value.list == 'trash'){
-      selectedServer.value = mainServers.value[mainLength.value-1]
+      selectedServer.value = mainServers.value[mainLength.value-1]!
     }
     else if (selectedServer.value.list == 'pinned' && proposedIndex > pinnedLength.value-1){
-      selectedServer.value = mainServers.value[0]
+      selectedServer.value = mainServers.value[0]!
     }
     else if (selectedServer.value.list == 'main' && proposedIndex > mainLength.value-1){
-      selectedServer.value = trashServers.value[0]
+      selectedServer.value = trashServers.value[0]!
     }
     else {
-      selectedServer.value = getServersByList(selectedServer.value.list)[proposedIndex]
+      selectedServer.value = getServersByList(selectedServer.value.list)[proposedIndex]!
     }
 
     if (pinnedLength.value == 0  && proposedIndex == 0 && selectedServer.value.list == 'main') {
@@ -484,20 +484,20 @@
     
     let serversFrom = serverDetailsLastRefresh.value
     let query = newSearch.toLowerCase()
-    let filteredServers = []
+    let filteredServers: Quake3Server[] = []
     
     if (!config.value.show_unreachable) {
       serversFrom = serverDetailsLastRefresh.value.filter((x) => x.errormessage == '')
     }
     
     for(let i = 0; i < serversFrom.length; i++) {
-      if(serversFrom[i].map.toLowerCase().includes(query) ||
-        serversFrom[i].game.toLowerCase().includes(query) ||
-        serversFrom[i].host.toLowerCase().includes(query) ||
-        serversFrom[i].ip.toLowerCase().includes(query)
+      if(serversFrom[i]!.map.toLowerCase().includes(query) ||
+        serversFrom[i]!.game.toLowerCase().includes(query) ||
+        serversFrom[i]!.host.toLowerCase().includes(query) ||
+        serversFrom[i]!.ip.toLowerCase().includes(query)
         ) 
       {
-        filteredServers.push(serversFrom[i]);
+        filteredServers.push(serversFrom[i]!);
       }
     }
     serverDetails.value = filteredServers
