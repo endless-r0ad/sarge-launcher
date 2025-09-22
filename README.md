@@ -1,7 +1,7 @@
 # Sarge Launcher
 
 
-Sarge Launcher is a cross platform utility for Quake 3 Arena and Q3A mods
+Sarge Launcher is a cross platform desktop application for Quake 3 Arena and Q3A mods
 
 It provides some useful features like a
 quick server browser, unlimited demo/level browsing, and Q3A client management among other things.
@@ -15,14 +15,14 @@ quick server browser, unlimited demo/level browsing, and Q3A client management a
 npm install
 ```
 
-### Compiles and hot-reloads for development from ./src-tauri
+### Compiles and hot-reloads for development
 ```
-cargo tauri dev
+npm run tauri dev
 ```
 
-### Compiles and minifies for production ./src-tauri
+### Compiles and minifies for production
 ```
-cargo tauri build
+npm run tauri build
 ```
 
 
