@@ -117,6 +117,7 @@
                   numThreads: (config.value.server_browser_threads == 0 ? 1 : config.value.server_browser_threads),
                   timeout: config.value.server_timeout
                 })
+      console.log('servers refreshed - ', serverDetailsLastRefresh.value)
     }
     catch(err) {
       emit('errorAlert', ensureError(err).message)

@@ -24,15 +24,6 @@
   cursor: pointer;
 }
 
-.main-view {
-  position: fixed;
-  top: calc(3vh + 38px);
-  left: 112px;
-  padding-top: 12px;
-  width: calc(100% - 144px);
-  height: calc(100% - 94px);
-}
-
 .router-active {
   background: var(--secondary-bg);
 }
@@ -148,6 +139,21 @@ label {
   background-color: var(--main-bg);
 }
 
+.select-path-button {
+  background-color: rgba(0, 0, 0, 0);
+  color: white;
+  border: 1px solid #00ffff;
+  border-radius: 0.2rem;
+  cursor: pointer;
+  font-size: 160%;
+  padding: 2px 10px 2px 10px;
+  font-weight: 400;
+}
+
+.select-path-button:hover {
+  background-color: var(--main-bg);
+}
+
 .ok-button {
   background-color: rgba(0, 0, 0, 0);
   color: white;
@@ -222,9 +228,11 @@ div::-webkit-scrollbar {
   background: transparent;
   width: 14px;
 }
+
 div::-webkit-scrollbar-track {
   padding: 2px;
 }
+
 div::-webkit-scrollbar-thumb {
   background: #fff3;
   border-radius: 10px;
@@ -253,6 +261,48 @@ div::-webkit-scrollbar-thumb {
 
 .row-2:nth-of-type(odd) {
   background-color: rgba(23, 32, 45, 0.3);
+}
+
+.row-data {
+  color: white;
+  display: flex;
+  flex-direction: row;
+  height: min-content;
+  overflow: hidden;
+}
+
+.data {
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.row-details {
+  height: 188px;
+  display: flex;
+  flex-direction: row;
+  background-color: var(--secondary-bg);
+  border-radius: 0.2rem;
+  line-height: 18px;
+  font-size: 90%;
+  margin-top: 4px;
+}
+
+.minus {
+  padding: 0 6px 0 7px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.custom {
+  padding: 0 6px 0 7px;
+  font-weight: 500;
+}
+
+.plus {
+  padding: 0 4px 0 4px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
 .table-footer {
@@ -348,108 +398,143 @@ div::-webkit-scrollbar-thumb {
 .q3c-0 {
   color: rgb(0, 0, 0);
 }
+
 .q3c-1 {
   color: rgb(255, 0, 0);
 }
+
 .q3c-2 {
   color: rgb(0, 255, 0);
 }
+
 .q3c-3 {
   color: rgb(255, 255, 0);
 }
+
 .q3c-4 {
   color: rgb(51, 51, 255);
 }
+
 .q3c-5 {
   color: rgb(0, 255, 255);
 }
+
 .q3c-6 {
   color: rgb(255, 0, 255);
 }
+
 .q3c-7 {
   color: rgb(255, 255, 255);
 }
+
 .q3c-8 {
   color: rgb(255, 128, 0);
 }
+
 .q3c-9 {
   color: rgb(153, 153, 255);
 }
+
 .q3c-a {
   color: rgb(255, 0, 0);
 }
+
 .q3c-b {
   color: rgb(255, 68, 0);
 }
+
 .q3c-c {
   color: rgb(255, 128, 0);
 }
+
 .q3c-d {
   color: rgb(255, 187, 0);
 }
+
 .q3c-e {
   color: rgb(255, 255, 0);
 }
+
 .q3c-f {
   color: rgb(187, 255, 0);
 }
+
 .q3c-g {
   color: rgb(128, 255, 0);
 }
+
 .q3c-h {
   color: rgb(68, 255, 0);
 }
+
 .q3c-i {
   color: rgb(0, 255, 0);
 }
+
 .q3c-j {
   color: rgb(0, 255, 68);
 }
+
 .q3c-k {
   color: rgb(0, 255, 128);
 }
+
 .q3c-l {
   color: rgb(0, 255, 187);
 }
+
 .q3c-m {
   color: rgb(0, 255, 255);
 }
+
 .q3c-n {
   color: rgb(0, 187, 255);
 }
+
 .q3c-o {
   color: rgb(0, 128, 255);
 }
+
 .q3c-p {
   color: rgb(0, 68, 255);
 }
+
 .q3c-q {
   color: rgb(0, 0, 255);
 }
+
 .q3c-r {
   color: rgb(68, 0, 255);
 }
+
 .q3c-s {
   color: rgb(128, 0, 255);
 }
+
 .q3c-t {
   color: rgb(187, 0, 255);
 }
+
 .q3c-u {
   color: rgb(255, 0, 255);
 }
+
 .q3c-v {
   color: rgb(255, 0, 187);
 }
+
 .q3c-w {
   color: rgb(255, 0, 128);
 }
+
 .q3c-x {
   color: rgb(255, 0, 68);
 }
+
 .q3c-y {
   color: rgb(255, 255, 255);
 }
+
 .q3c-z {
   color: rgb(128, 128, 128);
 }

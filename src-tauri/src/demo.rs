@@ -272,19 +272,15 @@ impl Demo {
 	pub fn huffman_read(msg: &mut Vec<u8>, tree: [Node; 514], bit_position: &mut usize) -> i32 {
 		let mut node = tree[2];
 
-		while node.value == Some(257) {
+		while node.value == 257 {
 			if Self::bitbuffer_read(msg, bit_position) == 0 {
-				if let Some(left) = node.left {
-					node = tree[left];
-				}
+				node = tree[node.left];
 			} else {
-				if let Some(right) = node.right {
-					node = tree[right];
-				}
+				node = tree[node.right];
 			}
 		}
 
-		return node.value.unwrap() as i32;
+		return node.value as i32;
 	}
 
 	pub fn huffman_readbits(bits: i32, msg: &mut Vec<u8>, tree: [Node; 514], bit_position: &mut usize) -> i32 {

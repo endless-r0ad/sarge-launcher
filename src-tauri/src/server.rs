@@ -94,7 +94,9 @@ impl Quake3Server {
 		self.version = String::new();
 	}
 
-    pub fn query_server(&mut self, ping_start: Instant, socket: &UdpSocket, attempts: usize) -> () {
+    pub fn query_server(&mut self, socket: &UdpSocket, attempts: usize) -> () {
+        let ping_start = Instant::now();
+
         if attempts > 1 {
             self.set_error(Error::new(ErrorKind::TimedOut, "No response from server after max retries"));
             return
@@ -121,7 +123,7 @@ impl Quake3Server {
                 return
             }
             Err(_err) => {
-                return self.query_server(ping_start, &socket, attempts+1)
+                return self.query_server(&socket, attempts+1)
             }
         }
     }

@@ -133,23 +133,23 @@
 
 <template>
   <div style="overflow: hidden" id="details">
-    <div class="demo-row">
+    <div class="row-data">
       <span style="width: 1%"></span>
-      <span style="width: 9%; text-align: left; white-space: nowrap; overflow: hidden">{{ demo.gamename }}</span>
-      <span style="width: 8%; text-align: left; white-space: nowrap; overflow: hidden">{{ getGametype(demo) }}</span>
-      <span style="width: 12%; text-align: left; white-space: nowrap; overflow: hidden" v-html="demo.player_pov.namecolored"></span>
-      <span style="width: 44%; text-align: left; white-space: nowrap; overflow: hidden">{{ demo.file_name }}</span>
+      <span style="width: 9%;" class="data">{{ demo.gamename }}</span>
+      <span style="width: 8%;" class="data">{{ getGametype(demo) }}</span>
+      <span style="width: 12%;" class="data" v-html="demo.player_pov.namecolored"></span>
+      <span style="width: 44%;" class="data">{{ demo.file_name }}</span>
       <span style="width: 1%"></span>
-      <span style="width: 14%; text-align: left; white-space: nowrap; overflow: hidden">{{ demo.mapname }}</span>
+      <span style="width: 14%;" class="data">{{ demo.mapname }}</span>
       <span style="width: 1%"></span>
-      <span style="width: 12%; text-align: left; white-space: nowrap">{{ demo.duration }}</span>
+      <span style="width: 12%;" class="data">{{ demo.duration }}</span>
       <span style="width: 2%">
         <div v-if="!displayDetails" class="plus" id="expandDetails" @click="emit('showDetails')">+</div>
         <div v-if="displayDetails" class="minus" id="expandDetails" @click="emit('hideDetails')">-</div>
       </span>
     </div>
 
-    <div v-if="displayDetails" class="demo-details">
+    <div v-if="displayDetails" class="row-details">
       <img v-if="levelshotPath" class="levelshot" id="levelshot" :src="levelshotPath" @click="invoke('open_folder', {path: demo.path})"/>
       <img v-else class="levelshot" id="levelshot" src="../assets/icons/q3-white.svg" @click="invoke('open_folder', {path: demo.path})"/>
 
@@ -207,25 +207,6 @@
 </template>
 
 <style scoped>
-  .demo-row {
-    color: white;
-    display: flex;
-    flex-direction: row;
-    height: min-content;
-    overflow: hidden;
-  }
-
-  .demo-details {
-    height: 188px;
-    display: flex;
-    flex-direction: row;
-    background-color: var(--secondary-bg);
-    border-radius: 0.2rem;
-    line-height: 18px;
-    font-size: 90%;
-    margin-top: 4px;
-  }
-
   .more-button {
     background-color: rgba(0, 0, 0, 0);
     color: white;
@@ -239,40 +220,6 @@
 
   .more-button:hover {
     background-color: var(--main-bg);
-  }
-
-  .details-enter-from,
-  .details-leave-active {
-    opacity: 0;
-    transform: scale(1);
-  }
-  .details-leave-active {
-    position: absolute;
-  }
-
-  .details-enter-to {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  .details-enter-active {
-    transition: all 1s ease;
-  }
-
-  .details-move {
-    transition: all 1s ease;
-  }
-
-  .plus {
-    padding: 0 4px 0 4px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-
-  .minus {
-    padding: 0 6px 0 7px;
-    font-weight: bold;
-    cursor: pointer;
   }
 
   .backdrop {

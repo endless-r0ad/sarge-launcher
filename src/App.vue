@@ -17,8 +17,8 @@
   const isMounted = ref(false)
 
   onMounted(async () => {
-      await new Promise((r) => setTimeout(r, 500))
-      isMounted.value = true
+    await new Promise((r) => setTimeout(r, 500))
+    isMounted.value = true
   })
 
   async function saveConfig() {
@@ -99,7 +99,7 @@
 
   <Sidebar v-if="isMounted" :showSettings="showSettings" @toggleSettings="toggleSettings" @exitApp="invoke('exit_app')" />
 
-  <div v-if="isMounted" class="main-view">
+  <main v-if="isMounted" class="main-view">
     <router-view v-slot="{ Component }">
       <KeepAlive>
         <component
@@ -111,7 +111,7 @@
         />
       </KeepAlive>
     </router-view>
-  </div>
+  </main>
 
   <div id="modal">
     <Modal v-if="showAlertPopup" :popupType="popupType" @cancelModal="closeAlert" @executeModal="closeAlert">
@@ -125,7 +125,7 @@
 </template>
 
 <style>
-  @import url('./assets/css/main.css');
+  @import url('./assets/css/shared.css');
 
   @font-face {
     font-family: 'dejavu';
@@ -159,6 +159,15 @@
 
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  .main-view {
+    position: fixed;
+    top: calc(3vh + 38px);
+    left: 112px;
+    padding-top: 12px;
+    width: calc(100% - 144px);
+    height: calc(100% - 94px);
   }
 
 </style>

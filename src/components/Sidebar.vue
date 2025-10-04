@@ -105,71 +105,6 @@
     opacity: 1;
   }
 
-  .sidebar-icon {
-    width: 128px;
-    display: block;
-  }
-
-  .settings-btn {
-    position: absolute;
-    bottom: 10px;
-    width: 24px !important;
-    margin-left: 15px;
-    text-align: center;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-  }
-
-  .settings-btn:hover {
-    border: 1px solid var(--sidebar-item-hover);
-  }
-
-  .sidebar-divider {
-    border-bottom: 0.01em solid #52698a;
-    margin: 4px 12% 4px 12%;
-  }
-
-  .header {
-    background-color: rgba(46, 59, 79, 1);
-    border-right: 0.01em solid #17202d;
-    border-bottom: 0.01em solid #17202d;
-    height: 64px;
-  }
-
-  .sidebar-title {
-    text-align: center;
-  }
-
-  .profile {
-    padding: 0.75em;
-    text-align: left;
-    width: 10%;
-    color: rgba(46, 59, 79, 1);
-    cursor: pointer;
-    margin: 80px, auto;
-  }
-
-  .rotate-180 {
-    transform: rotateY(180deg);
-    transform: 3s linear;
-  }
-
-  .fade-enter-active {
-    transition: opacity 10s;
-  }
-
-  .fade-enter-on {
-    opacity: 0;
-  }
-
-  .centered-element {
-    margin: auto;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-
   .link {
     display: block;
     padding: 8px 8px 2px 8px;
@@ -179,14 +114,6 @@
   }
 
   .link:hover {
-    background-color: var(--secondary-bg);
-  }
-
-  .settings {
-    display: block;
-    padding: 8px 8px 2px 8px;
-    text-align: center;
-    border-radius: 0.8rem;
     background-color: var(--secondary-bg);
   }
 

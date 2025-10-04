@@ -165,20 +165,6 @@
     border-bottom-right-radius: 0.2rem;
   }
 
-  .remove-client-button {
-    color: white;
-    cursor: pointer;
-    width: 30px;
-    text-align: left;
-    background: url('../assets/icons/x.svg') center center no-repeat;
-    background-size: 10px;
-    display: inline-block;
-  }
-
-  .remove-client-button:hover {
-    background-color: var(--secondary-bg);
-  }
-
   .delete-button {
     background: var(--main-bg);
     border: 1px solid #777;
@@ -191,13 +177,4 @@
     cursor: pointer;
   }
 
-  .client-icon-h {
-    width: 24px;
-    margin-left: -24px;
-  }
-
-  .client-icon {
-    width: 24px;
-    margin-right: 8px;
-  }
 </style>

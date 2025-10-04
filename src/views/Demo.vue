@@ -390,19 +390,4 @@
     transform: translate(-50%, -50%);
     color: white;
   }
-
-  .select-path-button {
-    background-color: rgba(0, 0, 0, 0);
-    color: white;
-    border: 1px solid #00ffff;
-    border-radius: 0.2rem;
-    cursor: pointer;
-    font-size: 160%;
-    padding: 2px 10px 2px 10px;
-    font-weight: 400;
-  }
-
-  .select-path-button:hover {
-    background-color: var(--main-bg);
-  }
 </style>

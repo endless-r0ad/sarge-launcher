@@ -640,19 +640,6 @@
 </template>
 
 <style scoped>
-  .base-only-button {
-    cursor: pointer;
-    padding: 4px 15px;
-    margin: 0px 4px;
-    background: url('../assets/icons/q3-white.svg') center center no-repeat;
-    background-size: 78%;
-  }
-
-  .base-only-button:hover {
-    background-color: var(--main-bg);
-    border-radius: 0.2rem;
-  }
-
   .base-only {
     background-color: rgba(0, 143, 168, 0.514);
     border-radius: 0.2rem;
@@ -771,21 +758,6 @@
     top: 50%;
     transform: translate(-50%, -50%);
     color: white;
-  }
-
-  .select-path-button {
-    background-color: rgba(0, 0, 0, 0);
-    color: white;
-    border: 1px solid #00ffff;
-    border-radius: 0.2rem;
-    cursor: pointer;
-    font-size: 160%;
-    padding: 2px 10px 2px 10px;
-    font-weight: 400;
-  }
-
-  .select-path-button:hover {
-    background-color: var(--main-bg);
   }
 
   .map-row {

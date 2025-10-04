@@ -2,7 +2,6 @@ use std::net::UdpSocket;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-use std::time::Instant;
 use tauri::{AppHandle, Manager};
 
 use crate::config::SargeLauncher;
@@ -53,8 +52,7 @@ pub async fn refresh_all_servers(
                         continue;
                     }
 
-                    let ping_start = Instant::now();
-                    serv.query_server(ping_start, &socket, 0);
+                    serv.query_server(&socket, 0);
 
                     refreshed.lock().unwrap().push(serv);
                 }
@@ -79,9 +77,8 @@ pub async fn refresh_single_server(mut refresh_server: Quake3Server, timeout: u6
 
 	let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
 	let _ = socket.set_read_timeout(Some(Duration::from_millis(timeout)));
-	let ping_start = Instant::now();
     
-	refresh_server.query_server(ping_start, &socket, 0);
+	refresh_server.query_server(&socket, 0);
 
 	Ok(refresh_server)
 }

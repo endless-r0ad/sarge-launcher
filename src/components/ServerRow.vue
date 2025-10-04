@@ -59,7 +59,7 @@
 
 <template>
   <div style="overflow: hidden">
-    <div class="server-row">
+    <div class="row-data">
       <span style="width: 2%">
         <div v-if="server.list == 'pinned' && !server.custom" class="pin-solid" id="addToListButton" />
         <div v-if="server.list == 'pinned' && server.custom" class="custom">c</div>
@@ -85,7 +85,7 @@
       </span>
     </div>
 
-    <div v-if="displayDetails && isSelected" class="server-details">
+    <div v-if="displayDetails && isSelected" class="row-details">
       <img v-if="levelshotPath" class="levelshot" :src="levelshotPath" />
       <img v-else class="levelshot" src="../assets/icons/q3-white.svg" />
 
@@ -134,42 +134,9 @@
     cursor: pointer;
   }
 
-  .server-row {
-    color: white;
-    display: flex;
-    flex-direction: row;
-    height: min-content;
-    overflow: hidden;
-  }
-
-  .server-details {
-    height: 188px;
-    display: flex;
-    flex-direction: row;
-    background-color: var(--secondary-bg);
-    border-radius: 0.2rem;
-    line-height: 18px;
-    font-size: 90%;
-    margin-top: 4px;
-  }
-
-  .server-details-right {
-    float: right;
-    width: 30%;
-  }
-
-  .server-details-left {
-    display: block;
-    margin: 0 71% 0 0;
-  }
-
   .key {
     background: url('../assets/icons/key.svg') center center no-repeat;
     background-size: 18px;
-  }
-
-  .trash-row {
-    opacity: 0.5;
   }
 
   .pin {
@@ -184,70 +151,6 @@
     background: url('../assets/icons/pin-filled.svg') center center no-repeat;
     height: 20px;
     width: 20px;
-    cursor: pointer;
-  }
-
-  .page-title {
-    text-align: left;
-    padding-bottom: 5px;
-    border-bottom: 4px solid #fa8225;
-    flex: 1 1 auto;
-  }
-
-  .details-enter-from,
-  .details-leave-active {
-    opacity: 0;
-    transform: scale(1);
-  }
-
-  .details-leave-active {
-    position: absolute;
-  }
-
-  .details-enter-to {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  .details-enter-active {
-    transition: all 1s ease;
-  }
-
-  .details-move {
-    transition: all 1s ease;
-  }
-
-  .server-left {
-    display: flex;
-    margin: 0 98% 0 0;
-  }
-
-  .server-right {
-    float: right;
-    width: 98%;
-    overflow: hidden;
-  }
-
-  .data {
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-  }
-
-  .minus {
-    padding: 0 6px 0 7px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-
-  .custom {
-    padding: 0 6px 0 7px;
-    font-weight: 500;
-  }
-
-  .plus {
-    padding: 0 4px 0 4px;
-    font-weight: bold;
     cursor: pointer;
   }
 
