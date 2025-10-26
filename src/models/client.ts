@@ -5,3 +5,8 @@ export interface Q3Executable {
   gamename: string
   active: boolean
 }
+
+export interface Q3Config {
+  name: string
+  path: string
+}

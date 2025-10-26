@@ -1,35 +1,68 @@
 <script setup lang="ts">
   import { ref, onMounted, onBeforeUnmount } from 'vue'
+  import ClientProfile from '@/components/ClientProfile.vue'
+  import Modal from '@/components/Modal.vue'
   import { type Q3Executable } from '@/models/client'
   import { useConfig } from '@/composables/config'
   import { useClient } from '@/composables/client'
 
   const { config,  } = useConfig()
-  const { activeClient, toggleQ3Client, deleteQ3Client } = useClient()
+  const { activeClient, toggleQ3Client, deleteQ3Client, getClientDefaultGamename } = useClient()
 
   const isDropDownVisible = ref(false)
-  const deleteHovered = ref(false)
-  const deleteClicked = ref(false)
+  const settingsHovered = ref(false)
+  const settingsClicked = ref(false)
 
   function toggleClientSelect(client: Q3Executable) {
-    if (deleteClicked.value) {
-      deleteClicked.value = false
+    if (settingsClicked.value) {
+      settingsClicked.value = false
       return
     }
     toggleQ3Client(client)
   }
 
   function deleteClient(client: Q3Executable) {
-    deleteClicked.value = true
+    settingsClicked.value = true
     deleteQ3Client(client)
     isDropDownVisible.value = false
-    deleteHovered.value = false
+    settingsHovered.value = false
+  }
+
+  const showClientProfile = ref(false)
+  const profiledClient = ref<Q3Executable | null>(null)
+
+  function showProfile(client: Q3Executable) {
+    settingsClicked.value = true
+    showClientProfile.value = true
+    isDropDownVisible.value = false
+    settingsHovered.value = false
+
+    profiledClient.value = client
   }
 
   function handleKeyPress(event: KeyboardEvent) {
     if (event.code == 'Escape') {
       isDropDownVisible.value = false
     }
+  }
+
+  function additionalClientStyle(client: Q3Executable): string {
+    let addtlStyle = ''
+    if (settingsHovered.value) {
+      addtlStyle += 'background-color: var(--main-bg);'
+    }
+    if (client.exe_path == activeClient.value?.exe_path) {
+      addtlStyle += 'color: orange; font-weight: 800;'
+    }
+    return addtlStyle
+  }
+
+  function clientIsOverridden() {
+    if (!activeClient.value) { return false }
+    if (activeClient.value.gamename != getClientDefaultGamename(activeClient.value)) {
+      return true
+    }
+    return false
   }
 
   onMounted(() => {
@@ -50,6 +83,7 @@
   >
 
     {{ activeClient?.name || 'Quake 3 Client' }}
+    <span v-if="clientIsOverridden()" style="font-size: 70%; color: orange; font-weight: 800;">{{ activeClient?.gamename }}</span>
 
     <div class="clients-wrapper" v-if="isDropDownVisible">
       <div
@@ -57,22 +91,27 @@
         class="client"
         :class="client.gamename"
         :key="client.exe_path"
-        :style="deleteHovered ? 'background-color: var(--main-bg);' : ''"
+        :style="additionalClientStyle(client)"
         @click.prevent="toggleClientSelect(client)"
       >
         <button
           class="delete-button"
-          @mouseover="deleteHovered = true"
-          @mouseleave="deleteHovered = false"
-          @click.prevent="deleteClient(client)"
+          @mouseover="settingsHovered = true"
+          @mouseleave="settingsHovered = false"
+          @click.prevent="showProfile(client)"
         >
-          <img src="../assets/icons/x.svg" width="8px" />
+          <img src="../assets/icons/settings.svg" width="9px" />
         </button>
 
         <span>{{ client.name }}</span>
         
       </div>
     </div>
+    <Teleport to="#modal">
+      <Modal v-if="showClientProfile" :popup-type="'center'" @cancelModal="showClientProfile=false" @executeModal="showClientProfile=false">
+         <ClientProfile :profiledClient="profiledClient!" @deleteClient="showClientProfile=false; deleteClient(profiledClient!); isDropDownVisible = activeClient ? !isDropDownVisible : false"/>
+      </Modal>
+    </Teleport>
   </div>
 </template>
 
@@ -114,7 +153,7 @@
     background: var(--main-bg);
     box-shadow: 0px 0px 8px var(--secondary-bg);
     overflow: auto;
-    max-height: 210px;
+    max-height: 294px;
   }
 
   .client {
@@ -177,4 +216,18 @@
     cursor: pointer;
   }
 
+  .center {
+    margin: auto;
+    position: fixed;
+    inset: 0px;
+    width: 60%;
+    text-align: left;
+    color: white;
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--main-bg);
+    border-radius: 0.2rem;
+    padding: 32px;
+    text-wrap: wrap;
+    height: 60vh;
+  }
 </style>
