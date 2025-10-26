@@ -1,12 +1,19 @@
 <script setup lang="ts">
+  import { useAppData } from '@/composables/appdata'
   import { useConfig } from '@/composables/config'
+  import { invoke } from '@tauri-apps/api/core'
 
   const { config } = useConfig()
+  const { appdata } = useAppData()
+
+  async function reveal(p: string) {
+    await invoke('reveal_item_in_dir', {path: p})
+  }
 
 </script>
 
 <template>
-  <div class="item" style="padding-bottom: 10px;">
+  <div class="item">
     <input type="checkbox" v-model="config.manage_q3_instance" />
     <label class="ml-1">Manage Q3 Instance</label>
   </div>
@@ -35,7 +42,7 @@
     +
     <label class="ml-1">Server Timeout - {{ config.server_timeout }}ms</label>
   </div>
-  <div class="item" style="padding-bottom: 10px;">
+  <div class="item">
     <input type="range" min="200" max="1000" step="100" value="400" class="slider" v-model.number="config.server_timeout" />
   </div>
   <div class="item" style="padding-top: 10px; border-top: 1px solid var(--main-bg);">
@@ -48,16 +55,19 @@
   <div class="item"><input type="checkbox" v-model="config.get_full_demo_data" />
     <label class="ml-1">Parse full demo data</label>
   </div>
+  <div class="item" style="display: inline-block;">
+    <button class="refresh-button" style="font-size: 90%" @click="reveal(config.path)">config</button>
+  </div>
+  <div class="item" style="display: inline-block;">
+    <button class="refresh-button" style="font-size: 90%" @click="reveal(appdata.path)">logs</button>
+  </div>
 </template>
 
 <style scoped>
-  .item {
-    padding-bottom: 8px;
-    text-align: left;
-  }
 
   .conf-plus {
     margin: 0px 4px 0px 2px;
     text-align: left;
   }
+
 </style>

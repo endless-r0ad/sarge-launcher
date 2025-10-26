@@ -33,11 +33,12 @@ pub fn run() {
 			commands::client::pick_client,
 			commands::client::kill_q3_client,
             commands::client::get_client_paths,
+            commands::client::get_client_configs,
 			commands::demo::get_demos,
             commands::demo::create_demo_script,
             commands::demo::delete_temp_script,
 			commands::util::exit_app,
-            commands::util::open_folder
+            commands::util::reveal_item_in_dir
 		])
         .setup(move |_app| {
             #[cfg(not(debug_assertions))]

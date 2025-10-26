@@ -6,6 +6,8 @@ Sarge Launcher is a cross platform desktop application for Quake 3 Arena and Q3A
 It provides some useful features like a
 quick server browser, unlimited demo/level browsing, and Q3A client management among other things.
 
+![](./docs/static/sarge-launcher.gif)
+
 ## Development setup
 
 ### install all [Tauri v2](https://v2.tauri.app/start/prerequisites/) prerequisites for your system
@@ -24,8 +26,5 @@ npm run tauri dev
 ```
 npm run tauri build
 ```
-
-
-![](./docs/static/sarge-launcher.gif)
 
 Thanks to everyone who helped test, as well as [mwvdev/q3demo](https://github.com/mwvdev/q3demo) which I used as a reference

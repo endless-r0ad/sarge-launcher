@@ -117,7 +117,6 @@
                   numThreads: (config.value.server_browser_threads == 0 ? 1 : config.value.server_browser_threads),
                   timeout: config.value.server_timeout
                 })
-      console.log('servers refreshed - ', serverDetailsLastRefresh.value)
     }
     catch(err) {
       emit('errorAlert', ensureError(err).message)
@@ -776,14 +775,6 @@
     font-weight: 600;
   }
 
-  .unfiltered {
-    width: 8px;
-    height: 8px;
-    cursor: pointer;
-    position: relative;
-    margin: 3px 0 0 2px;
-  }
-
   .pinned {
     background-color: var(--alt-bg);
   }
@@ -814,21 +805,6 @@
   .trash-icon {
     height: 22px;
     margin-bottom: -2px;
-  }
-
-  .servers-tip-text {
-    visibility: hidden;
-    width: 120px;
-    background-color: black;
-    color: #fff;
-    text-align: center;
-    padding: 5px 0;
-    border-radius: 6px;
-
-  }
-
-  .servers-tip:hover .servers-tip-text {
-    visibility: visible;
   }
 
   .refresh-master-button {
@@ -873,16 +849,6 @@
     cursor: pointer;
   }
 
-  .master-hover-right {
-    float: right;
-    width: 85%;
-  }
-
-  .master-hover-left {
-    margin: 0 86% 0 0;
-  }
-
-
   .empty-pinned {
     background-color: var(--alt-bg);
     text-align: center; 
@@ -915,12 +881,6 @@
     background-color: rgba(36, 68, 37, 0.25);
   }
 
-  .data {
-    text-align: left;
-    white-space: nowrap; 
-    overflow: hidden;
-  }
-
   .close-button {
     background: rgba(0, 0, 0, 0);
     border: 1px solid var(--main-bg);
@@ -931,23 +891,6 @@
   .close-button:hover {
     background-color: var(--main-bg);
     cursor: pointer;
-  }
-
-  .custom-ip {
-    outline: none;
-    width: 80%;
-    height: 18px;
-    background-color: var(--main-bg);
-    color: #ccc;
-    border-width: 0px;
-    border-radius: 0.2rem;
-    margin: 8px 0px;
-    padding: 2px 0px;
-    text-indent: 4px;
-  }
-
-  .custom-ip::selection {
-    outline: 1px solid #333;
   }
     
 </style>

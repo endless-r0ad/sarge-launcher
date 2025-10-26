@@ -125,7 +125,7 @@
       </a>
     </div>
     <div
-      class="grid-bg banner-bg grow"
+      class="grid-bg mod-bg grow"
       @mouseover="hoveredCard = 'quake 3 mods'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 2 / 4; grid-row: 3"
@@ -220,7 +220,7 @@
     background-size: 10%;
   }
 
-  .banner-bg {
+  .mod-bg {
     background-image: url('../assets/images/code.png');
     background-size: 100%;
     background-position: 20% 40%;
@@ -260,10 +260,6 @@
     background-position: center center;
   }
 
-  .mod-bg {
-    background-position: center center;
-  }
-
   .oa-bg {
     background-image: url('../assets/images/baseoa.svg');
     background-size: 70%;
@@ -288,37 +284,10 @@
     background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 1%, rgba(255, 255, 255, 0.001) 25.35%);
   }
 
-  .play-pause {
-    position: absolute;
-    left: 94%;
-    top: 10%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    z-index: 999;
-  }
-
   .center {
     position: absolute;
     left: 50%;
     top: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    min-width: 100%;
-  }
-
-  .center-steam {
-    position: absolute;
-    left: 50%;
-    top: 40%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    min-width: 100%;
-  }
-
-  .center-gog {
-    position: absolute;
-    left: 50%;
-    top: 60%;
     transform: translate(-50%, -50%);
     text-align: center;
     min-width: 100%;

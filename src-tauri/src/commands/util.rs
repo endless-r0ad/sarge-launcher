@@ -8,7 +8,7 @@ pub fn exit_app(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn open_folder(app: AppHandle, path: String) -> Result<(), tauri_plugin_opener::Error> {
+pub fn reveal_item_in_dir(app: AppHandle, path: String) -> Result<(), tauri_plugin_opener::Error> {
 
     app.opener().reveal_item_in_dir(path)?;
 

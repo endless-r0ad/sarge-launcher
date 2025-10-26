@@ -250,19 +250,6 @@ div::-webkit-scrollbar-thumb {
   line-height: 20px;
 }
 
-.row-2 {
-  min-height: 20px;
-  padding: 2px;
-  color: white;
-  overflow: hidden;
-  outline: none;
-  line-height: 20px;
-}
-
-.row-2:nth-of-type(odd) {
-  background-color: rgba(23, 32, 45, 0.3);
-}
-
 .row-data {
   color: white;
   display: flex;
@@ -393,6 +380,22 @@ div::-webkit-scrollbar-thumb {
   -moz-user-select: none; /* Firefox */
   -ms-user-select: none; /* Internet Explorer/Edge */
   user-select: none; /* Non-prefixed version */
+}
+
+.backdrop {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  position: fixed;
+  background: rgba(0, 0, 0, 0.6);
+  width: 100%;
+  z-index: 999;
+  color: white;
+}
+
+.item {
+  margin-bottom: 8px;
+  text-align: left;
 }
 
 .q3c-0 {

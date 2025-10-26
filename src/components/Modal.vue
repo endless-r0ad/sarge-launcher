@@ -32,17 +32,6 @@
 </template>
 
 <style scoped>
-  .backdrop {
-    top: 0;
-    left: 0;
-    bottom: 0;
-    position: fixed;
-    background: rgba(0, 0, 0, 0.6);
-    width: 100%;
-    z-index: 999;
-    color: white;
-  }
-
   .center-text {
     text-align: center;
     margin: 4px 1px auto auto;

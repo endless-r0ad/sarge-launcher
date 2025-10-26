@@ -150,8 +150,8 @@
     </div>
 
     <div v-if="displayDetails" class="row-details">
-      <img v-if="levelshotPath" class="levelshot" id="levelshot" :src="levelshotPath" @click="invoke('open_folder', {path: demo.path})"/>
-      <img v-else class="levelshot" id="levelshot" src="../assets/icons/q3-white.svg" @click="invoke('open_folder', {path: demo.path})"/>
+      <img v-if="levelshotPath" class="levelshot" id="levelshot" :src="levelshotPath" @click="invoke('reveal_item_in_dir', {path: demo.path})"/>
+      <img v-else class="levelshot" id="levelshot" src="../assets/icons/q3-white.svg" @click="invoke('reveal_item_in_dir', {path: demo.path})"/>
 
       <div style="width: 46%; text-align: left; white-space: nowrap; padding: 8px; overflow: hidden">
         <div>Path: {{ demo.path.slice(0, demo.path.indexOf(demo.file_name)) }}</div>
@@ -220,17 +220,6 @@
 
   .more-button:hover {
     background-color: var(--main-bg);
-  }
-
-  .backdrop {
-    top: 0;
-    left: 0;
-    bottom: 0;
-    position: fixed;
-    background: rgba(0, 0, 0, 0.7);
-    width: 100%;
-    z-index: 999;
-    color: white;
   }
 
   .center {

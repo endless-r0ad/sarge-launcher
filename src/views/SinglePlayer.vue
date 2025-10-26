@@ -24,11 +24,13 @@
   })
 
   let stopWatchingClient: WatchHandle;
+  let stopWatchingClientGame: WatchHandle;
   const clientWhenDeactivated = ref(activeClient.value)
+  const clientPathsDeactivated = ref(clientPaths.value)
 
   onActivated(async () => { 
     emit('emitComponentName', componentName.value)
-    if (clientWhenDeactivated.value != activeClient.value) { 
+    if (clientWhenDeactivated.value != activeClient.value || clientPathsDeactivated.value != clientPaths.value) { 
       clearBots()
       await getLevels()
     }
@@ -38,12 +40,22 @@
         await getLevels()
       }
     })
+    stopWatchingClientGame = watch(clientPaths, async(newVal, oldVal) => {
+      if (newVal != oldVal) {
+        clearBots()
+        await getLevels()
+      }
+    })
   })
 
   onDeactivated(async () => {
     clientWhenDeactivated.value = activeClient.value
+    clientPathsDeactivated.value = clientPaths.value
     if (stopWatchingClient) {
       stopWatchingClient();
+    }
+    if (stopWatchingClientGame) {
+      stopWatchingClientGame();
     }
   })
 
@@ -270,7 +282,7 @@
 
   const gameType = ref<number | null>(0)
 
-  function getGameTypes() {
+  const gametypes = computed(() => {
     switch (activeClient.value!.gamename) {
       case "baseq3":
         return ["FFA", "1v1", "SP", "TDM", "CTF"]
@@ -285,29 +297,30 @@
       default:
         return ["FFA", "1v1", "SP", "TDM", "CTF"]
     }
-  }
+  })
 
-  function isTeamGameType() {
+  const isTeamGameType = computed(() => {
     if (gameType.value == null) { return false }
 
-    let gametypeName = getGameTypes()[gameType.value]
+    let gametypeName = gametypes.value[gameType.value]
+
     if (['TDM', 'CTF', 'T2v2', 'CA', 'FT', 
          'CTFS', '2v2', 'TS', '1FLAG', 'OVER',
          'HARV', 'ELIM', 'CTFE', 'DD', 'DOM'].includes(gametypeName!)) {
       return true
     }
     return false
-  }
+  })
 
-  function teamFreeBotsAllowed() {
+  const teamFreeBotsAllowed = computed(() => {
     if (gameType.value == null) { return false }
 
-    let gametypeName = getGameTypes()[gameType.value]
-    if (['FFA', '1V1', 'SP', 'LMS', 'DA'].includes(gametypeName!)) {
+    let gametypeName = gametypes.value[gameType.value]
+    if (['FFA', '1v1', 'SP', 'LMS', 'DA'].includes(gametypeName!)) {
       return true
     }
     return false
-  }
+  })
 
   const teamSelect = ref<'Free' | 'Red' | 'Blue'>('Free')
   const difficulty = ref(1)
@@ -334,12 +347,12 @@
   function spawnQuake() {
     if (selectedLevel.value && gameType.value != null) {
       let gametype = gameType.value // activeClient.value?.gamename == 'cpma' ? gameType.value -1 : gameType.value
-      let gametypeName = getGameTypes()[gameType.value]
+      let gametypeName = gametypes.value[gameType.value]
       let args = []
       let launch = ''
 
       if (activeClient.value?.gamename == 'defrag') {
-        launch = cheats.value ? '+dev' + getGameTypes()[gametype] : '+' + getGameTypes()[gametype]
+        launch = cheats.value ? '+dev' + gametypes.value[gametype] : '+' + gametypes.value[gametype]
       } else {
         if (gametypeName == 'SP') {
           launch = cheats.value ? '+spdevmap' : '+spmap'
@@ -348,11 +361,11 @@
         }
       }
       
-      args = [launch, selectedLevel.value.level_name]
+      args = ['+set', 'fs_game', activeClient.value!.gamename, launch, selectedLevel.value.level_name]
 
       if (activeClient.value?.gamename != 'defrag') {
         if (activeClient.value?.gamename == 'cpma') {
-          args.push(...['+set', 'mode_start', getGameTypes()[gametype]!])
+          args.push(...['+set', 'mode_start', gametypes.value[gametype]!])
         } else {
           args.push(...['+set', 'g_gametype', gametype.toString()])
         }
@@ -361,7 +374,7 @@
       args.push(...['+set', 'sv_maxclients', sv_maxclients.value.toString()])
       args.push(...['+set', gametypeName == 'SP' ? 'g_spskill' : 'skill', difficulty.value.toString(), '+wait', '3'])
 
-      if (teamFreeBotsAllowed()) {
+      if (teamFreeBotsAllowed.value) {
         if (bots_team_free.value.length && activeClient.value?.gamename == 'q3ut4') {
           args.push(...['+set', 'bot_enable', '1'])
         }
@@ -370,7 +383,7 @@
         })
       }
 
-      if (isTeamGameType()) {
+      if (isTeamGameType.value) {
         if ((bots_team_red.value.length || bots_team_blue.value.length) && activeClient.value?.gamename == 'q3ut4') {
           args.push(...['+set', 'bot_enable', '1'])
         }
@@ -539,7 +552,7 @@
   <div v-if="selectedLevel" class="game-setup no-select">
     <h2 style="text-align: center">Game Setup</h2>
     <div style="text-align: center; margin-bottom: 10px; padding: 0 70px; line-height: 34px;">
-      <button v-for="(gametype, index) in getGameTypes()" class="setup-button" :class="{active: gameType == index}" @click="gameType=index">
+      <button v-for="(gametype, index) in gametypes" class="setup-button" :class="{active: gameType == index}" @click="gameType=index">
         {{ gametype }}
       </button>
     </div>
@@ -556,7 +569,7 @@
         :src="levelshots[selectedLevel.level_name.toLowerCase()]"
       />
       <img v-else style="width: 50%" src="../assets/icons/q3-white.svg" />
-      <div style="width: 50%; text-align: center; overflow: hidden scroll; padding: 4px 0px 4px 4px" v-if="teamFreeBotsAllowed()">
+      <div style="width: 50%; text-align: center; overflow: hidden scroll; padding: 4px 0px 4px 4px" v-if="teamFreeBotsAllowed">
         <button class="bot-button" style="margin: 0px 0px 6px 30px; color: #fff;">you</button>
         <div v-for="b in bots_team_free" style="white-space: nowrap;">
           <button @click="bots_team_free.splice(bots_team_free.indexOf(b), 1)" class="close-button">
@@ -566,7 +579,7 @@
           <label class="bot-button" style="margin-left: 6px" @click="b.difficulty = (b.difficulty % 5) + 1">{{ b.difficulty }}</label>
         </div>
       </div>
-      <div v-if="isTeamGameType()" class="team red">
+      <div v-if="isTeamGameType" class="team red">
         <button v-if="teamSelect == 'Red'" class="bot-button" style="margin: 0px 0px 6px 30px; color: #fff;">you</button>
         <div v-for="b in bots_team_red" style="white-space: nowrap;">
           <button @click="bots_team_red.splice(bots_team_red.indexOf(b), 1)" class="close-button">
@@ -576,7 +589,7 @@
           <label class="bot-button" style="margin-left: 6px" @click="b.difficulty = (b.difficulty % 5) + 1">{{ b.difficulty }}</label>
         </div>
       </div>
-      <div v-if="isTeamGameType()" class="team blue">
+      <div v-if="isTeamGameType" class="team blue">
         <button v-if="teamSelect == 'Blue'" class="bot-button" style="margin: 0px 0px 6px 30px; color: #fff;">you</button>
         <div v-for="b in bots_team_blue" style="white-space: nowrap;">
           <button @click="bots_team_blue.splice(bots_team_blue.indexOf(b), 1)" class="close-button">
@@ -592,7 +605,7 @@
       <div style="width: 50%; text-align: center">
         <button class="dif-button" @click="sv_maxclients = (sv_maxclients % 24) + 1">sv_maxclients: {{ sv_maxclients }}</button>
         <button
-          v-if="isTeamGameType()"
+          v-if="isTeamGameType"
           class="dif-button"
           :style="teamSelect == 'Red' ? 'background-color: rgba(255, 0, 0, 0.2)' : 'background-color: rgba(0, 0, 255, 0.2);'"
           @click="teamSelect = teamSelect == 'Red' ? 'Blue' : 'Red'"
@@ -600,9 +613,8 @@
           Team: {{ teamSelect }}
         </button>
       </div>
-      <div style="width: 50%; text-align: center" v-if="teamFreeBotsAllowed()">
+      <div style="width: 50%; text-align: center" v-if="teamFreeBotsAllowed">
         <button
-          v-if="teamFreeBotsAllowed()"
           class="dif-button"
           style="display: inline-block"
           @click="pushBot({ name: defaultBotName(), difficulty: difficulty, team: 'Free' })"
@@ -610,9 +622,8 @@
           +bot
         </button>
       </div>
-      <div style="width: 25%; text-align: center" v-if="isTeamGameType()">
+      <div style="width: 25%; text-align: center" v-if="isTeamGameType">
         <button
-          v-if="isTeamGameType()"
           class="dif-button"
           style="display: inline-block"
           @click="pushBot({ name: defaultBotName(), difficulty: difficulty, team: 'Red' })"
@@ -620,9 +631,8 @@
           +bot
         </button>
       </div>
-      <div style="width: 25%; text-align: center" v-if="isTeamGameType()">
+      <div style="width: 25%; text-align: center" v-if="isTeamGameType">
         <button
-          v-if="isTeamGameType()"
           class="dif-button"
           style="display: inline-block"
           @click="pushBot({ name: defaultBotName(), difficulty: difficulty, team: 'Blue' })"

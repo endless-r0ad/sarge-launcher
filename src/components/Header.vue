@@ -1,18 +1,22 @@
 <script setup lang="ts">
   import DropDown from '@/components/DropDown.vue'
-  import { defineProps, defineEmits } from 'vue'
+  import { defineProps, defineEmits, computed } from 'vue'
   import { ensureError } from '@/utils/util'
   import { useClient } from '@/composables/client'
 
   defineProps<{ currentView: string; }>()
   
-  const { activeClient, pickClient } = useClient()
+  const { activeClient, pickClient, getClientGameProtocol } = useClient()
 
   const emit = defineEmits<{
     spawnQuake: [string[]]
     errorAlert: [string]
     infoAlert: [string]
   }>()
+
+  const headerSpawnArgs = computed(() => {
+    return ['+set', 'fs_game', activeClient.value!.gamename, '+set', 'protocol', getClientGameProtocol(activeClient.value!).toString()]
+  })
 
   async function pickQ3Client() {
     try {
@@ -34,7 +38,7 @@
     </div>
 
     <div class="nav-right">
-      <div v-if="activeClient" class="launch-client-button" @click="emit('spawnQuake', [])" />
+      <div v-if="activeClient" class="launch-client-button" @click="emit('spawnQuake', headerSpawnArgs)" />
       <div class="add-client-button" @click="pickQ3Client()"></div>
 
       <DropDown />
