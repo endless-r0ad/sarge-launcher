@@ -32,10 +32,8 @@
       await getDemos(true) 
     }
     emit('emitComponentName', componentName.value)
-    stopWatchingClient = watch(activeClient, async(newVal, oldVal) => {
-      if (newVal?.name != oldVal?.name) {
+    stopWatchingClient = watch(activeClient, async(_newVal, _oldVal) => {
         await getDemos(true)
-      }
     })
   });
 

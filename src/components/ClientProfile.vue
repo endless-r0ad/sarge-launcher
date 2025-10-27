@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import type { Q3Executable, Q3Config } from '@/models/client';
-  import { defineProps, defineEmits, onMounted, onBeforeUnmount, ref, computed, watch } from 'vue'
+  import { defineProps, defineEmits, onMounted, onBeforeUnmount, ref, computed, watch, type Ref } from 'vue'
   import { useClient } from '@/composables/client';
   import { invoke } from '@tauri-apps/api/core'
 
@@ -12,12 +12,16 @@
     getClientConfigs,
     getClientGameProtocol,
     getClientDefaultGamename,
-    updateClientGame,
-    activeClient,
-    toggleQ3Client
+    updateClient
   } = useClient()
 
-  const localClient = ref(props.profiledClient)
+  const localClient: Ref<Q3Executable> = ref({
+    name: props.profiledClient.name,
+    exe_path: props.profiledClient.exe_path,
+    parent_path: props.profiledClient.parent_path,
+    gamename: props.profiledClient.gamename,
+    active: props.profiledClient.active
+  })
 
   watch(() => localClient.value.gamename, (_newVal, _oldVal) => {
     configs.value = []
@@ -64,10 +68,7 @@
   onBeforeUnmount( async() => {
     document.removeEventListener('keydown', handleKeyPress)
     if (mountedClientGame.value != localClient.value.gamename) {
-      await updateClientGame(localClient.value)
-      if (localClient.value === activeClient.value) {
-        toggleQ3Client(localClient.value) // retoggle to update search paths
-      }
+      await updateClient(localClient.value)
     }
   })
 </script>

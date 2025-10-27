@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, onMounted, onBeforeUnmount } from 'vue'
+  import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
   import ClientProfile from '@/components/ClientProfile.vue'
   import Modal from '@/components/Modal.vue'
   import { type Q3Executable } from '@/models/client'
@@ -12,6 +12,17 @@
   const isDropDownVisible = ref(false)
   const settingsHovered = ref(false)
   const settingsClicked = ref(false)
+
+  const activeClientNameOrDefault = computed(() => {
+    if (!activeClient.value) { return 'Quake 3 Client'}
+    return removeDotSuffix(activeClient.value.name)
+  })
+
+  function removeDotSuffix(name: string) {
+    let dot = name.indexOf('.')
+    let withoutSuffix =  name.substring(0, dot == -1 ? name.length : dot)
+    return withoutSuffix
+  }
 
   function toggleClientSelect(client: Q3Executable) {
     if (settingsClicked.value) {
@@ -82,7 +93,7 @@
     @click.prevent="isDropDownVisible = activeClient ? !isDropDownVisible : false"
   >
 
-    {{ activeClient?.name || 'Quake 3 Client' }}
+    {{ activeClientNameOrDefault }}
     <span v-if="clientIsOverridden()" style="font-size: 70%; color: orange; font-weight: 800;">{{ activeClient?.gamename }}</span>
 
     <div class="clients-wrapper" v-if="isDropDownVisible">
@@ -95,7 +106,7 @@
         @click.prevent="toggleClientSelect(client)"
       >
         <button
-          class="delete-button"
+          class="settings-button"
           @mouseover="settingsHovered = true"
           @mouseleave="settingsHovered = false"
           @click.prevent="showProfile(client)"
@@ -103,7 +114,7 @@
           <img src="../assets/icons/settings.svg" width="9px" />
         </button>
 
-        <span>{{ client.name }}</span>
+        <span>{{ removeDotSuffix(client.name) }}</span>
         
       </div>
     </div>
@@ -169,6 +180,16 @@
     background-color: var(--alt-bg);
   }
 
+  .client:first-of-type {
+    border-top-left-radius: 0.2rem;
+    border-top-right-radius: 0.2rem;
+  }
+
+  .client:last-of-type {
+    border-bottom-left-radius: 0.2rem;
+    border-bottom-right-radius: 0.2rem;
+  }
+
   .defrag {
     background: url('../assets/images/defrag.svg') 90% center no-repeat;
     background-size: 30%;
@@ -194,40 +215,16 @@
     background-size: 30%;
   }
 
-  .client:first-of-type {
-    border-top-left-radius: 0.2rem;
-    border-top-right-radius: 0.2rem;
-  }
-
-  .client:last-of-type {
-    border-bottom-left-radius: 0.2rem;
-    border-bottom-right-radius: 0.2rem;
-  }
-
-  .delete-button {
+  .settings-button {
     background: var(--main-bg);
     border: 1px solid #777;
     border-radius: 0.2rem;
     margin: 0px 8px 8px 0px;
   }
 
-  .delete-button:hover {
+  .settings-button:hover {
     background: var(--alt-bg);
     cursor: pointer;
   }
 
-  .center {
-    margin: auto;
-    position: fixed;
-    inset: 0px;
-    width: 60%;
-    text-align: left;
-    color: white;
-    background-color: var(--secondary-bg);
-    border: 1px solid var(--main-bg);
-    border-radius: 0.2rem;
-    padding: 32px;
-    text-wrap: wrap;
-    height: 60vh;
-  }
 </style>

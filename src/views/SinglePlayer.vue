@@ -24,38 +24,24 @@
   })
 
   let stopWatchingClient: WatchHandle;
-  let stopWatchingClientGame: WatchHandle;
   const clientWhenDeactivated = ref(activeClient.value)
-  const clientPathsDeactivated = ref(clientPaths.value)
 
   onActivated(async () => { 
     emit('emitComponentName', componentName.value)
-    if (clientWhenDeactivated.value != activeClient.value || clientPathsDeactivated.value != clientPaths.value) { 
+    if (clientWhenDeactivated.value != activeClient.value) { 
       clearBots()
       await getLevels()
     }
-    stopWatchingClient = watch(activeClient, async(newVal, oldVal) => {
-      if (newVal?.name != oldVal?.name) {
+    stopWatchingClient = watch(activeClient, async(_newVal, _oldVal) => {
         clearBots()
         await getLevels()
-      }
-    })
-    stopWatchingClientGame = watch(clientPaths, async(newVal, oldVal) => {
-      if (newVal != oldVal) {
-        clearBots()
-        await getLevels()
-      }
     })
   })
 
   onDeactivated(async () => {
     clientWhenDeactivated.value = activeClient.value
-    clientPathsDeactivated.value = clientPaths.value
     if (stopWatchingClient) {
       stopWatchingClient();
-    }
-    if (stopWatchingClientGame) {
-      stopWatchingClientGame();
     }
   })
 

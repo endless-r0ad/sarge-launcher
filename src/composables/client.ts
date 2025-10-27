@@ -54,7 +54,7 @@ export function useClient() {
   }
 
   async function deleteQ3Client(client: Q3Executable) {
-    if (config.value.q3_clients.length == 0 || !clientInConfig(client))  {
+    if (config.value.q3_clients.length == 0 || clientConfigIndex(client) == -1)  {
       return
     }
 
@@ -89,11 +89,14 @@ export function useClient() {
     }
   }
 
-  async function updateClientGame(client: Q3Executable) {
+  async function updateClient(client: Q3Executable) {
     try {
-      if (clientInConfig(client)) {
-        let configClient = config.value.q3_clients.find((c) => c.exe_path === client.exe_path)
-        configClient!.gamename = client.gamename
+      let index = clientConfigIndex(client)
+      if (index != -1) {
+        config.value.q3_clients[index] = client
+        if (client.exe_path === activeClient.value?.exe_path) {
+          await toggleQ3Client(client)
+        }
         await writeConfig()
       } 
     } catch (err) {
@@ -149,8 +152,8 @@ export function useClient() {
     return config.value.q3_clients.some((x) => x.active)
   }
 
-  function clientInConfig(client: Q3Executable): boolean {
-    return config.value.q3_clients.some((c) => c.exe_path === client.exe_path)
+  function clientConfigIndex(client: Q3Executable): number {
+    return config.value.q3_clients.findIndex((c) => c.exe_path === client.exe_path)
   }
 
   onMounted( async()=>{
@@ -167,7 +170,7 @@ export function useClient() {
     clientGame,
     getClientGameProtocol,
     getClientDefaultGamename,
-    updateClientGame,
+    updateClient,
     toggleQ3Client,
     deleteQ3Client,
     pickClient,
