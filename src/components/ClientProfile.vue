@@ -1,8 +1,9 @@
 <script setup lang="ts">
-  import type { Q3Executable, Q3Config } from '@/models/client';
+  import type { Q3Executable, Q3Config } from '@/models/client'
   import { defineProps, defineEmits, onMounted, onBeforeUnmount, ref, computed, watch, type Ref } from 'vue'
-  import { useClient } from '@/composables/client';
+  import { useClient } from '@/composables/client'
   import { invoke } from '@tauri-apps/api/core'
+  import { getClientGameProtocol } from '@/utils/util'
 
   const props = defineProps<{ profiledClient: Q3Executable }>()
 
@@ -10,7 +11,6 @@
 
   const { 
     getClientConfigs,
-    getClientGameProtocol,
     getClientDefaultGamename,
     updateClient
   } = useClient()

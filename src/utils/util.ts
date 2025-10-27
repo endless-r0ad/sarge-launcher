@@ -1,5 +1,6 @@
 import { type Config, type AppData } from '@/models/config'
 import { type Quake3Server } from '@/models/server'
+import { type Q3Executable } from '@/models/client'
 
 export function ensureError(value: unknown): Error {
   if (value instanceof Error) return value
@@ -224,3 +225,20 @@ export const OA_BOT_NAMES: string[] = [
   'tanisha',
   'tony',
 ]
+
+export function getClientGameProtocol(client: Q3Executable | null): number {
+  if (!client) { return 68}
+  if (client.name.includes('liliumarenaclassic')) { return 43 }
+  if (client.gamename == 'baseoa') { return 71 }
+  return 68
+}
+
+export function getServerProtocol(serv: Quake3Server): string {
+  if (serv.protocol) {
+    return serv.protocol.toString()
+  }
+  if (serv.othersettings.hasOwnProperty('protocol')) {
+    return serv.othersettings['protocol']
+  }
+  return '68'
+}

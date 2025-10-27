@@ -57,17 +57,6 @@
     }
   }
 
-  function additionalClientStyle(client: Q3Executable): string {
-    let addtlStyle = ''
-    if (settingsHovered.value) {
-      addtlStyle += 'background-color: var(--main-bg);'
-    }
-    if (client.exe_path == activeClient.value?.exe_path) {
-      addtlStyle += 'color: orange; font-weight: 800;'
-    }
-    return addtlStyle
-  }
-
   function clientIsOverridden() {
     if (!activeClient.value) { return false }
     if (activeClient.value.gamename != getClientDefaultGamename(activeClient.value)) {
@@ -94,15 +83,16 @@
   >
 
     {{ activeClientNameOrDefault }}
-    <span v-if="clientIsOverridden()" style="font-size: 70%; color: orange; font-weight: 800;">{{ activeClient?.gamename }}</span>
+    <span v-if="clientIsOverridden()" class="overridden">{{ activeClient?.gamename }}</span>
 
     <div class="clients-wrapper" v-if="isDropDownVisible">
       <div
-        v-for="(client, _index) in config.q3_clients"
+        v-for="(client, index) in config.q3_clients"
         class="client"
         :class="client.gamename"
         :key="client.exe_path"
-        :style="additionalClientStyle(client)"
+        :style="settingsHovered ? 'background-color: var(--main-bg);' : ''"
+        :id="client.exe_path === activeClient?.exe_path ? 'selected-client': `client-${index}`"
         @click.prevent="toggleClientSelect(client)"
       >
         <button
@@ -127,6 +117,11 @@
 </template>
 
 <style scoped>
+
+  #selected-client {
+    font-weight: 800;
+  }
+
   .active-client {
     padding: 2px;
     width: 160px;
@@ -153,6 +148,12 @@
 
   .not-empty:hover {
     background-color: var(--main-bg);
+  }
+
+  .overridden {
+    font-size: 70%; 
+    color: orange; 
+    font-weight: 800;
   }
 
   .clients-wrapper {

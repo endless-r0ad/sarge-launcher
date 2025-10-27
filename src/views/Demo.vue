@@ -17,7 +17,7 @@
 
   const componentName = ref('Demo Browser')
   const { config } = useConfig()
-  const { activeClient, clientPaths, pickClient } = useClient()
+  const { activeClient, activeClientPaths, pickClient } = useClient()
 
   onMounted(async () => {
     emit('emitComponentName', componentName.value)
@@ -88,7 +88,7 @@
 
     try {
       let new_demos: Demo[] = await invoke('get_demos', { 
-                      searchPaths: clientPaths.value, 
+                      searchPaths: activeClientPaths.value, 
                       cache: demosCache.value, 
                       allData: config.value.get_full_demo_data 
                     })
@@ -211,7 +211,13 @@
       let relative_path = selectedDemo.value.path.substring(demos_index + 7)
       let path = relative_path.substring(0, relative_path.lastIndexOf('.'))
   
-      await invoke('create_demo_script', {activeClient: activeClient.value, demoPath: path, close: config.value.autoclose_demo, loopD: config.value.loop_demo})      
+      await invoke('create_demo_script', {
+        activeClient: activeClient.value, 
+        fsGame: selectedDemo.value.gamename, 
+        demoPath: path, 
+        close: config.value.autoclose_demo, 
+        loopD: config.value.loop_demo
+      })      
       emit('spawnQuake', args)
     } catch (err) {
       emit('errorAlert', ensureError(err).message)
@@ -365,8 +371,8 @@
             class="search-paths">
         Search Paths
       </button>
-      <div v-if="clientPaths && showSearchPaths" class="footer-popup">
-        <div v-for="p in clientPaths" style="padding-right: 40px;">
+      <div v-if="activeClientPaths && showSearchPaths" class="footer-popup">
+        <div v-for="p in activeClientPaths" style="padding-right: 40px;">
           <div style="display: inline-block; width: 15%;">{{ p }} </div>
         </div>
       </div> 

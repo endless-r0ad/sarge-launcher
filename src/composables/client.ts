@@ -3,10 +3,17 @@ import { invoke } from '@tauri-apps/api/core'
 import type { Q3Executable, Q3Config } from '@/models/client'
 import { useConfig } from '@/composables/config'
 import { error } from '@tauri-apps/plugin-log'
-import { ensureError } from '@/utils/util'
+import { ensureError, getClientGameProtocol } from '@/utils/util'
 
 const activeClient = ref<Q3Executable | null>(null)
-const clientPaths = ref<string[]>([])
+const activeClientPaths = ref<string[]>([])
+
+const activeClientProtocol = computed(() => { return getClientGameProtocol(activeClient.value)})
+
+const activeClientSpawnArgs = computed(() => {
+  if (!activeClient.value) { return [] }
+  return ['+set', 'fs_game', activeClient.value.gamename, '+set', 'fs_basepath', activeClient.value.parent_path]
+})
 
 export function useClient() {
 
@@ -39,7 +46,7 @@ export function useClient() {
     }
     client.active = true
     config.value.q3_clients.push(client)
-    clientPaths.value = await getClientPaths(client)
+    activeClientPaths.value = await getClientPaths(client)
 
     activeClient.value = client
   }
@@ -48,7 +55,7 @@ export function useClient() {
     config.value.q3_clients.map((c) => {
       c.active = c.exe_path == client.exe_path
     })
-    clientPaths.value = await getClientPaths(client)
+    activeClientPaths.value = await getClientPaths(client)
 
     activeClient.value = client
   }
@@ -61,11 +68,11 @@ export function useClient() {
     config.value.q3_clients = config.value.q3_clients.filter((c) => c.exe_path != client.exe_path)
     if (config.value.q3_clients.length == 0) {
       activeClient.value = null
-      clientPaths.value = []
+      activeClientPaths.value = []
     }
     if (config.value.q3_clients.length > 0 && !config.value.q3_clients.some((x) => x.active)) {
       config.value.q3_clients[0]!.active = true
-      clientPaths.value = await getClientPaths(config.value.q3_clients[0]!)
+      activeClientPaths.value = await getClientPaths(config.value.q3_clients[0]!)
       activeClient.value = config.value.q3_clients[0]!
     }
     await writeConfig()
@@ -115,12 +122,6 @@ export function useClient() {
     }
   }
 
-  function getClientGameProtocol(client: Q3Executable): number {
-    if (client.name.includes('liliumarenaclassic')) { return 43 }
-    if (client.gamename == 'baseoa') { return 71 }
-    return 68
-  }
-
   function getClientDefaultGamename(client: Q3Executable): string {
     switch (client.name.toLowerCase()) {
 			case "quake3-urt":
@@ -160,21 +161,22 @@ export function useClient() {
     if (config.value.q3_clients.length > 0 && !clientAlreadyActivated()) {
       let client: Q3Executable = config.value.q3_clients[0]!
       client.active = true
-      clientPaths.value = await getClientPaths(client)
+      activeClientPaths.value = await getClientPaths(client)
       activeClient.value = client
     }
   })
 
   return {
     activeClient,
+    activeClientPaths,
+    activeClientSpawnArgs,
+    activeClientProtocol,
     clientGame,
-    getClientGameProtocol,
     getClientDefaultGamename,
     updateClient,
     toggleQ3Client,
     deleteQ3Client,
     pickClient,
-    clientPaths,
     getClientConfigs
   }
 }

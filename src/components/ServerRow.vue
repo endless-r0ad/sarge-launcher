@@ -2,7 +2,8 @@
   import Loading from '@/components/Loading.vue'
   import { defineProps, defineEmits, computed, onMounted, onUnmounted } from 'vue'
   import { type Quake3Server } from '@/models/server'
-
+  import { getServerProtocol } from '@/utils/util'
+  
   const props = defineProps<{
     server: Quake3Server
     isSelected: boolean
@@ -34,15 +35,6 @@
 
     return sortedList.sort()
   })
-
-  function getServerProtocol(serv: Quake3Server) {
-    if (serv.protocol) {
-      return serv.protocol
-    }
-    if (serv.othersettings.hasOwnProperty('protocol')) {
-      return serv.othersettings['protocol']
-    }
-  }
 
   onMounted(async () => {
     if (props.isSelected && props.displayDetailsOnMount) {

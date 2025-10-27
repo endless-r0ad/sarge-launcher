@@ -5,7 +5,7 @@
   import Loading from '@/components/Loading.vue'
   import { invoke } from '@tauri-apps/api/core'
   import { info } from '@tauri-apps/plugin-log'
-  import { ensureError, newCustomServer, validServerAddress, validIp } from '@/utils/util'
+  import { ensureError, newCustomServer, validServerAddress, validIp, getServerProtocol } from '@/utils/util'
   import { type Quake3Server } from '@/models/server'
   import { type MasterServer } from '@/models/master'
   import { useVirtualScroll } from '@/composables/virtualscroll'
@@ -422,7 +422,7 @@
     if (selectedServer.value == null) { return }
 
     try {
-      let args = ['+set', 'fs_game', selectedServer.value.game, '+set', 'protocol', selectedServer.value.protocol?.toString() ?? '68', '+connect', selectedServer.value.address];
+      let args = ['+set', 'fs_game', selectedServer.value.game, '+set', 'protocol', getServerProtocol(selectedServer.value), '+connect', selectedServer.value.address];
       if ('g_needpass' in selectedServer.value.othersettings && selectedServer.value.othersettings['g_needpass'] == '1') {
         showPopup.value = 'password'
         popupInput.value = appdata.value.server_password

@@ -32,18 +32,18 @@ pub async fn get_demos(search_paths: Vec<String>, cache: HashMap<String, String>
 }
 
 #[tauri::command(async)]
-pub async fn create_demo_script(app: AppHandle, active_client: Q3Executable, demo_path: String, close: bool, loop_d: bool) -> Result<(), String> {
+pub async fn create_demo_script(app: AppHandle, active_client: Q3Executable, fs_game: String, demo_path: String, close: bool, loop_d: bool) -> Result<(), String> {
     let client_path = Path::new(&active_client.parent_path);
 
-    let mut cfg_path = client_path.join(&active_client.gamename);
+    let mut cfg_path = client_path.join(&fs_game);
 
     if !cfg_path.is_dir() {
         let home_dir = app.path().home_dir().unwrap();
-        cfg_path = home_dir.join(&active_client.gamename);
+        cfg_path = home_dir.join(&fs_game);
     }
 
     if !cfg_path.is_dir() {
-        return Err(String::from("Cannot find baseq3 path for active client, was it deleted?"));
+        return Err(String::from("Cannot find baseq3 path for active client, does it exist?"));
     }
 
     let new_file = cfg_path.join(SARGE_CFG);

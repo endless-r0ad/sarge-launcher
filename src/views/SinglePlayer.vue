@@ -16,7 +16,7 @@
 
   const componentName = ref('Single Player')
 
-  const { activeClient, pickClient, clientPaths } = useClient()
+  const { activeClient, pickClient, activeClientPaths } = useClient()
 
   onMounted(async () => {
     emit('emitComponentName', componentName.value)
@@ -129,7 +129,7 @@
     let num_extracted = 0
 
     try {
-      num_extracted = await extractLevelshots(clientPaths.value)
+      num_extracted = await extractLevelshots(activeClientPaths.value)
       await getCachedLevelshots()
     } catch(err) {
       emit('errorAlert', ensureError(err).message)
@@ -193,7 +193,7 @@
     showBaseLevelsOnly.value = false
 
     try {
-      levels.value = await invoke('get_levels', { searchPaths: clientPaths.value, getAllData: true })
+      levels.value = await invoke('get_levels', { searchPaths: activeClientPaths.value, getAllData: true })
       levelsLastRefresh.value = levels.value
     } catch (err) {
       emit('errorAlert', ensureError(err).message)
@@ -347,7 +347,7 @@
         }
       }
       
-      args = ['+set', 'fs_game', activeClient.value!.gamename, launch, selectedLevel.value.level_name]
+      args = [launch, selectedLevel.value.level_name]
 
       if (activeClient.value?.gamename != 'defrag') {
         if (activeClient.value?.gamename == 'cpma') {
@@ -527,8 +527,8 @@
       <button v-if="activeClient" class="refresh-button" @click="extractQ3Levelshots()">
         Extract Levelshots
       </button>
-      <div v-if="clientPaths && showSearchPaths" class="footer-popup">
-        <div v-for="p in clientPaths" style="padding-right: 40px;">
+      <div v-if="activeClientPaths && showSearchPaths" class="footer-popup">
+        <div v-for="p in activeClientPaths" style="padding-right: 40px;">
           <div style="display: inline-block; width: 15%;">{{ p }} </div>
         </div>
       </div> 

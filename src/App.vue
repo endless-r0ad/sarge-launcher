@@ -12,7 +12,7 @@
   import { useClient } from './composables/client'
 
   const { config, writeConfig } = useConfig()
-  const { activeClient } = useClient()
+  const { activeClient, activeClientSpawnArgs } = useClient()
 
   const isMounted = ref(false)
 
@@ -72,7 +72,7 @@
       }
       q3ClientProcessId.value = await invoke('spawn_client', {
         activeClient: activeClient.value,
-        q3Args: ['+set', 'fs_basepath', activeClient.value?.parent_path].concat(launchArgs)
+        q3Args: activeClientSpawnArgs.value.concat(launchArgs)
       })
     } catch (err) {
       const e: Error = ensureError(err)
