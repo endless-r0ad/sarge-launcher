@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Mutex;
 
@@ -73,10 +74,9 @@ pub async fn kill_q3_client(app: AppHandle, process_id: Option<u32>) -> Result<(
 }
 
 #[tauri::command(async)]
-pub async fn get_client_paths(app: AppHandle, active_client: Option<Q3Executable>) -> Result<Vec<String>, tauri::Error> {
-    let mut search_paths: Vec<String> = vec![];
+pub async fn get_client_paths(app: AppHandle, active_client: Option<Q3Executable>) -> Result<HashSet<String>, tauri::Error> {
+    let mut search_paths: HashSet<String> = HashSet::new();
     let home = app.path().home_dir()?;
-    let mut mod_uses_baseq3_path: bool = false;
 
 	if active_client.is_none() {
 		return Ok(search_paths);
@@ -84,34 +84,41 @@ pub async fn get_client_paths(app: AppHandle, active_client: Option<Q3Executable
 
     let client = active_client.unwrap();
 
-    if client.gamename == "cpma" || client.gamename == "defrag" {
-        mod_uses_baseq3_path = true;
-    }
-    
     let fs_homepath = home.join(".q3a").join(&client.gamename);
     let exe_path = Path::new(&client.parent_path).join(&client.gamename);
     let oa_path = home.join(".openarena").join(&client.gamename);
     let home_baseq3 = home.join(".q3a").join("baseq3");
     let exe_baseq3 = Path::new(&client.parent_path).join("baseq3");
+    let home_baseoa = home.join(".openarena").join("baseoa");
+    let exe_baseoa = Path::new(&client.parent_path).join("baseoa");
 
-    if fs_homepath.is_dir() && client.gamename != "baseoa" {
-        search_paths.push(fs_homepath.into_os_string().into_string().unwrap());
+    if fs_homepath.is_dir() && !client.game_uses_baseoa_paths() {
+        search_paths.insert(fs_homepath.into_os_string().into_string().unwrap());
     }
     
     if exe_path.is_dir() {
-        search_paths.push(exe_path.into_os_string().into_string().unwrap());
+        search_paths.insert(exe_path.into_os_string().into_string().unwrap());
     }
 
-    if oa_path.is_dir() && client.gamename == "baseoa" {
-        search_paths.push(oa_path.into_os_string().into_string().unwrap());
+    if oa_path.is_dir() && client.game_uses_baseoa_paths() {
+        search_paths.insert(oa_path.into_os_string().into_string().unwrap());
     }
 
-    if mod_uses_baseq3_path {
+    if client.game_uses_baseq3_paths() {
         if home_baseq3.is_dir() {
-            search_paths.push(home_baseq3.into_os_string().into_string().unwrap());
+            search_paths.insert(home_baseq3.into_os_string().into_string().unwrap());
         }
         if exe_baseq3.is_dir() {
-            search_paths.push(exe_baseq3.into_os_string().into_string().unwrap());
+            search_paths.insert(exe_baseq3.into_os_string().into_string().unwrap());
+        }     
+    }
+
+    if client.game_uses_baseoa_paths() {
+        if home_baseoa.is_dir() {
+            search_paths.insert(home_baseoa.into_os_string().into_string().unwrap());
+        }
+        if exe_baseoa.is_dir() {
+            search_paths.insert(exe_baseoa.into_os_string().into_string().unwrap());
         }     
     }
 

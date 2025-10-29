@@ -101,7 +101,7 @@
           @mouseleave="settingsHovered = false"
           @click.prevent="showProfile(client)"
         >
-          <img src="../assets/icons/settings.svg" width="9px" />
+          <img src="../assets/icons/settings.svg" width="16px" />
         </button>
 
         <span>{{ removeDotSuffix(client.name) }}</span>
@@ -110,7 +110,7 @@
     </div>
     <Teleport to="#modal">
       <Modal v-if="showClientProfile" :popup-type="'center'" @cancelModal="showClientProfile=false" @executeModal="showClientProfile=false">
-         <ClientProfile :profiledClient="profiledClient!" @deleteClient="showClientProfile=false; deleteClient(profiledClient!); isDropDownVisible = activeClient ? !isDropDownVisible : false"/>
+        <ClientProfile :profiledClient="profiledClient!" @deleteClient="showClientProfile=false; deleteClient(profiledClient!); isDropDownVisible = activeClient ? !isDropDownVisible : false"/>
       </Modal>
     </Teleport>
   </div>
@@ -169,7 +169,8 @@
   }
 
   .client {
-    display: block;
+    display: flex;
+    align-items: center;
     line-height: 42px;
     cursor: pointer;
     text-align: left;
@@ -216,11 +217,30 @@
     background-size: 30%;
   }
 
+  .osp {
+    background: url('../assets/images/osp.png') 94% center no-repeat;
+    background-size: 35%;
+  }
+
+  .excessiveplus {
+    background: url('../assets/images/excessiveplus.png') 94% center no-repeat;
+    background-size: 39%;
+  }
+
+  .rat {
+    background: url('../assets/images/rat.png') 85% center no-repeat;
+    background-size: 20%;
+  }
+
   .settings-button {
     background: var(--main-bg);
     border: 1px solid #777;
     border-radius: 0.2rem;
-    margin: 0px 8px 8px 0px;
+    margin-right: 8px;
+    padding-inline-start: 2px;
+    padding-inline-end: 3px;
+    padding-block-start: 2px;
+    padding-block-end: 0px;
   }
 
   .settings-button:hover {

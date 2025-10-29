@@ -166,7 +166,7 @@
             levels.value = levelsLastRefresh.value.filter((m) => m.level_name.includes('ut4'))
             break
           default:
-            levels.value = levelsLastRefresh.value.filter((m) => m.pk3_name == 'pak0')
+            levels.value = levelsLastRefresh.value
             break
         }
       }
@@ -389,6 +389,10 @@
     }
   }
 
+  async function reveal(p: string) {
+    await invoke('reveal_item_in_dir', {path: p})
+  }
+
   const getVirtualRows = computed(() => {
     return levels.value.slice(virtualStartIndex.value, virtualEndIndex.value)
   })
@@ -483,8 +487,8 @@
           @contextmenu.prevent="rightClickToSelect(level)"
         >
           <div class="map-row">
-            <img v-if="levelHasLevelshot(level.level_name)" class="map-img" :src="levelshots[level.level_name.toLowerCase()]"/>
-            <img v-else class="map-img" src="../assets/icons/q3-white.svg" />
+            <img v-if="levelHasLevelshot(level.level_name)" class="map-img" :src="levelshots[level.level_name.toLowerCase()]" @click="reveal(level.path)"/>
+            <img v-else class="map-img" src="../assets/icons/q3-white.svg" @click="reveal(level.path)" />
             <div style="width: 50%; text-align: left; white-space: nowrap; overflow: hidden; margin-left: 24px">
               <h3 style="margin: 8px 0 0 0;">{{ level.level_name }} 
                 <span style="font-size: 60%; font-weight: 100; margin-left: 16px;" v-if="level.level_name.toLowerCase() != level.pk3_name.toLowerCase()"> 
@@ -767,6 +771,11 @@
   .map-img {
     height: 96px;
     width: 128px;
+    overflow: hidden;
+  }
+
+  .map-img:hover {
+    cursor: pointer;
   }
 
   .level-row {

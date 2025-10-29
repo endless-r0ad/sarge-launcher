@@ -10,6 +10,9 @@
     await invoke('reveal_item_in_dir', {path: p})
   }
 
+  async function reveal_log() {
+    await invoke('reveal_log')
+  }
 </script>
 
 <template>
@@ -49,17 +52,22 @@
     <input type="checkbox" v-model="config.autoclose_demo" />
     <label class="ml-1">Autoclose demo</label>
   </div>
-  <div class="item"><input type="checkbox" v-model="config.loop_demo" />
+  <div class="item">
+    <input type="checkbox" v-model="config.loop_demo" />
     <label class="ml-1">Loop demo</label>
   </div>
-  <div class="item"><input type="checkbox" v-model="config.get_full_demo_data" />
+  <div class="item" style="padding-bottom: 10px; border-bottom: 1px solid var(--main-bg);">
+    <input type="checkbox" v-model="config.get_full_demo_data" />
     <label class="ml-1">Parse full demo data</label>
   </div>
-  <div class="item" style="display: inline-block;">
+  <div class="item" style="display: inline-block; padding-top: 4px;">
     <button class="refresh-button" style="font-size: 90%" @click="reveal(config.path)">config</button>
   </div>
   <div class="item" style="display: inline-block;">
-    <button class="refresh-button" style="font-size: 90%" @click="reveal(appdata.path)">logs</button>
+    <button class="refresh-button" style="font-size: 90%" @click="reveal(appdata.path)">appdata</button>
+  </div>
+  <div class="item" style="display: inline-block;">
+    <button class="refresh-button" style="font-size: 90%" @click="reveal_log()">log</button>
   </div>
 </template>
 

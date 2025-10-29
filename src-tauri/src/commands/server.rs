@@ -72,11 +72,14 @@ pub async fn refresh_all_servers(
 pub async fn refresh_single_server(mut refresh_server: Quake3Server, timeout: u64) -> Result<Quake3Server, String> {
 
     let server_list = refresh_server.list.clone();
+    let is_custom = refresh_server.custom.clone();
+
 	refresh_server.reset_data();
     refresh_server.list = server_list;
+    refresh_server.custom = is_custom;
 
 	let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
-	let _ = socket.set_read_timeout(Some(Duration::from_millis(timeout)));
+	let _ = socket.set_read_timeout(Some(Duration::from_millis(timeout))).unwrap();
     
 	refresh_server.query_server(&socket, 0);
 

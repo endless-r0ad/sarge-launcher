@@ -72,8 +72,6 @@
 
   const { levelshots } = useLevelshot()
 
-  const refreshingSingle = ref(false)
-
   async function queryMasterServers() {
     loadingEvent.value = 'querying master servers...'
     serverIPs.value = []
@@ -89,7 +87,7 @@
 
   async function refreshServers(fullRefresh: boolean){
 
-    if (loading.value) { return }
+    if (loading.value || refreshingSingleServer.value) { return }
 
     const startTime = performance.now();
     loading.value = true
@@ -150,26 +148,30 @@
     }
   }
 
-  async function refreshSingleServer() {
-    if (selectedServer.value == null || refreshingSingle.value) { return }
+  const refreshingSingleServer = ref<Quake3Server | null>(null)
+
+  async function refreshSingleServer(server: Quake3Server) {
+    if (refreshingSingleServer.value) { return }
     
-    refreshingSingle.value = true
+    refreshingSingleServer.value = server
 
     try{
-      let refreshed: Quake3Server = await invoke('refresh_single_server', {refreshServer: selectedServer.value, timeout: 1000})
-
-      let splice_index = serverDetails.value.indexOf(selectedServer.value!)
-      let splice_index2 = serverDetailsLastRefresh.value.indexOf(selectedServer.value!)
+      let refreshed: Quake3Server = await invoke('refresh_single_server', {refreshServer: refreshingSingleServer.value, timeout: 1000})
+      let splice_index = serverDetails.value.indexOf(refreshingSingleServer.value)
+      let splice_index2 = serverDetailsLastRefresh.value.indexOf(refreshingSingleServer.value)
 
       serverDetails.value[splice_index] = refreshed
       serverDetailsLastRefresh.value[splice_index2] = refreshed
-      selectedServer.value = refreshed
 
-      refreshingSingle.value = false;
+      if (server.address === selectedServer.value?.address) {
+        selectedServer.value = refreshed
+      }
     }
     catch(err){
       emit('errorAlert', ensureError(err).message)
     }
+
+    refreshingSingleServer.value = null;
   }
 
   const pinnedServers = computed(() => { return serverDetails.value.filter((s) => s.list == 'pinned') }) 
@@ -212,7 +214,7 @@
       popupInput.value = '', showPopup.value = '';
       return
     }
-    if (appdata.value.pinned.has(popupInput.value)) {
+    if (appdata.value.pinned.has(popupInput.value) || appdata.value.custom.has(popupInput.value)) {
       emit('infoAlert', 'custom server is already a pinned server')
       popupInput.value = '', showPopup.value = '';
       return
@@ -227,6 +229,8 @@
 
       if (alreadyOnMaster) {
         alreadyOnMaster.list = 'pinned'
+        alreadyOnMaster.custom = true
+        await refreshSingleServer(alreadyOnMaster)
         popupInput.value = ''
         return
       } 
@@ -236,18 +240,11 @@
       
       lastSelectedServer.value = selectedServer.value
       selectedServer.value = customServer
-      refreshingSingle.value = true
-
+    
       serverDetails.value.push(customServer)
       serverDetailsLastRefresh.value.push(customServer) 
       
-      let refreshed: Quake3Server = await invoke('refresh_single_server', {refreshServer: selectedServer.value, timeout: 1000})
-
-      serverDetails.value[serverDetails.value.length-1] = refreshed
-      serverDetailsLastRefresh.value[serverDetailsLastRefresh.value.length-1] = refreshed
-      selectedServer.value = refreshed
-
-      refreshingSingle.value = false;
+      await refreshSingleServer(selectedServer.value)
 
       if (closeAfterHandle) {
         popupInput.value = '', showPopup.value = '';
@@ -382,7 +379,7 @@
   function keySelect(increment: number){   
     let proposedIndex = selectedServerIndex.value + increment
       
-    if (selectedServer.value == null || refreshingSingle.value || keySelectOutOfBound(proposedIndex))
+    if (selectedServer.value == null || refreshingSingleServer.value || keySelectOutOfBound(proposedIndex))
     {
       return
     }
@@ -508,6 +505,7 @@
 
     if (server) {
       server.list = 'main'
+      server.custom = false
     }
     removeAppData('custom', address)
     writeAppData()
@@ -585,7 +583,7 @@
   
     <div class="table-column-header">
       <span style="width: 3%;"></span>
-      <span style="width: 11%; text-align: left;"><span class="sort-header" @click="sortServers('game');">game</span><span :class="getArrowSort('game')" @click="sortServers('game');"/></span>
+      <span style="width: 11%; text-align: left;"><span class="sort-header" @click="sortServers('game');">fs_game</span><span :class="getArrowSort('game')" @click="sortServers('game');"/></span>
       <span style="width: 3%;"></span>
       <span style="width: 36%; text-align: left;"><span class="sort-header" @click="sortServers('host');">hostname</span><span :class="getArrowSort('host')" @click="sortServers('host');" /></span>
       <span style="width: 1%;"></span>
@@ -603,7 +601,6 @@
       @keydown.up.prevent="keySelect(-1)" 
       @keydown.down.prevent="keySelect(1)" 
       @keydown.enter.prevent="spawnQuake()"
-      @keydown.space.prevent="refreshSingleServer()"
       id="serverTable"
       ref="serverTable"
       >
@@ -625,14 +622,15 @@
           :server="server"
           :isSelected="server === selectedServer"
           :displayDetails="displayDetails"
-          :refreshing="refreshingSingle"
+          :refreshing="server === refreshingSingleServer"
           :altKeyHeld="altKeyHeld"
           :levelshotPath="levelshots[server.map.toLowerCase()] ?? null"
           tabindex="0"
           @click="clickServer(server, index, $event);"
           @showDetails="displayDetails = true"
           @hideDetails="displayDetails = false"
-          @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer();"
+          @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer(server);"
+          @keydown.space.prevent="refreshSingleServer(server)"
         />              
         <ServerRow v-for="(server, index) in getVirtualRows" 
           class="row"
@@ -642,7 +640,7 @@
           :server="server"
           :isSelected="server === selectedServer"
           :displayDetails="displayDetails"
-          :refreshing="refreshingSingle"
+          :refreshing="server === refreshingSingleServer"
           :altKeyHeld="altKeyHeld"
           :displayDetailsOnMount="keepSelectedDetailsOpen"
           :levelshotPath="levelshots[server.map.toLowerCase()] ?? null"
@@ -650,8 +648,9 @@
           @click="clickServer(server, index, $event);"
           @showDetails="displayDetails = true"
           @hideDetails="displayDetails = false"
-          @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer();"
+          @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer(server);"
           @detailsDisplayedOnUnmount="keepSelectedDetailsOpen = !keepSelectedDetailsOpen"
+          @keydown.space.prevent="refreshSingleServer(server)"
           />    
         <div v-if="config.show_trashed_servers">
           <ServerRow v-for="(server, index) in trashServers" 
@@ -661,14 +660,15 @@
           :server="server"
           :isSelected="server === selectedServer"
           :displayDetails="displayDetails"
-          :refreshing="refreshingSingle"
+          :refreshing="server === refreshingSingleServer"
           :altKeyHeld="altKeyHeld"
           :levelshotPath="levelshots[server.map.toLowerCase()] ?? null"
           tabindex="0"
           @click="clickServer(server, index, $event);"
           @showDetails="displayDetails = true"
           @hideDetails="displayDetails = false"
-          @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer();"
+          @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer(server);"
+          @keydown.space.prevent="refreshSingleServer(server)"
           /> 
         </div> 
         <div v-if="!config.show_trashed_servers && trashLength > 0" class="hidden-trash" @click="displayTrashedServers()">

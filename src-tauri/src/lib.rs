@@ -38,7 +38,8 @@ pub fn run() {
             commands::demo::create_demo_script,
             commands::demo::delete_temp_script,
 			commands::util::exit_app,
-            commands::util::reveal_item_in_dir
+            commands::util::reveal_item_in_dir,
+            commands::util::reveal_log
 		])
         .setup(move |_app| {
             #[cfg(not(debug_assertions))]

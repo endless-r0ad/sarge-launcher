@@ -12,7 +12,9 @@ const activeClientProtocol = computed(() => { return getClientGameProtocol(activ
 
 const activeClientSpawnArgs = computed(() => {
   if (!activeClient.value) { return [] }
-  return ['+set', 'fs_game', activeClient.value.gamename, '+set', 'fs_basepath', activeClient.value.parent_path]
+  return ['+set', 'fs_game', activeClient.value.gamename, 
+          '+set', 'protocol', activeClientProtocol.value.toString(),
+          '+set', 'fs_basepath', activeClient.value.parent_path]
 })
 
 export function useClient() {

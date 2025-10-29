@@ -67,7 +67,7 @@
       <span style="width: 16%" class="data">{{ server.map }}</span>
       <span style="width: 10%" class="data">{{ server.playersconnected }}/{{ server.maxclients }}</span>
       <span style="width: 2%" class="data">
-        <Loading v-if="refreshing && isSelected" :position="'relative'" :size="15" />
+        <Loading v-if="refreshing" :position="'relative'" :size="15" />
       </span>
       <span style="width: 7%" class="data">{{ server.ping }}</span>
       <span style="width: 16%" class="data">{{ server.ip }}:{{ server.port }}</span>
