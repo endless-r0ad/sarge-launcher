@@ -1,5 +1,4 @@
 use image::DynamicImage;
-use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::{collections::HashMap, path::PathBuf};
 use std::fs::{create_dir, File};
