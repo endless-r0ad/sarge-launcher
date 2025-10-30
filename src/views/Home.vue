@@ -6,9 +6,11 @@
   import { useClient } from '@/composables/client'
 
   const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], errorAlert: [string], infoAlert: [string]}>()
+  const props = defineProps<{ latestGithubVersion: string | null }>()
 
   const componentName = ref('Sarge Launcher')
-
+  const appVersion = 'v0.1.1'
+  const updateAvailable = ref(props.latestGithubVersion && appVersion != props.latestGithubVersion)
   const { config } = useConfig()
   const { pickClient } = useClient()
 
@@ -31,13 +33,21 @@
 
 <template>
   <Teleport to="#modal">
-    <Modal v-if="config.welcome_message" :popupType="'center'" @cancelModal="config.welcome_message = false">
+    <Modal v-if="config.welcome_message || updateAvailable" :popupType="'center'" @cancelModal="config.welcome_message = false; updateAvailable = false">
       <div style="width: 400px">
         <img style="position: absolute; left: 15%; top: 4%" src="../assets/icons/sarge.svg" />
         <h2 style="position: absolute; right: 15%; top: 4%">SARGE LAUNCHER</h2>
+        <a v-if="props.latestGithubVersion && appVersion != props.latestGithubVersion" 
+          class="link" 
+          href="https://github.com/endless-r0ad/sarge-launcher/releases" 
+          target="_blank">
+          <p style="position: absolute; right: 42%; top: 16%; font-size: 75%; color: #00ffff;">
+            update available
+          </p>
+        </a>
         <a class="link" href="https://github.com/endless-r0ad/sarge-launcher" target="_blank">
           <p style="position: absolute; right: 15%; top: 16%; font-size: 75%;">
-            v0.1.1
+            {{ appVersion }}
           </p>
         </a>
         <p style="margin-top: 72px">
@@ -54,13 +64,13 @@
 
   <div class="client-grid" draggable="false">
     <div
-      class="grid-bg welcome-bg grow"
-      @mouseover="hoveredCard = 'welcome'"
+      class="grid-bg about-bg grow"
+      @mouseover="hoveredCard = 'about'"
       @mouseleave="hoveredCard = ''"
       @click="config.welcome_message = true"
       style="grid-column: 1; grid-row: 1"
     >
-      <div v-if="hoveredCard == 'welcome'" class="tint">
+      <div v-if="hoveredCard == 'about'" class="tint">
         <span class="center card-name" draggable="false">{{ hoveredCard }}</span>
       </div>
     </div>
@@ -230,7 +240,7 @@
     background-image: url('../assets/images/q3_box_art.jpg');
   }
 
-  .welcome-bg {
+  .about-bg {
     background-image: url('../assets/icons/sarge.svg');
     background-size: 40%;
   }

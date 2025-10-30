@@ -4,7 +4,7 @@
   import Modal from '@/components/Modal.vue'
   import Sidebar from '@/components/Sidebar.vue'
   import Settings from '@/components/Settings.vue'
-  import { ensureError } from '@/utils/util'
+  import { ensureError, getLatestGithubRelease } from '@/utils/util'
   import { ref, onMounted } from 'vue'
   import { invoke } from '@tauri-apps/api/core'
   import { info, error } from '@tauri-apps/plugin-log'
@@ -15,9 +15,15 @@
   const { activeClient, activeClientDefaultArgs, activeClientUserArgs } = useClient()
 
   const isMounted = ref(false)
+  const latestRelease = ref<string | null>(null)
 
   onMounted(async () => {
-    await new Promise((r) => setTimeout(r, 500))
+    try {
+      latestRelease.value = await getLatestGithubRelease()
+    } catch (err) {
+      error(ensureError(err).message)
+    }
+    await new Promise((r) => setTimeout(r, 300))
     isMounted.value = true
   })
 
@@ -104,6 +110,7 @@
       <KeepAlive>
         <component
           :is="Component"
+          :latestGithubVersion="latestRelease"
           @spawnQuake="spawnQuake"
           @emitComponentName="getComponentName"
           @errorAlert="errorAlert"

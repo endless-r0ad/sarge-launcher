@@ -17,7 +17,8 @@
   import { watch, nextTick, defineEmits, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
   
   const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], errorAlert: [string], infoAlert: [string]}>()
-
+  defineProps<{ latestGithubVersion: string | null }>()
+  
   const componentName = ref('Server Browser')
 
   const handleKeyUp = (event: KeyboardEvent) => {

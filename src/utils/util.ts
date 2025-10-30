@@ -244,3 +244,19 @@ export function getServerProtocol(serv: Quake3Server): string {
   }
   return '68'
 }
+
+export async function getLatestGithubRelease() {
+  const url = "https://api.github.com/repos/endless-r0ad/sarge-launcher/releases/latest"
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Request for latest release version status: ${response.status}`)
+    }
+    const result = await response.json()
+
+    return result.tag_name
+  } catch (err) {
+    throw err
+  }
+}

@@ -13,7 +13,8 @@
   import { Q3_BOT_NAMES, UT_BOT_NAMES, CPMA_BOT_NAMES, OA_BOT_NAMES } from '@/utils/util'
 
   const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], errorAlert: [string], infoAlert: [string]}>()
-
+  defineProps<{ latestGithubVersion: string | null }>()
+  
   const componentName = ref('Single Player')
 
   const { activeClient, pickClient, activeClientPaths } = useClient()
