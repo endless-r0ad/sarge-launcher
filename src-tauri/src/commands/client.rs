@@ -24,7 +24,13 @@ pub async fn pick_client(app: AppHandle) -> Result<Option<Q3Executable>, String>
         let path = picked_file.clone().simplified();
         let parent_path = path.as_path().unwrap().parent().unwrap().to_str().unwrap().to_string();
 
-        q3_exe = Q3Executable{name: file_name.to_string(), exe_path: path.to_string(), parent_path: parent_path, gamename: String::from("")};
+        q3_exe = Q3Executable{
+            name: file_name.to_string(), 
+            exe_path: path.to_string(), 
+            parent_path: parent_path, 
+            gamename: String::from(""),
+            extra_launch_args: String::from("")
+        };
 
 	} else {
 		return Ok(None);

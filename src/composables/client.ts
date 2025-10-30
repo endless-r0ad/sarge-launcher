@@ -10,11 +10,16 @@ const activeClientPaths = ref<string[]>([])
 
 const activeClientProtocol = computed(() => { return getClientGameProtocol(activeClient.value)})
 
-const activeClientSpawnArgs = computed(() => {
+const activeClientDefaultArgs = computed(() => {
   if (!activeClient.value) { return [] }
   return ['+set', 'fs_game', activeClient.value.gamename, 
           '+set', 'protocol', activeClientProtocol.value.toString(),
           '+set', 'fs_basepath', activeClient.value.parent_path]
+})
+
+const activeClientUserArgs = computed(() => {
+  if (!activeClient.value || activeClient.value.extra_launch_args == "") { return [] }
+  return activeClient.value.extra_launch_args.split(" ")
 })
 
 export function useClient() {
@@ -24,7 +29,7 @@ export function useClient() {
     writeConfig
   } = useConfig()
 
-  const clientGame = computed(() => {
+  const clientServerGame = computed(() => {
     if (!activeClient.value) {
       return null
     }
@@ -171,9 +176,10 @@ export function useClient() {
   return {
     activeClient,
     activeClientPaths,
-    activeClientSpawnArgs,
+    activeClientDefaultArgs,
+    activeClientUserArgs,
     activeClientProtocol,
-    clientGame,
+    clientServerGame,
     getClientDefaultGamename,
     updateClient,
     toggleQ3Client,

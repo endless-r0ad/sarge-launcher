@@ -28,12 +28,16 @@
   const clientWhenDeactivated = ref(activeClient.value)
 
   onActivated(async () => {
-    if (clientWhenDeactivated.value != activeClient.value) { 
+    if (clientWhenDeactivated.value?.name != activeClient.value?.name || 
+        clientWhenDeactivated.value?.gamename != activeClient.value?.gamename) 
+    { 
       await getDemos(true) 
     }
     emit('emitComponentName', componentName.value)
-    stopWatchingClient = watch(activeClient, async(_newVal, _oldVal) => {
+    stopWatchingClient = watch(activeClient, async(newVal, oldVal) => {
+      if (newVal?.name != oldVal?.name || newVal?.gamename != oldVal?.gamename) {
         await getDemos(true)
+      }
     })
   });
 

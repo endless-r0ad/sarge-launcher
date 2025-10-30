@@ -45,11 +45,11 @@
   })
 
   const { config } = useConfig()
-  const { activeClient, clientGame } = useClient()
+  const { activeClient, clientServerGame } = useClient()
 
   watch(activeClient, async(newVal, oldVal) => {
     if (config.value.refresh_by_mod && newVal?.gamename != oldVal?.gamename) {
-      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientGame.value!) || x.list == 'pinned' || x.list == 'trash')
+      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash')
       toggleShowUnreachableServers()
     }
   })
@@ -99,19 +99,19 @@
     serverDetailsLastRefresh.value = []
     searchQuery.value = ''
       
-    let refreshByMod = clientGame.value && config.value.refresh_by_mod && !fullRefresh
+    let refreshByMod = clientServerGame.value && config.value.refresh_by_mod && !fullRefresh
 
     if (fullRefresh) {
       await queryMasterServers()
     }
       
-    loadingEvent.value = `querying ${refreshByMod ? clientGame.value : 'all'} servers...`
+    loadingEvent.value = `querying ${refreshByMod ? clientServerGame.value : 'all'} servers...`
 
     try {
 
       serverDetailsLastRefresh.value = await invoke('refresh_all_servers', 
                 { 
-                  allServers: serverIPs.value.filter((x) => refreshByMod ? x.game.includes(clientGame.value!) || x.list == 'trash' : true), 
+                  allServers: serverIPs.value.filter((x) => refreshByMod ? x.game.includes(clientServerGame.value!) || x.list == 'trash' : true), 
                   numThreads: (config.value.server_browser_threads == 0 ? 1 : config.value.server_browser_threads),
                   timeout: config.value.server_timeout
                 })
@@ -123,7 +123,7 @@
     if (fullRefresh) {
       serverIPs.value = serverDetailsLastRefresh.value
       if (activeClient.value && config.value.refresh_by_mod) {
-        serverDetailsLastRefresh.value = serverDetailsLastRefresh.value.filter((x) => x.game.includes(clientGame.value!) || x.list == 'pinned' || x.list == 'trash')
+        serverDetailsLastRefresh.value = serverDetailsLastRefresh.value.filter((x) => x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash')
       }
     }
     
@@ -462,7 +462,7 @@
 
   watch(() => config.value.refresh_by_mod, (newVal, _oldVal) => {
     if (newVal && activeClient.value) {
-      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientGame.value!) || x.list == 'pinned' || x.list == 'trash')
+      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash')
       toggleShowUnreachableServers()
     }
     if (!newVal) {

@@ -3,6 +3,7 @@ export interface Q3Executable {
   exe_path: string
   parent_path: string
   gamename: string
+  extra_launch_args: string
   active: boolean
 }
 

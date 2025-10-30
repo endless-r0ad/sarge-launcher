@@ -12,7 +12,7 @@
   import { useClient } from './composables/client'
 
   const { config, writeConfig } = useConfig()
-  const { activeClient, activeClientSpawnArgs } = useClient()
+  const { activeClient, activeClientDefaultArgs, activeClientUserArgs } = useClient()
 
   const isMounted = ref(false)
 
@@ -65,14 +65,14 @@
     alertMessage.value = '' 
   }
 
-  async function spawnQuake(launchArgs: string[]) {
+  async function spawnQuake(viewSuppliedArgs: string[]) {
     try {
       if (config.value.manage_q3_instance) {
         await invoke('kill_q3_client', { processId: q3ClientProcessId.value })
       }
       q3ClientProcessId.value = await invoke('spawn_client', {
         activeClient: activeClient.value,
-        q3Args: activeClientSpawnArgs.value.concat(launchArgs)
+        q3Args: activeClientDefaultArgs.value.concat(viewSuppliedArgs).concat(activeClientUserArgs.value)
       })
     } catch (err) {
       const e: Error = ensureError(err)

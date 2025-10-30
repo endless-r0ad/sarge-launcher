@@ -28,13 +28,17 @@
 
   onActivated(async () => { 
     emit('emitComponentName', componentName.value)
-    if (clientWhenDeactivated.value != activeClient.value) { 
+    if (clientWhenDeactivated.value?.name != activeClient.value?.name || 
+        clientWhenDeactivated.value?.gamename != activeClient.value?.gamename) 
+    { 
       clearBots()
       await getLevels()
     }
-    stopWatchingClient = watch(activeClient, async(_newVal, _oldVal) => {
+    stopWatchingClient = watch(activeClient, async(newVal, oldVal) => {
+      if (newVal?.name != oldVal?.name || newVal?.gamename != oldVal?.gamename) {
         clearBots()
         await getLevels()
+      }
     })
   })
 

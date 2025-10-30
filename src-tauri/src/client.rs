@@ -6,6 +6,7 @@ pub struct Q3Executable {
 	pub exe_path: String,
 	pub parent_path: String,
 	pub gamename: String,
+    pub extra_launch_args: String
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

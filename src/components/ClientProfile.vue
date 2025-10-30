@@ -20,6 +20,7 @@
     exe_path: props.profiledClient.exe_path,
     parent_path: props.profiledClient.parent_path,
     gamename: props.profiledClient.gamename,
+    extra_launch_args: props.profiledClient.extra_launch_args,
     active: props.profiledClient.active
   })
 
@@ -28,9 +29,9 @@
   })
 
   const mountedClientGame = ref(props.profiledClient.gamename)
+  const mountedExtraArgs = ref(props.profiledClient.extra_launch_args)
 
   const defaultClientGame = ref('')
-  const additionalLaunchOptions = ref('')
 
   function handleKeyPress(event: KeyboardEvent) {
     if (event.code == 'Escape') {
@@ -67,7 +68,7 @@
 
   onBeforeUnmount( async() => {
     document.removeEventListener('keydown', handleKeyPress)
-    if (mountedClientGame.value != localClient.value.gamename) {
+    if (mountedClientGame.value != localClient.value.gamename || mountedExtraArgs.value != localClient.value.extra_launch_args) {
       await updateClient(localClient.value)
     }
   })
@@ -105,7 +106,11 @@
     </div>
     <div class="profile-item">
       <label class="ml-1">Additional launch options</label>
-      <input type="text" v-model="additionalLaunchOptions" class="search" style="width: 180px; margin-left: 16px" />
+      <input type="text" 
+          v-model="localClient.extra_launch_args" 
+          class="search" 
+          style="width: 180px; margin-left: 16px"
+          :style="localClient.extra_launch_args != '' ? 'outline: 1px solid orange;' : ''" />
     </div>
     <div class="profile-item">
       <button class="refresh-button" @click="getConfigs()" style="font-size: 90%">Browse Configs</button>
