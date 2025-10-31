@@ -12,9 +12,9 @@
   import { type Bot } from '@/models/singleplayer'
   import { Q3_BOT_NAMES, UT_BOT_NAMES, CPMA_BOT_NAMES, OA_BOT_NAMES } from '@/utils/util'
 
-  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
+  const emit = defineEmits<{ spawnQuake: [string[]], emitComponentName: [string], alert: [string, string] }>()
   defineProps<{ latestGithubVersion: string | null }>()
-  
+
   const componentName = ref('Single Player')
 
   const { activeClient, pickClient, activeClientPaths } = useClient()
@@ -24,18 +24,19 @@
     await getLevels()
   })
 
-  let stopWatchingClient: WatchHandle;
+  let stopWatchingClient: WatchHandle
   const clientWhenDeactivated = ref(activeClient.value)
 
-  onActivated(async () => { 
+  onActivated(async () => {
     emit('emitComponentName', componentName.value)
-    if (clientWhenDeactivated.value?.name != activeClient.value?.name || 
-        clientWhenDeactivated.value?.gamename != activeClient.value?.gamename) 
-    { 
+    if (
+      clientWhenDeactivated.value?.name != activeClient.value?.name ||
+      clientWhenDeactivated.value?.gamename != activeClient.value?.gamename
+    ) {
       clearBots()
       await getLevels()
     }
-    stopWatchingClient = watch(activeClient, async(newVal, oldVal) => {
+    stopWatchingClient = watch(activeClient, async (newVal, oldVal) => {
       if (newVal?.name != oldVal?.name || newVal?.gamename != oldVal?.gamename) {
         clearBots()
         await getLevels()
@@ -46,7 +47,7 @@
   onDeactivated(async () => {
     clientWhenDeactivated.value = activeClient.value
     if (stopWatchingClient) {
-      stopWatchingClient();
+      stopWatchingClient()
     }
   })
 
@@ -66,41 +67,37 @@
   const bots_team_blue = ref<Bot[]>([])
 
   function pushBot(bot: Bot) {
-    if (bot.team == 'Free' && bots_team_free.value.length < Math.min(sv_maxclients.value-1, 15)) {
-        bots_team_free.value.push(bot)
+    if (bot.team == 'Free' && bots_team_free.value.length < Math.min(sv_maxclients.value - 1, 15)) {
+      bots_team_free.value.push(bot)
     }
-    if (bot.team == 'Red' && bots_team_red.value.length < (sv_maxclients.value - bots_team_blue.value.length - 1)) {
-        bots_team_red.value.push(bot)
+    if (bot.team == 'Red' && bots_team_red.value.length < sv_maxclients.value - bots_team_blue.value.length - 1) {
+      bots_team_red.value.push(bot)
     }
-    if (bot.team == 'Blue' && bots_team_blue.value.length < (sv_maxclients.value - bots_team_red.value.length - 1)) {
-        bots_team_blue.value.push(bot)
+    if (bot.team == 'Blue' && bots_team_blue.value.length < sv_maxclients.value - bots_team_red.value.length - 1) {
+      bots_team_blue.value.push(bot)
     }
   }
 
   function cycleBotNames(name: string) {
     switch (activeClient.value?.gamename) {
-      case 'baseq3':
-        return Q3_BOT_NAMES[(Q3_BOT_NAMES.indexOf(name) + 1) % 32]
       case 'q3ut4':
         return UT_BOT_NAMES[(UT_BOT_NAMES.indexOf(name) + 1) % 16]
       case 'cpma':
         return CPMA_BOT_NAMES[(CPMA_BOT_NAMES.indexOf(name) + 1) % 35]
       case 'baseoa':
+      case 'rat':
         return OA_BOT_NAMES[(OA_BOT_NAMES.indexOf(name) + 1) % 33]
       default:
         return Q3_BOT_NAMES[(Q3_BOT_NAMES.indexOf(name) + 1) % 32]
     }
-    
   }
 
   function defaultBotName() {
     switch (activeClient.value?.gamename) {
-      case 'baseq3':
-      case 'cpma':
-        return 'anarki'
       case 'q3ut4':
         return 'boa'
       case 'baseoa':
+      case 'rat':
         return 'angelyss'
       default:
         return 'anarki'
@@ -136,7 +133,7 @@
     try {
       num_extracted = await extractLevelshots(activeClientPaths.value)
       await getCachedLevelshots()
-    } catch(err) {
+    } catch (err) {
       emit('alert', 'error', ensureError(err).message)
     }
     loadingEvent.value = ''
@@ -155,19 +152,21 @@
     if (newVal) {
       if (activeClient.value && activeClient.value.gamename) {
         switch (activeClient.value.gamename) {
-          case "baseq3":
+          case 'baseq3':
             levels.value = levelsLastRefresh.value.filter((m) => m.pk3_name == 'pak0')
             break
-          case "baseoa":
-            levels.value = levelsLastRefresh.value.filter((m) => m.pk3_name == 'pak1-maps' || m.pk3_name == 'pak6-patch085' || m.pk3_name == 'pak6-patch088')
+          case 'baseoa':
+            levels.value = levelsLastRefresh.value.filter(
+              (m) => m.pk3_name == 'pak1-maps' || m.pk3_name == 'pak6-patch085' || m.pk3_name == 'pak6-patch088'
+            )
             break
-          case "cpma":
+          case 'cpma':
             levels.value = levelsLastRefresh.value.filter((m) => m.pk3_name.includes('map_cpm'))
             break
-          case "defrag":
+          case 'defrag':
             levels.value = levelsLastRefresh.value.filter((m) => m.is_defrag)
             break
-          case "q3ut4":
+          case 'q3ut4':
             levels.value = levelsLastRefresh.value.filter((m) => m.level_name.includes('ut4'))
             break
           default:
@@ -227,9 +226,11 @@
     let filteredMaps: Level[] = []
 
     for (let i = 0; i < levelsLastRefresh.value.length; i++) {
-      if (levelsLastRefresh.value[i]!.level_name.toLowerCase().includes(query) || 
-          levelsLastRefresh.value[i]!.author.toLowerCase().includes(query) || 
-          levelsLastRefresh.value[i]!.pk3_name.toLowerCase().includes(query)) {
+      if (
+        levelsLastRefresh.value[i]!.level_name.toLowerCase().includes(query) ||
+        levelsLastRefresh.value[i]!.author.toLowerCase().includes(query) ||
+        levelsLastRefresh.value[i]!.pk3_name.toLowerCase().includes(query)
+      ) {
         filteredMaps.push(levelsLastRefresh.value[i]!)
       }
     }
@@ -245,26 +246,26 @@
     if (!sortDesc.value && currentSort.value == column) { return 'sort-arrow-asc'}
   }
 
-  function sortMaps(column: string){
-    if (currentSort.value == column || currentSort.value == ''){
+  function sortMaps(column: string) {
+    if (currentSort.value == column || currentSort.value == '') {
       sortDesc.value = !sortDesc.value
     } else {
-      sortDesc.value = true;
+      sortDesc.value = true
     }
 
     selectedLevel.value = null
     currentSort.value = column
 
-    if (column == 'level_name' ) {
+    if (column == 'level_name') {
       levels.value.sort((a, b) => {
         if (a[column].toLowerCase() > b[column].toLowerCase()) {
-          return ( sortDesc.value ? -1 : 1 );
+          return sortDesc.value ? -1 : 1
         }
         if (a[column].toLowerCase() < b[column].toLowerCase()) {
-          return ( sortDesc.value ? 1 : -1 );
+          return sortDesc.value ? 1 : -1
         }
-        return 0;
-      });
+        return 0
+      })
     }
   }
 
@@ -275,36 +276,51 @@
 
   const gametypes = computed(() => {
     switch (activeClient.value!.gamename) {
-      case "baseq3":
-        return ["FFA", "1v1", "SP", "TDM", "CTF"]
-      case "cpma":
-        return ["1v1", "TDM", "FFA", "CTF", "CA", "DA", "FT", "CTFS", "NTF", "HM", "2v2"]
-      case "q3ut4":
-        return ["FFA", "LMS", "SP", "TDM", "TS", "FTL", "CNH", "CTF", "BM", "JUMP", "FT", "GUN"]
-      case "baseoa":
-        return ["FFA", "1v1", "SP", "TDM", "CTF", "1FLAG", "OVER", "HARV", "ELIM", "CTFE", "LMS", "DD", "DOM"]
-      case "defrag":
+      case 'cpma':
+        return ['1v1', 'TDM', 'FFA', 'CTF', 'CA', 'DA', 'FT', 'CTFS', 'NTF', 'HM', '2v2']
+      case 'q3ut4':
+        return ['FFA', 'LMS', 'SP', 'TDM', 'TS', 'FTL', 'CNH', 'CTF', 'BM', 'JUMP', 'FT', 'GUN']
+      case 'baseoa':
+      case 'rat':
+        return ['FFA', '1v1', 'SP', 'TDM', 'CTF', '1FCTF', 'OVER', 'HARV', 'ELIM', 'CTFE', 'LMS', 'DD', 'DOM']
+      case 'defrag':
         return ['VQ3', 'CPM']
+      case 'excessiveplus':
+        return ['FFA', '1v1', 'SP', 'TDM', 'CTF', 'RTF', '1FCTF', 'CA', 'FT', 'PTL']
       default:
-        return ["FFA", "1v1", "SP", "TDM", "CTF"]
+        return ['FFA', '1v1', 'SP', 'TDM', 'CTF']
     }
   })
 
   const isTeamGameType = computed(() => {
-    if (gameType.value == null) { return false }
+    if (gameType.value == null) {
+      return false
+    }
 
     let gametypeName = gametypes.value[gameType.value]
 
-    if (['TDM', 'CTF', 'T2v2', 'CA', 'FT', 
-         'CTFS', '2v2', 'TS', '1FLAG', 'OVER',
-         'HARV', 'ELIM', 'CTFE', 'DD', 'DOM'].includes(gametypeName!)) {
+    if (
+      ['TDM', 'CTF', 'T2v2', 'CA', 'FT', 'CTFS', '2v2', 'TS', '1FCTF', 
+       'OVER', 'HARV', 'ELIM', 'CTFE', 'DD', 'DOM', 'RTF', 'PTL'].includes(gametypeName!)
+    ) {
       return true
     }
     return false
   })
 
+  watch(isTeamGameType, (newVal, oldVal) => {
+    if (newVal && !oldVal) {
+      teamSelect.value = 'Red'
+    }
+    if (!newVal && oldVal) {
+      teamSelect.value = 'Free'
+    }
+  })
+
   const teamFreeBotsAllowed = computed(() => {
-    if (gameType.value == null) { return false }
+    if (gameType.value == null) {
+      return false
+    }
 
     let gametypeName = gametypes.value[gameType.value]
     if (['FFA', '1v1', 'SP', 'LMS', 'DA'].includes(gametypeName!)) {
@@ -351,7 +367,7 @@
           launch = cheats.value ? '+devmap' : '+map'
         }
       }
-      
+
       args = [launch, selectedLevel.value.level_name]
 
       if (activeClient.value?.gamename != 'defrag') {
@@ -395,7 +411,7 @@
   }
 
   async function reveal(p: string) {
-    await invoke('reveal_item_in_dir', {path: p})
+    await invoke('reveal_item_in_dir', { path: p })
   }
 
   const getVirtualRows = computed(() => {
@@ -448,13 +464,17 @@
   setScroller({ rowHeight: 96, overscan: 8 })
 
   const showSearchPaths = ref(false)
-
 </script>
 
 <template>
   <div class="table-header-base no-select" style="height: 40px">
-    <div class="table-header-right">     
-      <button v-if="activeClient" class="refresh-button" :class="{ 'base-only': showBaseLevelsOnly }" @click="showBaseLevelsOnly = !showBaseLevelsOnly">
+    <div class="table-header-right">
+      <button
+        v-if="activeClient"
+        class="refresh-button"
+        :class="{ 'base-only': showBaseLevelsOnly }"
+        @click="showBaseLevelsOnly = !showBaseLevelsOnly"
+      >
         {{ activeClient?.gamename }}
       </button>
       <input class="search" type="text" placeholder="search" v-model="searchQuery" />
@@ -462,11 +482,10 @@
     <div class="table-header-left">
       <button class="connect-button" :disabled="!selectedLevel || gameType == null" @click="spawnQuake()">Connect</button>
       <button class="refresh-button" @click="getLevels()">Refresh</button>
-      <span style="margin-left: 24px; text-align: left; color: #fff;">
+      <span style="margin-left: 24px; text-align: left; color: #fff">
         <span class="sort-header" @click="sortMaps('level_name')">map</span>
         <span :class="getArrowSort('level_name')" @click="sortMaps('level_name')" />
       </span>
-
     </div>
   </div>
 
@@ -492,21 +511,30 @@
           @contextmenu.prevent="rightClickToSelect(level)"
         >
           <div class="map-row">
-            <img v-if="levelHasLevelshot(level.level_name)" class="map-img" :src="levelshots[level.level_name.toLowerCase()]" @click="reveal(level.path)"/>
+            <img
+              v-if="levelHasLevelshot(level.level_name)"
+              class="map-img"
+              :src="levelshots[level.level_name.toLowerCase()]"
+              @click="reveal(level.path)"
+            />
             <img v-else class="map-img" src="../assets/icons/q3-white.svg" @click="reveal(level.path)" />
             <div style="width: 50%; text-align: left; white-space: nowrap; overflow: hidden; margin-left: 24px">
-              <h3 style="margin: 8px 0 0 0;">{{ level.level_name }} 
-                <span style="font-size: 60%; font-weight: 100; margin-left: 16px;" v-if="level.level_name.toLowerCase() != level.pk3_name.toLowerCase()"> 
-                  {{ level.pk3_name}}.pk3
+              <h3 style="margin: 8px 0 0 0">
+                {{ level.level_name }}
+                <span
+                  style="font-size: 60%; font-weight: 100; margin-left: 16px"
+                  v-if="level.level_name.toLowerCase() != level.pk3_name.toLowerCase()"
+                >
+                  {{ level.pk3_name }}.pk3
                 </span>
               </h3>
-              <h6 v-if="level.long_name" v-html="level.long_name" style="font-style: italic; margin: 4px 0 0 0;" />
-              <h6 v-if="level.year_created" style="font-style: italic; margin: 4px 0 0 0;" >{{ level.year_created }}</h6>
-              <h6 v-if="level.author_vhtml" v-html="level.author_vhtml" style="margin: 12px 0 0 0;"/>     
+              <h6 v-if="level.long_name" v-html="level.long_name" style="font-style: italic; margin: 4px 0 0 0" />
+              <h6 v-if="level.year_created" style="font-style: italic; margin: 4px 0 0 0">{{ level.year_created }}</h6>
+              <h6 v-if="level.author_vhtml" v-html="level.author_vhtml" style="margin: 12px 0 0 0" />
             </div>
-            <div style="margin-left: -408px; margin-top: 64px;">
+            <div style="margin-left: -408px; margin-top: 64px">
               <span class="gametype-tag" v-for="l in level.gametype">{{ l }} </span>
-            </div>           
+            </div>
           </div>
         </div>
       </div>
@@ -527,32 +555,32 @@
       <span class="footer-data-right" v-if="searchQuery.length > 0 || showBaseLevelsOnly">Maps: {{ levels.length }}</span>
     </div>
     <div class="table-footer-left">
-      <button v-if="activeClient"
-            @mouseover="showSearchPaths=true"
-            @mouseleave="showSearchPaths=false" 
-            class="search-paths">
+      <button v-if="activeClient" @mouseover="showSearchPaths = true" @mouseleave="showSearchPaths = false" class="search-paths">
         Search Paths
       </button>
-      <button v-if="activeClient" class="refresh-button" @click="extractQ3Levelshots()">
-        Extract Levelshots
-      </button>
+      <button v-if="activeClient" class="refresh-button" @click="extractQ3Levelshots()">Extract Levelshots</button>
       <div v-if="activeClientPaths && showSearchPaths" class="footer-popup">
-        <div v-for="p in activeClientPaths" style="padding-right: 40px;">
-          <div style="display: inline-block; width: 15%;">{{ p }} </div>
+        <div v-for="p in activeClientPaths" style="padding-right: 40px">
+          <div style="display: inline-block; width: 15%">{{ p }}</div>
         </div>
-      </div> 
+      </div>
     </div>
   </div>
 
   <div v-if="selectedLevel" class="game-setup no-select">
     <h2 style="text-align: center">Game Setup</h2>
-    <div style="text-align: center; margin-bottom: 10px; padding: 0 70px; line-height: 34px;">
-      <button v-for="(gametype, index) in gametypes" class="setup-button" :class="{active: gameType == index}" @click="gameType=index">
+    <div style="text-align: center; margin-bottom: 10px; padding: 0 70px; line-height: 34px">
+      <button v-for="(gametype, index) in gametypes" class="setup-button" :class="{ active: gameType == index }" @click="gameType = index">
         {{ gametype }}
       </button>
     </div>
     <div style="text-align: center; margin-bottom: 10px">
-      <button v-for="(d, index) in difficulties" class="dif-button" :class="{ active: difficulty == index + 1 }" @click="difficulty = index + 1">
+      <button
+        v-for="(d, index) in difficulties"
+        class="dif-button"
+        :class="{ active: difficulty == index + 1 }"
+        @click="difficulty = index + 1"
+      >
         {{ d }}
       </button>
     </div>
@@ -565,8 +593,8 @@
       />
       <img v-else style="width: 50%" src="../assets/icons/q3-white.svg" />
       <div style="width: 50%; text-align: center; overflow: hidden scroll; padding: 4px 0px 4px 4px" v-if="teamFreeBotsAllowed">
-        <button class="bot-button" style="margin: 0px 0px 6px 30px; color: #fff;">you</button>
-        <div v-for="b in bots_team_free" style="white-space: nowrap;">
+        <button class="bot-button" style="margin: 0px 0px 6px 30px; color: #fff">you</button>
+        <div v-for="b in bots_team_free" style="white-space: nowrap">
           <button @click="bots_team_free.splice(bots_team_free.indexOf(b), 1)" class="close-button">
             <img src="../assets/icons/x.svg" width="8px" />
           </button>
@@ -575,8 +603,8 @@
         </div>
       </div>
       <div v-if="isTeamGameType" class="team red">
-        <button v-if="teamSelect == 'Red'" class="bot-button" style="margin: 0px 0px 6px 30px; color: #fff;">you</button>
-        <div v-for="b in bots_team_red" style="white-space: nowrap;">
+        <button v-if="teamSelect == 'Red'" class="bot-button" style="margin: 0px 0px 6px 30px; color: #fff">you</button>
+        <div v-for="b in bots_team_red" style="white-space: nowrap">
           <button @click="bots_team_red.splice(bots_team_red.indexOf(b), 1)" class="close-button">
             <img src="../assets/icons/x.svg" width="8px" />
           </button>
@@ -585,8 +613,8 @@
         </div>
       </div>
       <div v-if="isTeamGameType" class="team blue">
-        <button v-if="teamSelect == 'Blue'" class="bot-button" style="margin: 0px 0px 6px 30px; color: #fff;">you</button>
-        <div v-for="b in bots_team_blue" style="white-space: nowrap;">
+        <button v-if="teamSelect == 'Blue'" class="bot-button" style="margin: 0px 0px 6px 30px; color: #fff">you</button>
+        <div v-for="b in bots_team_blue" style="white-space: nowrap">
           <button @click="bots_team_blue.splice(bots_team_blue.indexOf(b), 1)" class="close-button">
             <img src="../assets/icons/x.svg" width="8px" />
           </button>
@@ -636,7 +664,7 @@
         </button>
       </div>
     </div>
-    <button class="dif-button" :class="{ active: cheats }" @click="cheats = !cheats" style="margin-left: 5%;">cheats</button>
+    <button class="dif-button" :class="{ active: cheats }" @click="cheats = !cheats" style="margin-left: 5%">cheats</button>
 
     <div style="text-align: center">
       <button class="setup-button" :disabled="!selectedLevel || gameType == null" @click="spawnQuake()">Connect</button>
@@ -795,17 +823,17 @@
   }
 
   .team {
-    width: 25%; 
-    text-align: left; 
-    overflow: hidden scroll; 
+    width: 25%;
+    text-align: left;
+    overflow: hidden scroll;
     padding: 4px 0px 4px 4px;
   }
 
   .red {
-    background-color: rgba(255, 0, 0, 0.2); 
+    background-color: rgba(255, 0, 0, 0.2);
   }
 
   .blue {
-    background-color: rgba(0, 0, 255, 0.2); 
+    background-color: rgba(0, 0, 255, 0.2);
   }
 </style>
