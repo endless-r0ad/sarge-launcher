@@ -5,7 +5,7 @@
   import { useConfig } from '@/composables/config'
   import { useClient } from '@/composables/client'
 
-  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], errorAlert: [string], infoAlert: [string]}>()
+  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
   const props = defineProps<{ latestGithubVersion: string | null }>()
 
   const componentName = ref('Sarge Launcher')
@@ -20,10 +20,10 @@
     try {
       let isNewClient = await pickClient()
       if (!isNewClient) {
-        emit('infoAlert', 'client already added')
+        emit('alert', 'info', 'client already added')
       }
     } catch (err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
   }
 
@@ -33,7 +33,7 @@
 
 <template>
   <Teleport to="#modal">
-    <Modal v-if="config.welcome_message || updateAvailable" :popupType="'center'" @cancelModal="config.welcome_message = false; updateAvailable = false">
+    <Modal v-if="config.welcome_message || updateAvailable" :popupType="'center'" @close="config.welcome_message = false; updateAvailable = false">
       <div style="width: 400px">
         <img style="position: absolute; left: 15%; top: 4%" src="../assets/icons/sarge.svg" />
         <h2 style="position: absolute; right: 15%; top: 4%">SARGE LAUNCHER</h2>

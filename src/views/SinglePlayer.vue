@@ -12,7 +12,7 @@
   import { type Bot } from '@/models/singleplayer'
   import { Q3_BOT_NAMES, UT_BOT_NAMES, CPMA_BOT_NAMES, OA_BOT_NAMES } from '@/utils/util'
 
-  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], errorAlert: [string], infoAlert: [string]}>()
+  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
   defineProps<{ latestGithubVersion: string | null }>()
   
   const componentName = ref('Single Player')
@@ -54,10 +54,10 @@
     try {
       let isNewClient = await pickClient()
       if (!isNewClient) {
-        emit('infoAlert', 'client already added')
+        emit('alert', 'info', 'client already added')
       }
     } catch (err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
   }
 
@@ -137,7 +137,7 @@
       num_extracted = await extractLevelshots(activeClientPaths.value)
       await getCachedLevelshots()
     } catch(err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
     loadingEvent.value = ''
     loading.value = false
@@ -201,7 +201,7 @@
       levels.value = await invoke('get_levels', { searchPaths: activeClientPaths.value, getAllData: true })
       levelsLastRefresh.value = levels.value
     } catch (err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
 
     showBaseLevelsOnly.value = false

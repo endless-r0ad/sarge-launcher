@@ -109,7 +109,7 @@
       </div>
     </div>
     <Teleport to="#modal">
-      <Modal v-if="showClientProfile" :popup-type="'center'" @cancelModal="showClientProfile=false" @executeModal="showClientProfile=false">
+      <Modal v-if="showClientProfile" :popup-type="'center'" @close="showClientProfile=false">
         <ClientProfile :profiledClient="profiledClient!" @deleteClient="showClientProfile=false; deleteClient(profiledClient!); isDropDownVisible = activeClient ? !isDropDownVisible : false"/>
       </Modal>
     </Teleport>

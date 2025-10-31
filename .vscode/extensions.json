@@ -1,3 +1,3 @@
 {
-  "recommendations": ["Vue.volar", "vadimcn.vscode-lldb", "rust-lang.rust-analyzer", "tauri-apps.tauri-vscode"]
+  "recommendations": ["Vue.volar", "vadimcn.vscode-lldb", "rust-lang.rust-analyzer", "tauri-apps.tauri-vscode", "esbenp.prettier-vscode"]
 }

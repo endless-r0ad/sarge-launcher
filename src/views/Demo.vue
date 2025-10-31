@@ -13,7 +13,7 @@
   import { useConfig } from '@/composables/config'
   import { useClient } from '@/composables/client'
 
-  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], errorAlert: [string], infoAlert: [string]}>()
+  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
   defineProps<{ latestGithubVersion: string | null }>()
 
   const componentName = ref('Demo Browser')
@@ -53,10 +53,10 @@
     try {
       let isNewClient = await pickClient()
       if (!isNewClient) {
-        emit('infoAlert', 'client already added')
+        emit('alert', 'info', 'client already added')
       }
     } catch (err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
   }
 
@@ -109,7 +109,7 @@
       })
 
     } catch (err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
 
     loading.value = false
@@ -225,7 +225,7 @@
       })      
       emit('spawnQuake', args)
     } catch (err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }   
   }
   

@@ -7,7 +7,7 @@
 
   const props = defineProps<{ profiledClient: Q3Executable }>()
 
-  const emit = defineEmits<{ cancelModal: []; executeModal: []; mutateConfig: []; deleteClient: [] }>()
+  const emit = defineEmits<{ deleteClient: [] }>()
 
   const { 
     getClientConfigs,
@@ -15,14 +15,7 @@
     updateClient
   } = useClient()
 
-  const localClient: Ref<Q3Executable> = ref({
-    name: props.profiledClient.name,
-    exe_path: props.profiledClient.exe_path,
-    parent_path: props.profiledClient.parent_path,
-    gamename: props.profiledClient.gamename,
-    extra_launch_args: props.profiledClient.extra_launch_args,
-    active: props.profiledClient.active
-  })
+  const localClient: Ref<Q3Executable> = ref({ ... props.profiledClient })
 
   watch(() => localClient.value.gamename, (_newVal, _oldVal) => {
     configs.value = []
@@ -32,12 +25,6 @@
   const mountedExtraArgs = ref(props.profiledClient.extra_launch_args)
 
   const defaultClientGame = ref('')
-
-  function handleKeyPress(event: KeyboardEvent) {
-    if (event.code == 'Escape') {
-      emit('cancelModal')
-    }
-  }
 
   async function reveal(p: string) {
     await invoke('reveal_item_in_dir', {path: p})
@@ -62,12 +49,10 @@
   })
 
   onMounted(() => {
-    document.addEventListener('keydown', handleKeyPress)
     defaultClientGame.value = getClientDefaultGamename(localClient.value)
   })
 
   onBeforeUnmount( async() => {
-    document.removeEventListener('keydown', handleKeyPress)
     if (mountedClientGame.value != localClient.value.gamename || mountedExtraArgs.value != localClient.value.extra_launch_args) {
       await updateClient(localClient.value)
     }

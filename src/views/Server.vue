@@ -16,7 +16,7 @@
   import { useClient } from '@/composables/client'
   import { watch, nextTick, defineEmits, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
   
-  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], errorAlert: [string], infoAlert: [string]}>()
+  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
   defineProps<{ latestGithubVersion: string | null }>()
   
   const componentName = ref('Server Browser')
@@ -82,7 +82,7 @@
       info(`${serverIPs.value.length} servers pulled from ${activeMasterServers.value.length} active master servers`)
     }
     catch(err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
   }
 
@@ -118,7 +118,7 @@
                 })
     }
     catch(err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
 
     if (fullRefresh) {
@@ -169,7 +169,7 @@
       }
     }
     catch(err){
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
 
     refreshingSingleServer.value = null;
@@ -211,12 +211,12 @@
   async function handleAddCustomPopup(closeAfterHandle: boolean) {
     if (popupInput.value == '') { return }
     if (!validServerAddress(popupInput.value)) {
-      emit('errorAlert', 'not a valid IP:Port')
+      emit('alert', 'error', 'not a valid IP:Port')
       popupInput.value = '', showPopup.value = '';
       return
     }
     if (appdata.value.pinned.has(popupInput.value) || appdata.value.custom.has(popupInput.value)) {
-      emit('infoAlert', 'custom server is already a pinned server')
+      emit('alert', 'info', 'custom server is already a pinned server')
       popupInput.value = '', showPopup.value = '';
       return
     }
@@ -255,7 +255,7 @@
 
     }
     catch(err){
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
   }
 
@@ -263,7 +263,7 @@
     if (popupInput.value == '') { return }
 
     if (!validIp(popupInput.value)) {
-      emit('errorAlert', 'not a valid IP')
+      emit('alert', 'error', 'not a valid IP')
       popupInput.value = '', showPopup.value = '';
       return
     }
@@ -274,7 +274,7 @@
       await writeAppData()
     }
     catch(err){
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
  
     if (closeAfterHandle) {
@@ -299,7 +299,7 @@
         popupInput.value = ''
       } 
     } catch(err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
   }
 
@@ -313,7 +313,7 @@
       }
       await refreshServers(true)
     } catch(err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
   }
 
@@ -428,7 +428,7 @@
         emit('spawnQuake', args)
       }
     } catch(err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }       
   }
 
@@ -705,7 +705,7 @@
 
 
   <Teleport to="#modal">
-    <Modal v-if="showPopup=='add'" :popupType="'center'" @executeModal="handleAddCustomPopup(true)" @cancelModal="popupInput = '', showPopup = ''">
+    <Modal v-if="showPopup=='add'" :popupType="'center'" @close="popupInput = '', showPopup = ''">
       <label>Add a Custom Server</label> 
       <div>
         <input type="text" placeholder="0.0.0.0:0" v-model="popupInput" class="search" @keyup.enter="handleAddCustomPopup(false)">
@@ -720,7 +720,7 @@
       </div>
     </Modal>
           
-    <Modal v-if="showPopup=='trash'" :popupType="'center'" @executeModal="handleAddTrashIpPopup(true)" @cancelModal="popupInput = '', showPopup = ''">
+    <Modal v-if="showPopup=='trash'" :popupType="'center'" @close="popupInput = '', showPopup = ''">
       <label>Trash all servers of an IP
         <div>
           <input type="text" placeholder="0.0.0.0" v-model="popupInput" class="search"  @keyup.enter="handleAddTrashIpPopup(false)">
@@ -735,7 +735,7 @@
       </div>    
     </Modal>
 
-    <Modal v-if="showPopup=='password'" :popupType="'center'" @executeModal="handleServerPasswordPopup(true)" @cancelModal="popupInput = '', showPopup = ''">
+    <Modal v-if="showPopup=='password'" :popupType="'center'" @close="popupInput = '', showPopup = ''">
       <label>Enter server password
         <div>
           <input type="text" :placeholder="'password'" v-model="popupInput" class="search" @keyup.enter="handleServerPasswordPopup(true)">
@@ -744,7 +744,7 @@
       </label>  
     </Modal>
       
-    <Modal v-if="showPopup=='masterSettings'" :popupType="'center'" @executeModal="handleMasterServerPopup(true)" @cancelModal="popupInput = '', showPopup = ''">   
+    <Modal v-if="showPopup=='masterSettings'" :popupType="'center'" @close="popupInput = '', showPopup = ''">   
       <h3 style="text-align: center; margin-top: -10px;">Master Servers Settings</h3>
       <div v-for="master in appdata.masters" style="height: 32px;">
         <span><input type="checkbox" v-model="master.active"></span>
