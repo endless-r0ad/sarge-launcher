@@ -5,7 +5,7 @@
   import Loading from '@/components/Loading.vue'
   import { invoke } from '@tauri-apps/api/core'
   import { info } from '@tauri-apps/plugin-log'
-  import { ensureError, newCustomServer, validServerAddress, validIp } from '@/utils/util'
+  import { ensureError, newCustomServer, validServerAddress, validIp, getServerProtocol } from '@/utils/util'
   import { type Quake3Server } from '@/models/server'
   import { type MasterServer } from '@/models/master'
   import { useVirtualScroll } from '@/composables/virtualscroll'
@@ -16,8 +16,9 @@
   import { useClient } from '@/composables/client'
   import { watch, nextTick, defineEmits, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
   
-  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], errorAlert: [string], infoAlert: [string]}>()
-
+  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
+  defineProps<{ latestGithubVersion: string | null }>()
+  
   const componentName = ref('Server Browser')
 
   const handleKeyUp = (event: KeyboardEvent) => {
@@ -45,11 +46,11 @@
   })
 
   const { config } = useConfig()
-  const { activeClient, clientGame } = useClient()
+  const { activeClient, clientServerGame } = useClient()
 
   watch(activeClient, async(newVal, oldVal) => {
     if (config.value.refresh_by_mod && newVal?.gamename != oldVal?.gamename) {
-      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientGame.value!) || x.list == 'pinned' || x.list == 'trash')
+      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash')
       toggleShowUnreachableServers()
     }
   })
@@ -72,8 +73,6 @@
 
   const { levelshots } = useLevelshot()
 
-  const refreshingSingle = ref(false)
-
   async function queryMasterServers() {
     loadingEvent.value = 'querying master servers...'
     serverIPs.value = []
@@ -83,13 +82,13 @@
       info(`${serverIPs.value.length} servers pulled from ${activeMasterServers.value.length} active master servers`)
     }
     catch(err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
   }
 
   async function refreshServers(fullRefresh: boolean){
 
-    if (loading.value) { return }
+    if (loading.value || refreshingSingleServer.value) { return }
 
     const startTime = performance.now();
     loading.value = true
@@ -101,32 +100,31 @@
     serverDetailsLastRefresh.value = []
     searchQuery.value = ''
       
-    let refreshByMod = clientGame.value && config.value.refresh_by_mod && !fullRefresh
+    let refreshByMod = clientServerGame.value && config.value.refresh_by_mod && !fullRefresh
 
     if (fullRefresh) {
       await queryMasterServers()
     }
       
-    loadingEvent.value = `querying ${refreshByMod ? clientGame.value : 'all'} servers...`
+    loadingEvent.value = `querying ${refreshByMod ? clientServerGame.value : 'all'} servers...`
 
     try {
 
       serverDetailsLastRefresh.value = await invoke('refresh_all_servers', 
                 { 
-                  allServers: serverIPs.value.filter((x) => refreshByMod ? x.game.includes(clientGame.value!) || x.list == 'trash' : true), 
+                  allServers: serverIPs.value.filter((x) => refreshByMod ? x.game.includes(clientServerGame.value!) || x.list == 'trash' : true), 
                   numThreads: (config.value.server_browser_threads == 0 ? 1 : config.value.server_browser_threads),
                   timeout: config.value.server_timeout
                 })
-      console.log('servers refreshed - ', serverDetailsLastRefresh.value)
     }
     catch(err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
 
     if (fullRefresh) {
       serverIPs.value = serverDetailsLastRefresh.value
       if (activeClient.value && config.value.refresh_by_mod) {
-        serverDetailsLastRefresh.value = serverDetailsLastRefresh.value.filter((x) => x.game.includes(clientGame.value!) || x.list == 'pinned' || x.list == 'trash')
+        serverDetailsLastRefresh.value = serverDetailsLastRefresh.value.filter((x) => x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash')
       }
     }
     
@@ -151,26 +149,30 @@
     }
   }
 
-  async function refreshSingleServer() {
-    if (selectedServer.value == null || refreshingSingle.value) { return }
+  const refreshingSingleServer = ref<Quake3Server | null>(null)
+
+  async function refreshSingleServer(server: Quake3Server) {
+    if (refreshingSingleServer.value) { return }
     
-    refreshingSingle.value = true
+    refreshingSingleServer.value = server
 
     try{
-      let refreshed: Quake3Server = await invoke('refresh_single_server', {refreshServer: selectedServer.value, timeout: 1000})
-
-      let splice_index = serverDetails.value.indexOf(selectedServer.value!)
-      let splice_index2 = serverDetailsLastRefresh.value.indexOf(selectedServer.value!)
+      let refreshed: Quake3Server = await invoke('refresh_single_server', {refreshServer: refreshingSingleServer.value, timeout: 1000})
+      let splice_index = serverDetails.value.indexOf(refreshingSingleServer.value)
+      let splice_index2 = serverDetailsLastRefresh.value.indexOf(refreshingSingleServer.value)
 
       serverDetails.value[splice_index] = refreshed
       serverDetailsLastRefresh.value[splice_index2] = refreshed
-      selectedServer.value = refreshed
 
-      refreshingSingle.value = false;
+      if (server.address === selectedServer.value?.address) {
+        selectedServer.value = refreshed
+      }
     }
     catch(err){
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
+
+    refreshingSingleServer.value = null;
   }
 
   const pinnedServers = computed(() => { return serverDetails.value.filter((s) => s.list == 'pinned') }) 
@@ -209,12 +211,12 @@
   async function handleAddCustomPopup(closeAfterHandle: boolean) {
     if (popupInput.value == '') { return }
     if (!validServerAddress(popupInput.value)) {
-      emit('errorAlert', 'not a valid IP:Port')
+      emit('alert', 'error', 'not a valid IP:Port')
       popupInput.value = '', showPopup.value = '';
       return
     }
-    if (appdata.value.pinned.has(popupInput.value)) {
-      emit('infoAlert', 'custom server is already a pinned server')
+    if (appdata.value.pinned.has(popupInput.value) || appdata.value.custom.has(popupInput.value)) {
+      emit('alert', 'info', 'custom server is already a pinned server')
       popupInput.value = '', showPopup.value = '';
       return
     }
@@ -228,6 +230,8 @@
 
       if (alreadyOnMaster) {
         alreadyOnMaster.list = 'pinned'
+        alreadyOnMaster.custom = true
+        await refreshSingleServer(alreadyOnMaster)
         popupInput.value = ''
         return
       } 
@@ -237,18 +241,11 @@
       
       lastSelectedServer.value = selectedServer.value
       selectedServer.value = customServer
-      refreshingSingle.value = true
-
+    
       serverDetails.value.push(customServer)
       serverDetailsLastRefresh.value.push(customServer) 
       
-      let refreshed: Quake3Server = await invoke('refresh_single_server', {refreshServer: selectedServer.value, timeout: 1000})
-
-      serverDetails.value[serverDetails.value.length-1] = refreshed
-      serverDetailsLastRefresh.value[serverDetailsLastRefresh.value.length-1] = refreshed
-      selectedServer.value = refreshed
-
-      refreshingSingle.value = false;
+      await refreshSingleServer(selectedServer.value)
 
       if (closeAfterHandle) {
         popupInput.value = '', showPopup.value = '';
@@ -258,7 +255,7 @@
 
     }
     catch(err){
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
   }
 
@@ -266,7 +263,7 @@
     if (popupInput.value == '') { return }
 
     if (!validIp(popupInput.value)) {
-      emit('errorAlert', 'not a valid IP')
+      emit('alert', 'error', 'not a valid IP')
       popupInput.value = '', showPopup.value = '';
       return
     }
@@ -277,7 +274,7 @@
       await writeAppData()
     }
     catch(err){
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
  
     if (closeAfterHandle) {
@@ -302,7 +299,7 @@
         popupInput.value = ''
       } 
     } catch(err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
   }
 
@@ -316,7 +313,7 @@
       }
       await refreshServers(true)
     } catch(err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
   }
 
@@ -383,7 +380,7 @@
   function keySelect(increment: number){   
     let proposedIndex = selectedServerIndex.value + increment
       
-    if (selectedServer.value == null || refreshingSingle.value || keySelectOutOfBound(proposedIndex))
+    if (selectedServer.value == null || refreshingSingleServer.value || keySelectOutOfBound(proposedIndex))
     {
       return
     }
@@ -423,7 +420,7 @@
     if (selectedServer.value == null) { return }
 
     try {
-      let args = ['+set', 'fs_game', selectedServer.value.game, '+set', 'protocol', selectedServer.value.protocol?.toString() ?? '68', '+connect', selectedServer.value.address];
+      let args = ['+set', 'fs_game', selectedServer.value.game, '+set', 'protocol', getServerProtocol(selectedServer.value), '+connect', selectedServer.value.address];
       if ('g_needpass' in selectedServer.value.othersettings && selectedServer.value.othersettings['g_needpass'] == '1') {
         showPopup.value = 'password'
         popupInput.value = appdata.value.server_password
@@ -431,7 +428,7 @@
         emit('spawnQuake', args)
       }
     } catch(err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }       
   }
 
@@ -466,7 +463,7 @@
 
   watch(() => config.value.refresh_by_mod, (newVal, _oldVal) => {
     if (newVal && activeClient.value) {
-      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientGame.value!) || x.list == 'pinned' || x.list == 'trash')
+      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash')
       toggleShowUnreachableServers()
     }
     if (!newVal) {
@@ -509,6 +506,7 @@
 
     if (server) {
       server.list = 'main'
+      server.custom = false
     }
     removeAppData('custom', address)
     writeAppData()
@@ -586,7 +584,7 @@
   
     <div class="table-column-header">
       <span style="width: 3%;"></span>
-      <span style="width: 11%; text-align: left;"><span class="sort-header" @click="sortServers('game');">game</span><span :class="getArrowSort('game')" @click="sortServers('game');"/></span>
+      <span style="width: 11%; text-align: left;"><span class="sort-header" @click="sortServers('game');">fs_game</span><span :class="getArrowSort('game')" @click="sortServers('game');"/></span>
       <span style="width: 3%;"></span>
       <span style="width: 36%; text-align: left;"><span class="sort-header" @click="sortServers('host');">hostname</span><span :class="getArrowSort('host')" @click="sortServers('host');" /></span>
       <span style="width: 1%;"></span>
@@ -604,7 +602,6 @@
       @keydown.up.prevent="keySelect(-1)" 
       @keydown.down.prevent="keySelect(1)" 
       @keydown.enter.prevent="spawnQuake()"
-      @keydown.space.prevent="refreshSingleServer()"
       id="serverTable"
       ref="serverTable"
       >
@@ -626,14 +623,15 @@
           :server="server"
           :isSelected="server === selectedServer"
           :displayDetails="displayDetails"
-          :refreshing="refreshingSingle"
+          :refreshing="server === refreshingSingleServer"
           :altKeyHeld="altKeyHeld"
           :levelshotPath="levelshots[server.map.toLowerCase()] ?? null"
           tabindex="0"
           @click="clickServer(server, index, $event);"
           @showDetails="displayDetails = true"
           @hideDetails="displayDetails = false"
-          @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer();"
+          @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer(server);"
+          @keydown.space.prevent="refreshSingleServer(server)"
         />              
         <ServerRow v-for="(server, index) in getVirtualRows" 
           class="row"
@@ -643,7 +641,7 @@
           :server="server"
           :isSelected="server === selectedServer"
           :displayDetails="displayDetails"
-          :refreshing="refreshingSingle"
+          :refreshing="server === refreshingSingleServer"
           :altKeyHeld="altKeyHeld"
           :displayDetailsOnMount="keepSelectedDetailsOpen"
           :levelshotPath="levelshots[server.map.toLowerCase()] ?? null"
@@ -651,8 +649,9 @@
           @click="clickServer(server, index, $event);"
           @showDetails="displayDetails = true"
           @hideDetails="displayDetails = false"
-          @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer();"
+          @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer(server);"
           @detailsDisplayedOnUnmount="keepSelectedDetailsOpen = !keepSelectedDetailsOpen"
+          @keydown.space.prevent="refreshSingleServer(server)"
           />    
         <div v-if="config.show_trashed_servers">
           <ServerRow v-for="(server, index) in trashServers" 
@@ -662,14 +661,15 @@
           :server="server"
           :isSelected="server === selectedServer"
           :displayDetails="displayDetails"
-          :refreshing="refreshingSingle"
+          :refreshing="server === refreshingSingleServer"
           :altKeyHeld="altKeyHeld"
           :levelshotPath="levelshots[server.map.toLowerCase()] ?? null"
           tabindex="0"
           @click="clickServer(server, index, $event);"
           @showDetails="displayDetails = true"
           @hideDetails="displayDetails = false"
-          @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer();"
+          @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer(server);"
+          @keydown.space.prevent="refreshSingleServer(server)"
           /> 
         </div> 
         <div v-if="!config.show_trashed_servers && trashLength > 0" class="hidden-trash" @click="displayTrashedServers()">
@@ -705,7 +705,7 @@
 
 
   <Teleport to="#modal">
-    <Modal v-if="showPopup=='add'" :popupType="'center'" @executeModal="handleAddCustomPopup(true)" @cancelModal="popupInput = '', showPopup = ''">
+    <Modal v-if="showPopup=='add'" :popupType="'center'" @close="popupInput = '', showPopup = ''">
       <label>Add a Custom Server</label> 
       <div>
         <input type="text" placeholder="0.0.0.0:0" v-model="popupInput" class="search" @keyup.enter="handleAddCustomPopup(false)">
@@ -720,7 +720,7 @@
       </div>
     </Modal>
           
-    <Modal v-if="showPopup=='trash'" :popupType="'center'" @executeModal="handleAddTrashIpPopup(true)" @cancelModal="popupInput = '', showPopup = ''">
+    <Modal v-if="showPopup=='trash'" :popupType="'center'" @close="popupInput = '', showPopup = ''">
       <label>Trash all servers of an IP
         <div>
           <input type="text" placeholder="0.0.0.0" v-model="popupInput" class="search"  @keyup.enter="handleAddTrashIpPopup(false)">
@@ -735,7 +735,7 @@
       </div>    
     </Modal>
 
-    <Modal v-if="showPopup=='password'" :popupType="'center'" @executeModal="handleServerPasswordPopup(true)" @cancelModal="popupInput = '', showPopup = ''">
+    <Modal v-if="showPopup=='password'" :popupType="'center'" @close="popupInput = '', showPopup = ''">
       <label>Enter server password
         <div>
           <input type="text" :placeholder="'password'" v-model="popupInput" class="search" @keyup.enter="handleServerPasswordPopup(true)">
@@ -744,7 +744,7 @@
       </label>  
     </Modal>
       
-    <Modal v-if="showPopup=='masterSettings'" :popupType="'center'" @executeModal="handleMasterServerPopup(true)" @cancelModal="popupInput = '', showPopup = ''">   
+    <Modal v-if="showPopup=='masterSettings'" :popupType="'center'" @close="popupInput = '', showPopup = ''">   
       <h3 style="text-align: center; margin-top: -10px;">Master Servers Settings</h3>
       <div v-for="master in appdata.masters" style="height: 32px;">
         <span><input type="checkbox" v-model="master.active"></span>
@@ -774,14 +774,6 @@
     line-height: 48px;
     font-size: large;
     font-weight: 600;
-  }
-
-  .unfiltered {
-    width: 8px;
-    height: 8px;
-    cursor: pointer;
-    position: relative;
-    margin: 3px 0 0 2px;
   }
 
   .pinned {
@@ -814,21 +806,6 @@
   .trash-icon {
     height: 22px;
     margin-bottom: -2px;
-  }
-
-  .servers-tip-text {
-    visibility: hidden;
-    width: 120px;
-    background-color: black;
-    color: #fff;
-    text-align: center;
-    padding: 5px 0;
-    border-radius: 6px;
-
-  }
-
-  .servers-tip:hover .servers-tip-text {
-    visibility: visible;
   }
 
   .refresh-master-button {
@@ -873,16 +850,6 @@
     cursor: pointer;
   }
 
-  .master-hover-right {
-    float: right;
-    width: 85%;
-  }
-
-  .master-hover-left {
-    margin: 0 86% 0 0;
-  }
-
-
   .empty-pinned {
     background-color: var(--alt-bg);
     text-align: center; 
@@ -915,12 +882,6 @@
     background-color: rgba(36, 68, 37, 0.25);
   }
 
-  .data {
-    text-align: left;
-    white-space: nowrap; 
-    overflow: hidden;
-  }
-
   .close-button {
     background: rgba(0, 0, 0, 0);
     border: 1px solid var(--main-bg);
@@ -931,23 +892,6 @@
   .close-button:hover {
     background-color: var(--main-bg);
     cursor: pointer;
-  }
-
-  .custom-ip {
-    outline: none;
-    width: 80%;
-    height: 18px;
-    background-color: var(--main-bg);
-    color: #ccc;
-    border-width: 0px;
-    border-radius: 0.2rem;
-    margin: 8px 0px;
-    padding: 2px 0px;
-    text-indent: 4px;
-  }
-
-  .custom-ip::selection {
-    outline: 1px solid #333;
   }
     
 </style>

@@ -1,12 +1,26 @@
 import { ref, onMounted, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import type { Q3Executable } from '@/models/client'
+import type { Q3Executable, Q3Config } from '@/models/client'
 import { useConfig } from '@/composables/config'
 import { error } from '@tauri-apps/plugin-log'
-import { ensureError } from '@/utils/util'
+import { ensureError, getClientGameProtocol } from '@/utils/util'
 
 const activeClient = ref<Q3Executable | null>(null)
-const clientPaths = ref<string[]>([])
+const activeClientPaths = ref<string[]>([])
+
+const activeClientProtocol = computed(() => { return getClientGameProtocol(activeClient.value)})
+
+const activeClientDefaultArgs = computed(() => {
+  if (!activeClient.value) { return [] }
+  return ['+set', 'fs_game', activeClient.value.gamename, 
+          '+set', 'protocol', activeClientProtocol.value.toString(),
+          '+set', 'fs_basepath', activeClient.value.parent_path]
+})
+
+const activeClientUserArgs = computed(() => {
+  if (!activeClient.value || activeClient.value.extra_launch_args == "") { return [] }
+  return activeClient.value.extra_launch_args.split(" ")
+})
 
 export function useClient() {
 
@@ -15,7 +29,7 @@ export function useClient() {
     writeConfig
   } = useConfig()
 
-  const clientGame = computed(() => {
+  const clientServerGame = computed(() => {
     if (!activeClient.value) {
       return null
     }
@@ -39,38 +53,36 @@ export function useClient() {
     }
     client.active = true
     config.value.q3_clients.push(client)
-    clientPaths.value = await getClientPaths(client)
+    activeClientPaths.value = await getClientPaths(client)
 
     activeClient.value = client
   }
 
   async function toggleQ3Client(client: Q3Executable) {
-    if (client == activeClient.value) {
-      return
-    }
     config.value.q3_clients.map((c) => {
       c.active = c.exe_path == client.exe_path
     })
-    clientPaths.value = await getClientPaths(client)
+    activeClientPaths.value = await getClientPaths(client)
 
     activeClient.value = client
   }
 
   async function deleteQ3Client(client: Q3Executable) {
-    if (config.value.q3_clients.length == 0) {
+    if (config.value.q3_clients.length == 0 || clientConfigIndex(client) == -1)  {
       return
     }
 
     config.value.q3_clients = config.value.q3_clients.filter((c) => c.exe_path != client.exe_path)
     if (config.value.q3_clients.length == 0) {
       activeClient.value = null
-      clientPaths.value = []
+      activeClientPaths.value = []
     }
     if (config.value.q3_clients.length > 0 && !config.value.q3_clients.some((x) => x.active)) {
       config.value.q3_clients[0]!.active = true
-      clientPaths.value = await getClientPaths(config.value.q3_clients[0]!)
+      activeClientPaths.value = await getClientPaths(config.value.q3_clients[0]!)
       activeClient.value = config.value.q3_clients[0]!
     }
+    await writeConfig()
   }
 
   async function pickClient(): Promise<boolean> {
@@ -81,6 +93,7 @@ export function useClient() {
         if (config.value.q3_clients.some((c) => c.exe_path === new_client.exe_path)) {
           return false
         }
+        new_client.gamename = getClientDefaultGamename(new_client)
         addQ3Client(new_client)
         await writeConfig()
       }
@@ -90,25 +103,88 @@ export function useClient() {
     }
   }
 
+  async function updateClient(client: Q3Executable) {
+    try {
+      let index = clientConfigIndex(client)
+      if (index != -1) {
+        config.value.q3_clients[index] = client
+        if (client.exe_path === activeClient.value?.exe_path) {
+          await toggleQ3Client(client)
+        }
+        await writeConfig()
+      } 
+    } catch (err) {
+      error(ensureError(err).message)
+    }
+  }
+
+  async function getClientConfigs(client: Q3Executable): Promise<Q3Config[]> {
+    try {
+      let paths = await getClientPaths(client)
+      let q3Configs: Q3Config[] = await invoke('get_client_configs', {searchPaths: paths})
+      return q3Configs
+    } catch (err) {
+      error(ensureError(err).message)
+      return []
+    }
+  }
+
+  function getClientDefaultGamename(client: Q3Executable): string {
+    switch (client.name.toLowerCase()) {
+			case "quake3-urt":
+      case "quake3e_urt.x64":
+        return 'q3ut4'
+			case "odfe":
+      case "odfe.vk":
+      case "odfe.x64":
+      case "odfe.vk.x64":
+      case 'idfe':
+      case 'idfe.vk':
+      case 'idfe.x64':
+      case 'idfe.vk.x64':
+      case 'idfe.x86_64':
+      case 'idfe.vk.x86_64':
+        return 'defrag'
+      case 'cnq3-x64':
+      case 'cnq3-x86':
+        return 'cpma'
+      case 'openarena':
+      case 'omega-x64':
+        return 'baseoa'
+      default:
+        return 'baseq3'
+		}
+  }
+
   function clientAlreadyActivated(): boolean {
     return config.value.q3_clients.some((x) => x.active)
+  }
+
+  function clientConfigIndex(client: Q3Executable): number {
+    return config.value.q3_clients.findIndex((c) => c.exe_path === client.exe_path)
   }
 
   onMounted( async()=>{
     if (config.value.q3_clients.length > 0 && !clientAlreadyActivated()) {
       let client: Q3Executable = config.value.q3_clients[0]!
       client.active = true
-      clientPaths.value = await getClientPaths(client)
+      activeClientPaths.value = await getClientPaths(client)
       activeClient.value = client
     }
   })
 
   return {
     activeClient,
-    clientGame,
+    activeClientPaths,
+    activeClientDefaultArgs,
+    activeClientUserArgs,
+    activeClientProtocol,
+    clientServerGame,
+    getClientDefaultGamename,
+    updateClient,
     toggleQ3Client,
     deleteQ3Client,
     pickClient,
-    clientPaths
+    getClientConfigs
   }
 }

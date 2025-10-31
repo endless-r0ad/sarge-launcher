@@ -5,10 +5,12 @@
   import { useConfig } from '@/composables/config'
   import { useClient } from '@/composables/client'
 
-  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], errorAlert: [string], infoAlert: [string]}>()
+  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
+  const props = defineProps<{ latestGithubVersion: string | null }>()
 
   const componentName = ref('Sarge Launcher')
-
+  const appVersion = 'v0.2.0'
+  const updateAvailable = ref(props.latestGithubVersion && appVersion != props.latestGithubVersion)
   const { config } = useConfig()
   const { pickClient } = useClient()
 
@@ -18,10 +20,10 @@
     try {
       let isNewClient = await pickClient()
       if (!isNewClient) {
-        emit('infoAlert', 'client already added')
+        emit('alert', 'info', 'client already added')
       }
     } catch (err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
   }
 
@@ -31,13 +33,21 @@
 
 <template>
   <Teleport to="#modal">
-    <Modal v-if="config.welcome_message" :popupType="'center'" @cancelModal="config.welcome_message = false">
+    <Modal v-if="config.welcome_message || updateAvailable" :popupType="'center'" @close="config.welcome_message = false; updateAvailable = false">
       <div style="width: 400px">
         <img style="position: absolute; left: 15%; top: 4%" src="../assets/icons/sarge.svg" />
         <h2 style="position: absolute; right: 15%; top: 4%">SARGE LAUNCHER</h2>
+        <a v-if="props.latestGithubVersion && appVersion != props.latestGithubVersion" 
+          class="link" 
+          href="https://github.com/endless-r0ad/sarge-launcher/releases" 
+          target="_blank">
+          <p style="position: absolute; right: 42%; top: 16%; font-size: 75%; color: #00ffff;">
+            update available
+          </p>
+        </a>
         <a class="link" href="https://github.com/endless-r0ad/sarge-launcher" target="_blank">
           <p style="position: absolute; right: 15%; top: 16%; font-size: 75%;">
-            v0.1.1
+            {{ appVersion }}
           </p>
         </a>
         <p style="margin-top: 72px">
@@ -54,13 +64,13 @@
 
   <div class="client-grid" draggable="false">
     <div
-      class="grid-bg welcome-bg grow"
-      @mouseover="hoveredCard = 'welcome'"
+      class="grid-bg about-bg grow"
+      @mouseover="hoveredCard = 'about'"
       @mouseleave="hoveredCard = ''"
       @click="config.welcome_message = true"
       style="grid-column: 1; grid-row: 1"
     >
-      <div v-if="hoveredCard == 'welcome'" class="tint">
+      <div v-if="hoveredCard == 'about'" class="tint">
         <span class="center card-name" draggable="false">{{ hoveredCard }}</span>
       </div>
     </div>
@@ -125,7 +135,7 @@
       </a>
     </div>
     <div
-      class="grid-bg banner-bg grow"
+      class="grid-bg mod-bg grow"
       @mouseover="hoveredCard = 'quake 3 mods'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 2 / 4; grid-row: 3"
@@ -220,7 +230,7 @@
     background-size: 10%;
   }
 
-  .banner-bg {
+  .mod-bg {
     background-image: url('../assets/images/code.png');
     background-size: 100%;
     background-position: 20% 40%;
@@ -230,7 +240,7 @@
     background-image: url('../assets/images/q3_box_art.jpg');
   }
 
-  .welcome-bg {
+  .about-bg {
     background-image: url('../assets/icons/sarge.svg');
     background-size: 40%;
   }
@@ -260,10 +270,6 @@
     background-position: center center;
   }
 
-  .mod-bg {
-    background-position: center center;
-  }
-
   .oa-bg {
     background-image: url('../assets/images/baseoa.svg');
     background-size: 70%;
@@ -288,37 +294,10 @@
     background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 1%, rgba(255, 255, 255, 0.001) 25.35%);
   }
 
-  .play-pause {
-    position: absolute;
-    left: 94%;
-    top: 10%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    z-index: 999;
-  }
-
   .center {
     position: absolute;
     left: 50%;
     top: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    min-width: 100%;
-  }
-
-  .center-steam {
-    position: absolute;
-    left: 50%;
-    top: 40%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    min-width: 100%;
-  }
-
-  .center-gog {
-    position: absolute;
-    left: 50%;
-    top: 60%;
     transform: translate(-50%, -50%);
     text-align: center;
     min-width: 100%;

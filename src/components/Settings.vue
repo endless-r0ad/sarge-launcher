@@ -1,16 +1,46 @@
 <script setup lang="ts">
+  import { useAppData } from '@/composables/appdata'
   import { useConfig } from '@/composables/config'
+  import { invoke } from '@tauri-apps/api/core'
+  import { onBeforeUnmount, ref, type Ref } from 'vue'
+  import { type Config } from '@/models/config'
 
-  const { config } = useConfig()
+  const { config, writeConfig } = useConfig()
+  const { appdata } = useAppData()
 
+  const localConfig: Ref<Config> = ref({ ...config.value })
+
+  async function reveal(p: string) {
+    await invoke('reveal_item_in_dir', { path: p })
+  }
+
+  async function reveal_log() {
+    await invoke('reveal_log')
+  }
+
+  onBeforeUnmount(async () => {
+    if (
+      config.value.manage_q3_instance != localConfig.value.manage_q3_instance ||
+      config.value.refresh_by_mod != localConfig.value.refresh_by_mod ||
+      config.value.show_unreachable != localConfig.value.show_unreachable ||
+      config.value.show_trashed_servers != localConfig.value.show_trashed_servers ||
+      config.value.server_browser_threads != localConfig.value.server_browser_threads ||
+      config.value.server_timeout != localConfig.value.server_timeout ||
+      config.value.autoclose_demo != localConfig.value.autoclose_demo ||
+      config.value.loop_demo != localConfig.value.loop_demo ||
+      config.value.get_full_demo_data != localConfig.value.get_full_demo_data
+    ) {
+      await writeConfig()
+    }
+  })
 </script>
 
 <template>
-  <div class="item" style="padding-bottom: 10px;">
+  <div class="item">
     <input type="checkbox" v-model="config.manage_q3_instance" />
     <label class="ml-1">Manage Q3 Instance</label>
   </div>
-  <div class="item" style="padding-top: 10px; border-top: 1px solid var(--main-bg);">
+  <div class="item" style="padding-top: 10px; border-top: 1px solid var(--main-bg)">
     <input type="checkbox" v-model="config.refresh_by_mod" />
     <label class="ml-1">Refresh by Client Game</label>
   </div>
@@ -35,27 +65,33 @@
     +
     <label class="ml-1">Server Timeout - {{ config.server_timeout }}ms</label>
   </div>
-  <div class="item" style="padding-bottom: 10px;">
+  <div class="item">
     <input type="range" min="200" max="1000" step="100" value="400" class="slider" v-model.number="config.server_timeout" />
   </div>
-  <div class="item" style="padding-top: 10px; border-top: 1px solid var(--main-bg);">
+  <div class="item" style="padding-top: 10px; border-top: 1px solid var(--main-bg)">
     <input type="checkbox" v-model="config.autoclose_demo" />
     <label class="ml-1">Autoclose demo</label>
   </div>
-  <div class="item"><input type="checkbox" v-model="config.loop_demo" />
+  <div class="item">
+    <input type="checkbox" v-model="config.loop_demo" />
     <label class="ml-1">Loop demo</label>
   </div>
-  <div class="item"><input type="checkbox" v-model="config.get_full_demo_data" />
+  <div class="item" style="padding-bottom: 10px; border-bottom: 1px solid var(--main-bg)">
+    <input type="checkbox" v-model="config.get_full_demo_data" />
     <label class="ml-1">Parse full demo data</label>
+  </div>
+  <div class="item" style="display: inline-block; padding-top: 4px">
+    <button class="refresh-button" style="font-size: 90%" @click="reveal(config.path)">config</button>
+  </div>
+  <div class="item" style="display: inline-block">
+    <button class="refresh-button" style="font-size: 90%" @click="reveal(appdata.path)">appdata</button>
+  </div>
+  <div class="item" style="display: inline-block">
+    <button class="refresh-button" style="font-size: 90%" @click="reveal_log()">log</button>
   </div>
 </template>
 
 <style scoped>
-  .item {
-    padding-bottom: 8px;
-    text-align: left;
-  }
-
   .conf-plus {
     margin: 0px 4px 0px 2px;
     text-align: left;

@@ -4,33 +4,29 @@
   import Modal from '@/components/Modal.vue'
   import Sidebar from '@/components/Sidebar.vue'
   import Settings from '@/components/Settings.vue'
-  import { ensureError } from '@/utils/util'
+  import { ensureError, getLatestGithubRelease } from '@/utils/util'
   import { ref, onMounted } from 'vue'
   import { invoke } from '@tauri-apps/api/core'
   import { info, error } from '@tauri-apps/plugin-log'
   import { useConfig } from './composables/config'
   import { useClient } from './composables/client'
 
-  const { config, writeConfig } = useConfig()
-  const { activeClient } = useClient()
+  const { config } = useConfig()
+  const { activeClient, activeClientDefaultArgs, activeClientUserArgs } = useClient()
 
   const isMounted = ref(false)
+  const latestRelease = ref<string | null>(null)
 
   onMounted(async () => {
-    await new Promise((r) => setTimeout(r, 500))
+    try {
+      latestRelease.value = await getLatestGithubRelease()
+    } catch (err) {
+      error(ensureError(err).message)
+    }
+    await new Promise((r) => setTimeout(r, 300))
     isMounted.value = true
   })
-
-  async function saveConfig() {
-    try {
-      showSettings.value = false
-      await writeConfig()
-    } catch (err) {
-      errorAlert(ensureError(err).message)
-    }
-  }
   
-  const q3ClientProcessId = ref<number | null>(null)
   const currentComponent = ref('')
 
   function getComponentName(componentName: string) { 
@@ -39,47 +35,32 @@
 
   const showSettings = ref(false)
 
-  function toggleSettings() { showSettings.value = !showSettings.value }
-
-  const showAlertPopup = ref(false)
-  const popupType = ref('')
   const alertMessage = ref('')
+  const alertType = ref('')
 
-  function infoAlert(infoMsg: string) {
-    info(infoMsg)
-    showAlertPopup.value = true 
-    popupType.value = 'info'
-    alertMessage.value = infoMsg
+  function alert(type: string, msg: string) {
+    alertType.value = type
+    type == 'info' ? info(msg) : error(msg)
+    alertMessage.value = msg
   }
 
-  function errorAlert(err: string) {
-    error(err)
-    showAlertPopup.value = true
-    popupType.value = 'error'
-    alertMessage.value = err
-  }
+  const q3ClientProcessId = ref<number | null>(null)
 
-  function closeAlert() { 
-    showAlertPopup.value = false
-    popupType.value = ''
-    alertMessage.value = '' 
-  }
-
-  async function spawnQuake(launchArgs: string[]) {
+  async function spawnQuake(viewSuppliedArgs: string[]) {
     try {
       if (config.value.manage_q3_instance) {
         await invoke('kill_q3_client', { processId: q3ClientProcessId.value })
       }
       q3ClientProcessId.value = await invoke('spawn_client', {
         activeClient: activeClient.value,
-        q3Args: ['+set', 'fs_basepath', activeClient.value?.parent_path].concat(launchArgs)
+        q3Args: activeClientDefaultArgs.value.concat(viewSuppliedArgs).concat(activeClientUserArgs.value)
       })
     } catch (err) {
       const e: Error = ensureError(err)
       if (e.message.includes('expected struct Q3Executable') || e.message.includes('missing required key activeClient')) {
-        infoAlert('Please configure a Quake 3 client to launch')
+        alert('info', 'Please configure a Quake 3 client to launch')
       } else {
-        errorAlert(e.message)
+        alert('error', e.message)
       }
     }
   }
@@ -88,37 +69,29 @@
 
 <template>
   <Loading v-if="!isMounted" :position="'center'" :message="'loading...'" :size="90" />
-
-  <Header
-    v-if="isMounted"
-    :currentView="currentComponent"
-    @spawnQuake="spawnQuake"
-    @errorAlert="errorAlert"
-    @infoAlert="infoAlert"
-  />
-
-  <Sidebar v-if="isMounted" :showSettings="showSettings" @toggleSettings="toggleSettings" @exitApp="invoke('exit_app')" />
+  <Header v-if="isMounted" :currentView="currentComponent" @spawnQuake="spawnQuake" @alert="alert" />
+  <Sidebar v-if="isMounted" :showSettings="showSettings" @toggleSettings="showSettings=!showSettings" @exitApp="invoke('exit_app')" />
 
   <main v-if="isMounted" class="main-view">
     <router-view v-slot="{ Component }">
       <KeepAlive>
         <component
           :is="Component"
+          :latestGithubVersion="latestRelease"
           @spawnQuake="spawnQuake"
           @emitComponentName="getComponentName"
-          @errorAlert="errorAlert"
-          @infoAlert="infoAlert"
+          @alert="alert"
         />
       </KeepAlive>
     </router-view>
   </main>
 
   <div id="modal">
-    <Modal v-if="showAlertPopup" :popupType="popupType" @cancelModal="closeAlert" @executeModal="closeAlert">
+    <Modal v-if="alertMessage != ''" :popupType="alertType" @close="alertType = ''; alertMessage = '' ">
       {{ alertMessage }}
     </Modal>
     
-    <Modal v-if="showSettings" :popupType="'center'" @executeModal="saveConfig" @cancelModal="saveConfig">
+    <Modal v-if="showSettings" :popupType="'center'" @close="showSettings=false">
       <Settings />
     </Modal>
   </div>

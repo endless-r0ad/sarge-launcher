@@ -1,5 +1,6 @@
 import { type Config, type AppData } from '@/models/config'
 import { type Quake3Server } from '@/models/server'
+import { type Q3Executable } from '@/models/client'
 
 export function ensureError(value: unknown): Error {
   if (value instanceof Error) return value
@@ -224,3 +225,38 @@ export const OA_BOT_NAMES: string[] = [
   'tanisha',
   'tony',
 ]
+
+export function getClientGameProtocol(client: Q3Executable | null): number {
+  let protocol71Mods = ['baseoa', 'rat']
+
+  if (!client) { return 68}
+  if (client.name.includes('liliumarenaclassic')) { return 43 }
+  if (protocol71Mods.includes(client.gamename)) { return 71 }
+  return 68
+}
+
+export function getServerProtocol(serv: Quake3Server): string {
+  if (serv.protocol) {
+    return serv.protocol.toString()
+  }
+  if (serv.othersettings.hasOwnProperty('protocol')) {
+    return serv.othersettings['protocol']
+  }
+  return '68'
+}
+
+export async function getLatestGithubRelease() {
+  const url = "https://api.github.com/repos/endless-r0ad/sarge-launcher/releases/latest"
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Request for latest release version status: ${response.status}`)
+    }
+    const result = await response.json()
+
+    return result.tag_name
+  } catch (err) {
+    throw err
+  }
+}

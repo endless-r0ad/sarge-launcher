@@ -8,20 +8,16 @@
   
   const { activeClient, pickClient } = useClient()
 
-  const emit = defineEmits<{
-    spawnQuake: [string[]]
-    errorAlert: [string]
-    infoAlert: [string]
-  }>()
+  const emit = defineEmits<{ spawnQuake: [string[]], alert: [string, string] }>()
 
   async function pickQ3Client() {
     try {
       let isNewClient = await pickClient()
       if (!isNewClient) {
-        emit('infoAlert', 'client already added')
+        emit('alert', 'info', 'client already added')
       }
     } catch (err) {
-      emit('errorAlert', ensureError(err).message)
+      emit('alert', 'error', ensureError(err).message)
     }
   }
 

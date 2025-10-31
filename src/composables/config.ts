@@ -22,7 +22,11 @@ watch(() => config.value.autoclose_demo, (newVal, _oldVal) => {
 export function useConfig() {
 
   async function writeConfig() {
-    await invoke('save_config', { updatedConfig: config.value })
+    try {
+      await invoke('save_config', { updatedConfig: config.value })
+    } catch(err) {
+      error(`Error saving config: ${ensureError(err).message}`)
+    }
   }
 
   onMounted( async()=>{

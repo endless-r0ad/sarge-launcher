@@ -1,5 +1,4 @@
 use image::DynamicImage;
-use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::{collections::HashMap, path::PathBuf};
 use std::fs::{create_dir, File};
@@ -41,9 +40,7 @@ pub async fn get_levels(search_paths: Vec<String>, get_all_data: bool) -> Result
 		levels.append(&mut Level::get_q3_levels(path, get_all_data).await?);
 	}
 
-	let unique_levels = levels.into_iter().unique_by(|l| l.to_owned().level_name).collect::<Vec<_>>();
-
-	Ok(unique_levels)
+	Ok(levels)
 }
 
 #[tauri::command(async)]
