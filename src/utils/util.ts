@@ -227,7 +227,7 @@ export const OA_BOT_NAMES: string[] = [
 ]
 
 export function getClientGameProtocol(client: Q3Executable | null): number {
-  let protocol71Mods = ['baseoa', 'rat', 'missionpack']
+  let protocol71Mods = ['baseoa', 'rat']
 
   if (!client) { return 68}
   if (client.name.includes('liliumarenaclassic')) { return 43 }

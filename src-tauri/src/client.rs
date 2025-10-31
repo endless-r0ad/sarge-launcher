@@ -30,7 +30,6 @@ impl Q3Executable {
         match self.gamename.to_lowercase().as_str() {
             "baseoa" => return true,
             "rat" => return true, 
-            "missionpack" => return true, 
             _ => return false
         }
     }
