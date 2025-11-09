@@ -3,6 +3,7 @@
   import ServerRow from '@/components/ServerRow.vue'
   import Modal from '@/components/Modal.vue'
   import Loading from '@/components/Loading.vue'
+  import MasterSettings from '@/components/MasterSettings.vue'
   import { invoke } from '@tauri-apps/api/core'
   import { info } from '@tauri-apps/plugin-log'
   import { ensureError, newCustomServer, validServerAddress, validIp, getServerProtocol } from '@/utils/util'
@@ -55,7 +56,7 @@
     }
   })
 
-  const { appdata, addAppData, removeAppData, writeAppData } = useAppData();
+  const { appdata, addAppData, removeAppData, writeAppData, activeMasterServers, setServerPassword } = useAppData();
 
   const loading = ref(false)
   const loadingEvent = ref('')
@@ -288,7 +289,7 @@
     if (popupInput.value == '') { return }
 
     try {
-      appdata.value.server_password = popupInput.value
+      setServerPassword(popupInput.value)
       await writeAppData()
       let args = ['+set', 'fs_game', selectedServer.value!.game, '+password', popupInput.value, '+connect', selectedServer.value!.address];
       emit('spawnQuake', args)   
@@ -298,20 +299,6 @@
       } else {
         popupInput.value = ''
       } 
-    } catch(err) {
-      emit('alert', 'error', ensureError(err).message)
-    }
-  }
-
-  async function handleMasterServerPopup(closeAfterHandle: boolean) {
-    try {
-      await writeAppData()
-      if (closeAfterHandle) {
-        popupInput.value = '', showPopup.value = '';
-      } else {
-        popupInput.value = ''
-      }
-      await refreshServers(true)
     } catch(err) {
       emit('alert', 'error', ensureError(err).message)
     }
@@ -434,10 +421,6 @@
 
   const popupInput = ref('')
   const masterServerHover = ref(false)
-
-  const activeMasterServers = computed(() => {
-    return appdata.value.masters.filter((m) => m.active);
-  })
 
   const altKeyHeld = ref(false)
   const keepSelectedDetailsOpen = ref(false)
@@ -572,8 +555,8 @@
   <div class="table-header-base no-select">
     <div class="table-header-right">
         <input class="search" type="text" placeholder="search" v-model="searchQuery"> 
-        <span class="add-custom-server" :class="{'active-popup': showPopup == 'add'}" @click="showPopup='add'" />
-        <span class="trash-server-button" :class="{'active-popup': showPopup == 'trash'}" @click="showPopup='trash'" />
+        <span class="add-custom-server" :class="{'activated-button': showPopup == 'add'}" @click="showPopup='add'" />
+        <span class="trash-server-button" :class="{'activated-button': showPopup == 'trash'}" @click="showPopup='trash'" />
     </div>
     <div class="table-header-left">        
       <button class="connect-button" :disabled="selectedServer == null" @click="spawnQuake();">Connect</button>            
@@ -691,6 +674,7 @@
       <button @mouseover="masterServerHover=true"
             @mouseleave="masterServerHover=false" 
             class="refresh-button"
+            :class="{'activated-button': showPopup == 'masterSettings'}"
             @click="showPopup='masterSettings'">
         Master Servers
       </button>
@@ -745,21 +729,11 @@
     </Modal>
       
     <Modal v-if="showPopup=='masterSettings'" :popupType="'center'" @close="popupInput = '', showPopup = ''">   
-      <h3 style="text-align: center; margin-top: -10px;">Master Servers Settings</h3>
-      <div v-for="master in appdata.masters" style="height: 32px;">
-        <span><input type="checkbox" v-model="master.active"></span>
-        <text :style="master.unreachable ? 'color: #aaa; text-decoration: line-through;' : ''" class="ml-1">{{ master.game }}: {{ master.name }} </text>
-      </div>
-      <div style="height: 32px; margin: 0px 4px 0px 2px; text-align: left;">
-        <text>+</text>
-        <text class="ml-1">Quake 3 Master Protocol</text>
-        <text class="ml-1"><input type="radio" :value="Number(68)" v-model="q3MasterProtocol">68</text>
-        <text class="ml-1"><input type="radio" :value="Number(43)" v-model="q3MasterProtocol">43</text>
-      </div>
-      <div style="height: 32px; text-align: center;">
-        <span>Refresh Master List: </span>
-        <span class="refresh-master-button" @click="handleMasterServerPopup(true)"></span>
-      </div>
+      <MasterSettings 
+        v-if="showPopup=='masterSettings'" 
+        :q3MasterProtocol="q3MasterProtocol" 
+        @fullRefresh="refreshServers(true)"
+        @toggleProtocol="q3MasterProtocol = q3MasterProtocol == 68 ? 43 : 68"/>
     </Modal>
   </Teleport>
 
@@ -844,7 +818,7 @@
     cursor: pointer;
   }
 
-  .active-popup {    
+  .activated-button {    
     background-color: var(--main-bg);
     border-radius: 0.2rem;
     cursor: pointer;
