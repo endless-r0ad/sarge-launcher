@@ -1,7 +1,7 @@
 {
   "prettier.semi": false,
   "prettier.singleQuote": true,
-  "prettier.printWidth": 140,
+  "prettier.printWidth": 145,
   "prettier.vueIndentScriptAndStyle": true,
   "editor.formatOnSave": false,
   "editor.detectIndentation": false,
