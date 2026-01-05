@@ -181,6 +181,8 @@
     selectedLevel.value = null
   })
 
+  const localDefragRecords = ref<{ [key: string]: [string[]] }>({})
+
   async function getLevels() {
     if (!activeClient.value || loading.value) {
       return
@@ -200,6 +202,10 @@
     try {
       levels.value = await invoke('get_levels', { searchPaths: activeClientPaths.value, getAllData: true })
       levelsLastRefresh.value = levels.value
+      
+      if (activeClient.value.gamename == 'defrag') {
+        localDefragRecords.value = await invoke('get_defrag_rec_files', { searchPaths: activeClientPaths.value })
+      }
     } catch (err) {
       emit('alert', 'error', ensureError(err).message)
     }
@@ -607,6 +613,12 @@
       <div v-if="activeClient?.gamename == 'defrag'" style="position: absolute; width: 50%; right: 0; text-align: center; height: 53%; overflow: hidden scroll;">
         <div style="height: 34px; line-height: 34px;">
           <h4 style="margin: 0px;">Local Records</h4>
+        </div>
+        <div v-for="rec in localDefragRecords[selectedLevel.level_name.toLowerCase()]" 
+          style="display: flex; text-align: left; justify-content: center; margin-left: 16px;">
+          <span style="width: 20%;">{{ rec[1]?.toUpperCase() }}</span>
+          <span style="width: 20%;">{{ rec[0] }}</span>
+          <span style="width: 40%;">{{ rec[2] }}</span> 
         </div>
       </div>
       <div v-if="teamFreeBotsAllowed" style="position: absolute; width: 50%; right: 0; text-align: center; height: 53%; overflow: hidden scroll;">

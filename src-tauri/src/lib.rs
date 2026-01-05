@@ -34,6 +34,7 @@ pub fn run() {
 			commands::client::kill_q3_client,
             commands::client::get_client_paths,
             commands::client::get_client_configs,
+            commands::client::get_defrag_rec_files,
 			commands::demo::get_demos,
             commands::demo::create_demo_script,
             commands::demo::delete_temp_script,

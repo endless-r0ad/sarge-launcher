@@ -1,5 +1,5 @@
-use std::collections::HashSet;
-use std::path::Path;
+use std::collections::{HashMap, HashSet};
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use is_executable::IsExecutable;
@@ -10,6 +10,7 @@ use tauri_plugin_dialog::DialogExt;
 
 use crate::client::{Q3Config, Q3Executable};
 use crate::config::SargeLauncher;
+use crate::q3_util::{get_q3_configs, get_defrag_recs};
 
 #[tauri::command(async)]
 pub async fn pick_client(app: AppHandle) -> Result<Option<Q3Executable>, String> {
@@ -132,6 +133,22 @@ pub async fn get_client_paths(app: AppHandle, active_client: Option<Q3Executable
 }
 
 #[tauri::command(async)]
+pub async fn get_defrag_rec_files(search_paths: Vec<String>) -> Result<HashMap<String, Vec<Vec<String>>>, tauri::Error> {
+	let mut defrag_recs: HashMap<String, Vec<Vec<String>>> = HashMap::new();
+
+	for p in search_paths {
+		let mut path = PathBuf::from(p);
+		path.extend(["system", "records"]);
+
+		if path.exists() && path.is_dir() {
+			defrag_recs.extend(get_defrag_recs(path.as_path()).await?);
+		}
+	}
+    
+	Ok(defrag_recs)
+}
+
+#[tauri::command(async)]
 pub async fn get_client_configs(search_paths: Vec<String>) -> Result<Vec<Q3Config>, tauri::Error> {
     let mut q3_configs: Vec<Q3Config> = vec![];
 
@@ -143,33 +160,4 @@ pub async fn get_client_configs(search_paths: Vec<String>) -> Result<Vec<Q3Confi
     }
 
 	Ok(q3_configs)
-}
-
-pub async fn get_q3_configs(dir: &Path) -> Result<Vec<Q3Config>, std::io::Error> {
-    let mut q3_configs: Vec<Q3Config> = vec![];
-
-    for entry in std::fs::read_dir(dir)? {
-        let entry = entry?;
-        let path = entry.path();
-
-        if path.is_dir() {
-            q3_configs.append(&mut Box::pin(get_q3_configs(&path)).await?);
-        }
-
-        if let Some(ext) = path.extension() {
-            let ext_s = ext.to_string_lossy().to_string();
-            
-            let name = path.file_name();
-
-            if ext_s != "cfg" || name.is_none() {
-                continue;
-            }
-
-            let config_p = path.to_str().unwrap();
-
-            q3_configs.push(Q3Config { name: name.unwrap().to_str().unwrap().to_string(), path: config_p.to_string() })
-            
-        }
-    }
-    Ok(q3_configs)
 }
