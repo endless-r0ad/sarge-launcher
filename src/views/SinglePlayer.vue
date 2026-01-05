@@ -592,13 +592,12 @@
         {{ gametype }}
       </button>
     </div>
-    <h5 style="text-align: center; margin: 0px 0px -20px 0px; width: 50%;">{{ selectedLevel.level_name }}</h5>
     <div style="display: flex; height: 58%; user-select: none">
-      <div class="setup-img"
+      <div v-if="levelHasLevelshot(selectedLevel.level_name)" class="setup-img"
         :style="`background-image: linear-gradient(
-          to top, rgba(0, 0, 0, 0.8) 1%, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.8)
-        ), url(${levelshots[selectedLevel.level_name.toLowerCase()]});`">
-      </div>
+          to top ${activeClient?.gamename == 'defrag' ? ',' : ', rgba(0, 0, 0, 0.5),'} rgba(0, 0, 0, 0) 20% 80%, rgba(0, 0, 0, 0.5)
+        ), url(${levelshots[selectedLevel.level_name.toLowerCase()]});`" />
+      <div v-else class="setup-img setup-img-default" />
       <div style="position: absolute; width: 50%; left: 0; text-align: center;">
         <div style="height: 34px; line-height: 34px;">
           <h4 style="margin: 0px;">{{ selectedLevel.level_name }}</h4>
@@ -661,7 +660,6 @@
     <div v-if="activeClient?.gamename != 'defrag'" style="text-align: center; margin-top: -28px; width: 50%;">
       <button 
         class="dif-button" 
-        style="background: rgba(0, 0, 0, 0.3);"
         @click="difficulty = (difficulty % 5) + 1" >
         bot skill: {{ difficulties[difficulty - 1] }}
       </button>
@@ -891,6 +889,11 @@
     background-size: 100% 100%;
     background-position: center;
     background-repeat: no-repeat;
+  }
+
+  .setup-img-default {
+    background-image: url('../assets/icons/q3-white.svg');
+    background-size: 80% 80%;
   }
 
   .bots-bg {
