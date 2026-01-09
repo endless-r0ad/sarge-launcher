@@ -1,6 +1,7 @@
 use crate::client::Q3Config;
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::fs::read_to_string;
 
 pub async fn get_q3_configs(dir: &Path) -> Result<Vec<Q3Config>, std::io::Error> {
 	let mut q3_configs: Vec<Q3Config> = vec![];
@@ -179,4 +180,31 @@ fn get_df_time_from_u32(rec_time: u32) -> String {
 	res.push_str(msec.to_string().as_str());
 
 	res
+}
+
+pub fn read_q3config(q3config: &mut HashMap<String, HashMap<String, String>>, config_path: &PathBuf) -> Result<bool, tauri::Error> {
+    if config_path.is_file() {
+        let s = read_to_string(&config_path)?;
+        let lines: Vec<&str> = s.lines().collect();
+
+        for l in lines {
+            if l.starts_with("//") {
+                continue;
+            }
+            let parts: Vec<&str> = l.splitn(3, ' ').collect();
+            if parts.len() == 3 {
+                if let Some(v) = q3config.get_mut(parts[0]) {
+                    if let Some(k) = v.get_mut(parts[1]) {
+                        *k = parts[2].to_string();
+                    } else {
+                        v.insert(parts[1].to_string(), parts[2].to_string());
+                    }       
+                } else {
+                    q3config.entry(parts[0].to_string()).or_insert(HashMap::from([(parts[1].to_string(), parts[2].to_string())]));
+                }
+            }
+        }
+        return Ok(true)
+    }
+    Ok(false)
 }

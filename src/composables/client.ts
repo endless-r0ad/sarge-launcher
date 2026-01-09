@@ -7,6 +7,16 @@ import { ensureError, getClientGameProtocol } from '@/utils/util'
 
 const activeClient = ref<Q3Executable | null>(null)
 const activeClientPaths = ref<string[]>([])
+const activeClientQ3Config = ref<{ [key: string]: { [key: string]: string } }>({})
+
+const activeClientQ3Name = computed(() => {
+  let seta = activeClientQ3Config.value['seta']
+
+  if (seta && seta['name']) {
+    return seta['name']
+  }
+  return 'UnnamedPlayer'
+})
 
 const activeClientProtocol = computed(() => { return getClientGameProtocol(activeClient.value)})
 
@@ -36,15 +46,27 @@ export function useClient() {
     return activeClient.value.gamename == 'q3ut4' ? 'q3urt4' : activeClient.value.gamename
   })
 
-  async function getClientPaths(c: Q3Executable): Promise<string[]> {
+  async function getClientPaths(client: Q3Executable): Promise<string[]> {
     let paths: string[] = []
     try {
-      paths = await invoke('get_client_paths', { activeClient: c })
+      paths = await invoke('get_client_search_paths', { client: client })
       return paths
     } catch (err) {
       error(ensureError(err).message)
     }
     return paths
+  }
+
+  async function getClientQ3Config(paths: string[]) {
+    let q3Config: { [key: string]: { [key: string]: string } } = {}
+    try {
+      q3Config = await invoke('get_client_q3config', {searchPaths: paths})
+      return q3Config
+    } catch (err) {
+      error(ensureError(err).message)
+    }
+    return q3Config
+
   }
 
   async function addQ3Client(client: Q3Executable) {
@@ -56,6 +78,7 @@ export function useClient() {
     activeClientPaths.value = await getClientPaths(client)
 
     activeClient.value = client
+    activeClientQ3Config.value = await getClientQ3Config(activeClientPaths.value)
   }
 
   async function toggleQ3Client(client: Q3Executable) {
@@ -65,6 +88,7 @@ export function useClient() {
     activeClientPaths.value = await getClientPaths(client)
 
     activeClient.value = client
+    activeClientQ3Config.value = await getClientQ3Config(activeClientPaths.value)
   }
 
   async function deleteQ3Client(client: Q3Executable) {
@@ -81,6 +105,7 @@ export function useClient() {
       config.value.q3_clients[0]!.active = true
       activeClientPaths.value = await getClientPaths(config.value.q3_clients[0]!)
       activeClient.value = config.value.q3_clients[0]!
+      activeClientQ3Config.value = await getClientQ3Config(activeClientPaths.value)
     }
     await writeConfig()
   }
@@ -121,7 +146,7 @@ export function useClient() {
   async function getClientConfigs(client: Q3Executable): Promise<Q3Config[]> {
     try {
       let paths = await getClientPaths(client)
-      let q3Configs: Q3Config[] = await invoke('get_client_configs', {searchPaths: paths})
+      let q3Configs: Q3Config[] = await invoke('get_client_available_configs', {searchPaths: paths})
       return q3Configs
     } catch (err) {
       error(ensureError(err).message)
@@ -170,12 +195,14 @@ export function useClient() {
       client.active = true
       activeClientPaths.value = await getClientPaths(client)
       activeClient.value = client
+      activeClientQ3Config.value = await getClientQ3Config(activeClientPaths.value)
     }
   })
 
   return {
     activeClient,
     activeClientPaths,
+    activeClientQ3Name,
     activeClientDefaultArgs,
     activeClientUserArgs,
     activeClientProtocol,

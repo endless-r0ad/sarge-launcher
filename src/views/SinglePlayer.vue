@@ -17,7 +17,7 @@
 
   const componentName = ref('Single Player')
 
-  const { activeClient, pickClient, activeClientPaths } = useClient()
+  const { activeClient, pickClient, activeClientPaths, activeClientQ3Name } = useClient()
 
   onMounted(async () => {
     emit('emitComponentName', componentName.value)
@@ -622,7 +622,7 @@
       </div>
       <div v-if="teamFreeBotsAllowed" style="position: absolute; width: 50%; right: 0; text-align: center; height: 53%; overflow: hidden scroll;">
         <div style="height: 34px; line-height: 34px;">
-          <button class="bot-button" style="margin: 6px 0px 6px 0px; color: #fff;">you</button>
+          <button class="bot-button" style="margin: 6px 0px 6px 0px; color: #fff;">{{ activeClientQ3Name }}</button>
         </div>
         <div v-for="b in bots_team_free" style="white-space: nowrap; margin-left: 2px;">
           <button @click="bots_team_free.splice(bots_team_free.indexOf(b), 1)" class="close-button">
@@ -634,7 +634,7 @@
       </div>
       <div v-if="isTeamGameType" style="border: 1px solid rgba(255, 0, 0, 0.7); position: absolute; width: calc(25% - 2px); right: 25%; height: calc(58% - 11px); text-align: left; overflow: hidden scroll;">
         <div style="height: 34px; line-height: 34px;">
-          <button v-if="teamSelect == 'Red'" class="bot-button" style="margin: 6px 0px 6px 29px; color: #fff">you</button>
+          <button v-if="teamSelect == 'Red'" class="bot-button" style="margin: 6px 0px 6px 29px; color: #fff">{{ activeClientQ3Name }}</button>
         </div> 
         <div v-for="b in bots_team_red" style="white-space: nowrap; margin-left: 2px;">
           <button @click="bots_team_red.splice(bots_team_red.indexOf(b), 1)" class="close-button">
@@ -646,7 +646,7 @@
       </div>
       <div v-if="isTeamGameType" style="border: 1px solid rgba(0, 0, 255, 0.7); position: absolute; width: calc(25% - 2px); right: 0; height: calc(58% - 11px); text-align: left; overflow: hidden scroll;">
         <div style="height: 34px; line-height: 34px;">
-          <button v-if="teamSelect == 'Blue'" class="bot-button" style="margin: 6px 0px 6px 29px; color: #fff">youasdf</button>
+          <button v-if="teamSelect == 'Blue'" class="bot-button" style="margin: 6px 0px 6px 29px; color: #fff">{{ activeClientQ3Name }}</button>
         </div> 
         <div v-for="b in bots_team_blue" style="white-space: nowrap; margin-left: 2px;">
           <button @click="bots_team_blue.splice(bots_team_blue.indexOf(b), 1)" class="close-button">

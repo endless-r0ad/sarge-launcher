@@ -16,20 +16,22 @@ pub struct Q3Config {
 }
 
 impl Q3Executable {
-    pub fn game_uses_baseq3_paths(&self) -> bool {
+    pub fn game_uses_basegame_paths(&self) -> bool {
         match self.gamename.to_lowercase().as_str() {
             "baseq3" => return true,
             "cpma" => return true, 
             "defrag" => return true, 
             "excessiveplus" => return true, 
             "osp" => return true,
+            "rat" => return true,
+            "baseoa" => return true,
             _ => return false
         }
     }
-    pub fn game_uses_baseoa_paths(&self) -> bool {
-        match self.gamename.to_lowercase().as_str() {
-            "baseoa" => return true,
-            "rat" => return true, 
+    pub fn uses_openarena_paths(&self) -> bool {
+        match self.name.to_lowercase().as_str() {
+            "openarena" => return true,
+            "omega-x64" => return true, 
             _ => return false
         }
     }
