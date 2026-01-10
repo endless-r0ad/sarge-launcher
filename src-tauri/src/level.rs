@@ -202,9 +202,9 @@ impl Level {
                 match key_val[0].to_lowercase().trim() {
                     "map" => current_arena_data.entry(String::from("map")).or_insert(key_val[1].trim().to_lowercase().to_string()),
                     "type" => current_arena_data.entry(String::from("gametype")).or_insert(key_val[1].trim().to_string()),
-                    "longname" => current_arena_data.entry(String::from("longname")).or_insert(parse_colorstring(key_val[1].trim().to_string()).1),
+                    "longname" => current_arena_data.entry(String::from("longname")).or_insert(parse_colorstring(key_val[1].trim()).1),
                     "author" => {
-                        let parsed = parse_colorstring(key_val[1].trim().to_string());
+                        let parsed = parse_colorstring(key_val[1].trim());
                         current_arena_data.entry(String::from("author")).or_insert(parsed.0);
                         current_arena_data.entry(String::from("author_vhtml")).or_insert(parsed.1)
                     }

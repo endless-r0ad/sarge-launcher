@@ -17,7 +17,7 @@
         "src/*"
       ]
     },
-    "lib": ["ES2021", "DOM"],
+    "lib": ["ES2022", "DOM"],
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
 }

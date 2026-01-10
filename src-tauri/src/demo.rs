@@ -213,23 +213,23 @@ impl Demo {
 
 						match &value {
 							x if x.starts_with(&"print \"") || x.starts_with(&"tchat \"") => {
-								let parsed = q3_util::parse_colorstring(x[7..x.len() - 1].to_string());
+								let parsed = q3_util::parse_colorstring(&x[7..x.len() - 1]);
 								value = parsed.1;
 							}
 							x if x.starts_with(&"chat \"") || x.starts_with(&"cpsm \"") => {
-								let parsed = q3_util::parse_colorstring(x[6..x.len() - 1].to_string());
+								let parsed = q3_util::parse_colorstring(&x[6..x.len() - 1]);
 								value = parsed.1;
 							}
 							x if x.starts_with(&"cp \"") => {
-								let parsed = q3_util::parse_colorstring(x[4..x.len() - 1].to_string());
+								let parsed = q3_util::parse_colorstring(&x[4..x.len() - 1]);
 								value = parsed.1;
 							}
 							x if x.starts_with(&"pcp \"") => {
-								let parsed = q3_util::parse_colorstring(x[5..x.len() - 1].to_string());
+								let parsed = q3_util::parse_colorstring(&x[5..x.len() - 1]);
 								value = parsed.1;
 							}
 							x if x.starts_with(&"cwhisper \"") => {
-								let parsed = q3_util::parse_colorstring(x[10..x.len() - 1].to_string());
+								let parsed = q3_util::parse_colorstring(&x[10..x.len() - 1]);
 								value = parsed.1;
 							}
 							_ => continue, // ()
@@ -327,7 +327,7 @@ impl Demo {
 				if config_string.starts_with("n\\") {
 					let mut new_player = DemoPlayer::new();
 					let player_stuff: Vec<&str> = config_string.split("\\").collect();
-					let parsed = q3_util::parse_colorstring(player_stuff[1].to_string());
+					let parsed = q3_util::parse_colorstring(player_stuff[1]);
 					new_player.namecolored = parsed.1;
 					new_player.name = parsed.0;
 
@@ -386,7 +386,7 @@ impl Demo {
 		for i in (0..server_stuff.len()).step_by(2) {
 			match server_stuff[i] {
 				"sv_hostname" => {
-					let parsed_host = q3_util::parse_colorstring(server_stuff[i + 1].to_string());
+					let parsed_host = q3_util::parse_colorstring(server_stuff[i + 1]);
 					self.sv_hostname = parsed_host.0;
 					self.sv_hostname_color = parsed_host.1;
 				}

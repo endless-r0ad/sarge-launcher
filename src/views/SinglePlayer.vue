@@ -17,7 +17,7 @@
 
   const componentName = ref('Single Player')
 
-  const { activeClient, pickClient, activeClientPaths } = useClient()
+  const { activeClient, pickClient, activeClientPaths, activeClientQ3Name } = useClient()
 
   onMounted(async () => {
     emit('emitComponentName', componentName.value)
@@ -38,6 +38,7 @@
     }
     stopWatchingClient = watch(activeClient, async (newVal, oldVal) => {
       if (newVal?.name != oldVal?.name || newVal?.gamename != oldVal?.gamename) {
+        gameType.value = 0
         clearBots()
         await getLevels()
       }
@@ -78,17 +79,17 @@
     }
   }
 
-  function cycleBotNames(name: string) {
+  function cycleBotNames(name: string, step: number) {
     switch (activeClient.value?.gamename) {
       case 'q3ut4':
-        return UT_BOT_NAMES[(UT_BOT_NAMES.indexOf(name) + 1) % 16]
+        return UT_BOT_NAMES.at((UT_BOT_NAMES.indexOf(name) + step) % 16)
       case 'cpma':
-        return CPMA_BOT_NAMES[(CPMA_BOT_NAMES.indexOf(name) + 1) % 35]
+        return CPMA_BOT_NAMES.at((CPMA_BOT_NAMES.indexOf(name) + step) % 35)
       case 'baseoa':
       case 'rat':
-        return OA_BOT_NAMES[(OA_BOT_NAMES.indexOf(name) + 1) % 33]
+        return OA_BOT_NAMES.at((OA_BOT_NAMES.indexOf(name) + step) % 33)
       default:
-        return Q3_BOT_NAMES[(Q3_BOT_NAMES.indexOf(name) + 1) % 32]
+        return Q3_BOT_NAMES.at((Q3_BOT_NAMES.indexOf(name) + step) % 32)
     }
   }
 
@@ -180,6 +181,8 @@
     selectedLevel.value = null
   })
 
+  const localDefragRecords = ref<{ [key: string]: [string[]] }>({})
+
   async function getLevels() {
     if (!activeClient.value || loading.value) {
       return
@@ -199,6 +202,10 @@
     try {
       levels.value = await invoke('get_levels', { searchPaths: activeClientPaths.value, getAllData: true })
       levelsLastRefresh.value = levels.value
+      
+      if (activeClient.value.gamename == 'defrag') {
+        localDefragRecords.value = await invoke('get_defrag_rec_files', { searchPaths: activeClientPaths.value })
+      }
     } catch (err) {
       emit('alert', 'error', ensureError(err).message)
     }
@@ -272,7 +279,7 @@
   const selectedLevel = ref<Level | null>(null)
   const lastSelectedLevel = ref<Level | null>(null)
 
-  const gameType = ref<number | null>(0)
+  const gameType = ref(0)
 
   const gametypes = computed(() => {
     switch (activeClient.value!.gamename) {
@@ -293,19 +300,24 @@
   })
 
   const isTeamGameType = computed(() => {
-    if (gameType.value == null) {
-      return false
-    }
 
     let gametypeName = gametypes.value[gameType.value]
 
     if (
       ['TDM', 'CTF', 'T2v2', 'CA', 'FT', 'CTFS', '2v2', 'TS', '1FCTF', 
-       'OVER', 'HARV', 'ELIM', 'CTFE', 'DD', 'DOM', 'RTF', 'PTL'].includes(gametypeName!)
+       'OVER', 'HARV', 'ELIM', 'CTFE', 'DD', 'DOM', 'RTF', 'PTL', 'NTF', 
+       'CNH', 'FTL', 'BM'].includes(gametypeName!)
     ) {
       return true
     }
     return false
+  })
+
+  const gametypeFontSize = computed(() => {
+    if (gametypes.value.length < 13) {
+      return 100
+    }
+    return 85
   })
 
   watch(isTeamGameType, (newVal, oldVal) => {
@@ -318,12 +330,9 @@
   })
 
   const teamFreeBotsAllowed = computed(() => {
-    if (gameType.value == null) {
-      return false
-    }
 
     let gametypeName = gametypes.value[gameType.value]
-    if (['FFA', '1v1', 'SP', 'LMS', 'DA'].includes(gametypeName!)) {
+    if (['FFA', '1v1', 'SP', 'LMS', 'DA', 'HM', 'GUN'].includes(gametypeName!)) {
       return true
     }
     return false
@@ -334,6 +343,7 @@
   const difficulties = ['i can win', 'bring it on', 'hurt me plenty', 'hardcore', 'nightmare!']
   const cheats = ref(false)
   const sv_maxclients = ref(8)
+  const overbounces = ref(false)
 
   const selectedMapIndex = computed(() => {
     if (selectedLevel.value) {
@@ -352,7 +362,7 @@
   }
 
   function spawnQuake() {
-    if (selectedLevel.value && gameType.value != null) {
+    if (selectedLevel.value) {
       let gametype = gameType.value // activeClient.value?.gamename == 'cpma' ? gameType.value -1 : gameType.value
       let gametypeName = gametypes.value[gameType.value]
       let args = []
@@ -376,6 +386,10 @@
         } else {
           args.push(...['+set', 'g_gametype', gametype.toString()])
         }
+      }
+
+      if (activeClient.value?.gamename == 'defrag') {
+        args.push(...['+set', 'df_ob_KillOBs', overbounces.value ? '0' : '1'])
       }
 
       args.push(...['+set', 'sv_maxclients', sv_maxclients.value.toString()])
@@ -480,7 +494,7 @@
       <input class="search" type="text" placeholder="search" v-model="searchQuery" />
     </div>
     <div class="table-header-left">
-      <button class="connect-button" :disabled="!selectedLevel || gameType == null" @click="spawnQuake()">Connect</button>
+      <button class="connect-button" :disabled="!selectedLevel" @click="spawnQuake()">Connect</button>
       <button class="refresh-button" @click="getLevels()">Refresh</button>
       <span style="margin-left: 24px; text-align: left; color: #fff">
         <span class="sort-header" @click="sortMaps('level_name')">map</span>
@@ -568,72 +582,97 @@
   </div>
 
   <div v-if="selectedLevel" class="game-setup no-select">
-    <h2 style="text-align: center">Game Setup</h2>
-    <div style="text-align: center; margin-bottom: 10px; padding: 0 70px; line-height: 34px">
-      <button v-for="(gametype, index) in gametypes" class="setup-button" :class="{ active: gameType == index }" @click="gameType = index">
+    <h2 style="text-align: center; margin: 0px 0px 2px 0px;">Game Setup</h2>
+    <div style="text-align: center; margin-bottom: 8px; line-height: 32px;">
+      <button v-for="(gametype, index) in gametypes" 
+        class="setup-button" 
+        :class="{ active: gameType == index }"
+        :style="`font-size: ${gametypeFontSize}%;`"
+        @click="gameType = index">
         {{ gametype }}
       </button>
     </div>
-    <div style="text-align: center; margin-bottom: 10px">
-      <button
-        v-for="(d, index) in difficulties"
-        class="dif-button"
-        :class="{ active: difficulty == index + 1 }"
-        @click="difficulty = index + 1"
-      >
-        {{ d }}
-      </button>
-    </div>
-
-    <div style="display: flex; height: 40%; user-select: none">
-      <img
-        v-if="levelHasLevelshot(selectedLevel.level_name)"
-        style="width: 50%"
-        :src="levelshots[selectedLevel.level_name.toLowerCase()]"
-      />
-      <img v-else style="width: 50%" src="../assets/icons/q3-white.svg" />
-      <div style="width: 50%; text-align: center; overflow: hidden scroll; padding: 4px 0px 4px 4px" v-if="teamFreeBotsAllowed">
-        <button class="bot-button" style="margin: 0px 0px 6px 30px; color: #fff">you</button>
-        <div v-for="b in bots_team_free" style="white-space: nowrap">
+    <div style="display: flex; height: 58%; user-select: none">
+      <div v-if="levelHasLevelshot(selectedLevel.level_name)" class="setup-img"
+        :style="`background-image: linear-gradient(
+          to top ${activeClient?.gamename == 'defrag' ? ',' : ', rgba(0, 0, 0, 0.5),'} rgba(0, 0, 0, 0) 20% 80%, rgba(0, 0, 0, 0.5)
+        ), url(${levelshots[selectedLevel.level_name.toLowerCase()]});`" />
+      <div v-else class="setup-img setup-img-default" />
+      <div style="position: absolute; width: 50%; left: 0; text-align: center;">
+        <h4 style="margin: 8px 0px;">{{ selectedLevel.level_name }}</h4>
+      </div>
+      <div style="width: 50%; overflow: clip; ">
+        <div
+          class="bots-bg"
+          :style="`background-image: url(${levelshots[selectedLevel.level_name.toLowerCase()]});`">
+        </div>
+      </div>
+      <div v-if="activeClient?.gamename == 'defrag'" style="position: absolute; width: 50%; right: 0; text-align: center; height: 53%; overflow: hidden scroll;">
+        <h4 style="margin: 8px 0px;">Local Records</h4> 
+        <h4 v-html="activeClientQ3Name" style="margin: 0px 0px 4px 0px;"></h4> 
+        <div v-for="rec in localDefragRecords[selectedLevel.level_name.toLowerCase()]" 
+          style="display: flex; text-align: left; justify-content: center; margin-left: 16px;">
+          <span style="width: 20%;">{{ rec[1]?.toUpperCase() }}</span>
+          <span style="width: 20%;">{{ rec[0] }}</span>
+          <span style="width: 40%;">{{ rec[2] }}</span> 
+        </div>
+      </div>
+      <div v-if="teamFreeBotsAllowed" style="position: absolute; width: 50%; right: 0; text-align: center; height: 53%; overflow: hidden scroll;">
+        <div style="height: 34px; line-height: 34px;">
+          <button class="bot-button" style="margin: 6px 0px 6px 0px;"><span v-html="activeClientQ3Name"></span></button>
+        </div>
+        <div v-for="b in bots_team_free" style="white-space: nowrap; margin-left: 2px;">
           <button @click="bots_team_free.splice(bots_team_free.indexOf(b), 1)" class="close-button">
             <img src="../assets/icons/x.svg" width="8px" />
           </button>
-          <label class="bot-button" @click="b.name = cycleBotNames(b.name)!">{{ b.name }}</label>
-          <label class="bot-button" style="margin-left: 6px" @click="b.difficulty = (b.difficulty % 5) + 1">{{ b.difficulty }}</label>
+          <label class="bot-button" @click="b.name = cycleBotNames(b.name, 1)!" @contextmenu.prevent="b.name = cycleBotNames(b.name, -1)!">{{ b.name }}</label>
+          <label class="bot-button ml-4" @click="b.difficulty = (b.difficulty % 5) + 1">{{ b.difficulty }}</label>
         </div>
       </div>
-      <div v-if="isTeamGameType" class="team red">
-        <button v-if="teamSelect == 'Red'" class="bot-button" style="margin: 0px 0px 6px 30px; color: #fff">you</button>
-        <div v-for="b in bots_team_red" style="white-space: nowrap">
+      <div v-if="isTeamGameType" style="border: 1px solid rgba(255, 0, 0, 0.7); position: absolute; width: calc(25% - 2px); right: 25%; height: calc(58% - 11px); text-align: left; overflow: hidden scroll;">
+        <div style="height: 34px; line-height: 34px;">
+          <button v-if="teamSelect == 'Red'" class="bot-button" style="margin: 6px 0px 6px 29px;"><span v-html="activeClientQ3Name"></span></button>
+        </div> 
+        <div v-for="b in bots_team_red" style="white-space: nowrap; margin-left: 2px;">
           <button @click="bots_team_red.splice(bots_team_red.indexOf(b), 1)" class="close-button">
             <img src="../assets/icons/x.svg" width="8px" />
           </button>
-          <label class="bot-button" @click="b.name = cycleBotNames(b.name)!">{{ b.name }}</label>
-          <label class="bot-button" style="margin-left: 6px" @click="b.difficulty = (b.difficulty % 5) + 1">{{ b.difficulty }}</label>
+          <label class="bot-button" @click="b.name = cycleBotNames(b.name, 1)!" @contextmenu.prevent="b.name = cycleBotNames(b.name, -1)!">{{ b.name }}</label>
+          <label class="bot-button ml-4" @click="b.difficulty = (b.difficulty % 5) + 1">{{ b.difficulty }}</label>
         </div>
       </div>
-      <div v-if="isTeamGameType" class="team blue">
-        <button v-if="teamSelect == 'Blue'" class="bot-button" style="margin: 0px 0px 6px 30px; color: #fff">you</button>
-        <div v-for="b in bots_team_blue" style="white-space: nowrap">
+      <div v-if="isTeamGameType" style="border: 1px solid rgba(0, 0, 255, 0.7); position: absolute; width: calc(25% - 2px); right: 0; height: calc(58% - 11px); text-align: left; overflow: hidden scroll;">
+        <div style="height: 34px; line-height: 34px;">
+          <button v-if="teamSelect == 'Blue'" class="bot-button" style="margin: 6px 0px 6px 29px;"><span v-html="activeClientQ3Name"></span></button>
+        </div> 
+        <div v-for="b in bots_team_blue" style="white-space: nowrap; margin-left: 2px;">
           <button @click="bots_team_blue.splice(bots_team_blue.indexOf(b), 1)" class="close-button">
             <img src="../assets/icons/x.svg" width="8px" />
           </button>
-          <label class="bot-button" @click="b.name = cycleBotNames(b.name)!">{{ b.name }}</label>
-          <label class="bot-button" style="margin-left: 6px" @click="b.difficulty = (b.difficulty % 5) + 1">{{ b.difficulty }}</label>
+          <label class="bot-button" @click="b.name = cycleBotNames(b.name, 1)!" @contextmenu.prevent="b.name = cycleBotNames(b.name, -1)!">{{ b.name }}</label>
+          <label class="bot-button ml-4" @click="b.difficulty = (b.difficulty % 5) + 1">{{ b.difficulty }}</label>
         </div>
       </div>
     </div>
-
-    <div style="display: flex; margin: 10px 0">
+    <div v-if="activeClient?.gamename != 'defrag'" style="text-align: center; margin-top: -28px; width: 50%;">
+      <button 
+        class="dif-button" 
+        @click="difficulty = (difficulty % 5) + 1" >
+        bot skill: {{ difficulties[difficulty - 1] }}
+      </button>
+    </div>
+    <div style="display: flex; margin: 10px 0px; padding: 0px 1px;">
       <div style="width: 50%; text-align: center">
-        <button class="dif-button" @click="sv_maxclients = (sv_maxclients % 24) + 1">sv_maxclients: {{ sv_maxclients }}</button>
+        <button class="dif-button" :class="{ active: cheats }" @click="cheats = !cheats">cheats</button>
+        <button v-if="activeClient?.gamename == 'defrag'" class="dif-button" :class="{ active: overbounces }" @click="overbounces = !overbounces">overbounces</button>
+        <button v-if="activeClient?.gamename != 'defrag'" class="dif-button" @click="sv_maxclients = (sv_maxclients % 24) + 1">maxclients: {{ sv_maxclients }}</button>
         <button
           v-if="isTeamGameType"
           class="dif-button"
           :style="teamSelect == 'Red' ? 'background-color: rgba(255, 0, 0, 0.2)' : 'background-color: rgba(0, 0, 255, 0.2);'"
           @click="teamSelect = teamSelect == 'Red' ? 'Blue' : 'Red'"
         >
-          Team: {{ teamSelect }}
+          team: {{ teamSelect }}
         </button>
       </div>
       <div style="width: 50%; text-align: center" v-if="teamFreeBotsAllowed">
@@ -647,7 +686,7 @@
       </div>
       <div style="width: 25%; text-align: center" v-if="isTeamGameType">
         <button
-          class="dif-button"
+          class="dif-button red"
           style="display: inline-block"
           @click="pushBot({ name: defaultBotName(), difficulty: difficulty, team: 'Red' })"
         >
@@ -656,18 +695,24 @@
       </div>
       <div style="width: 25%; text-align: center" v-if="isTeamGameType">
         <button
-          class="dif-button"
+          class="dif-button blue"
           style="display: inline-block"
           @click="pushBot({ name: defaultBotName(), difficulty: difficulty, team: 'Blue' })"
         >
           +bot
         </button>
       </div>
+      <div style="width: 50%; text-align: center" v-if="activeClient?.gamename == 'defrag'">
+        <a :href="`https://defrag.racing/maps/${selectedLevel.level_name.toLowerCase()}`" target="_blank">      
+          <button class="dif-button">
+            Leaderboard <img src="../assets/icons/new-window.svg" width="13px">
+          </button>
+        </a>
+      </div>
     </div>
-    <button class="dif-button" :class="{ active: cheats }" @click="cheats = !cheats" style="margin-left: 5%">cheats</button>
-
+    
     <div style="text-align: center">
-      <button class="setup-button" :disabled="!selectedLevel || gameType == null" @click="spawnQuake()">Connect</button>
+      <button class="setup-button" style="font-size: 120%;" :disabled="!selectedLevel" @click="spawnQuake()">Connect</button>
     </div>
   </div>
 </template>
@@ -684,10 +729,10 @@
   }
 
   .close-button {
-    background: rgba(0, 0, 0, 0);
+    background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--main-bg);
     border-radius: 0.2rem;
-    margin: 0px 8px 8px 0px;
+    margin: 0px 4px 5px 0px;
   }
 
   .close-button:hover {
@@ -696,7 +741,7 @@
   }
 
   .bot-button {
-    background: rgba(0, 0, 0, 0);
+    background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--main-bg);
     border-radius: 0.2rem;
     padding: 3px 5px;
@@ -714,8 +759,7 @@
     border: 1px solid var(--main-bg);
     border-radius: 0.2rem;
     cursor: pointer;
-    font-size: 120%;
-    padding: 2px 10px 2px 10px;
+    font-size: 100%;
     font-weight: 400;
     margin-right: 4px;
   }
@@ -727,7 +771,7 @@
     border: 1px solid var(--main-bg);
     border-radius: 0.2rem;
     cursor: default;
-    font-size: 120%;
+    font-size: 100%;
     padding: 2px 10px 2px 10px;
     font-weight: 400;
     margin-right: 4px;
@@ -768,14 +812,14 @@
 
   .game-setup {
     position: absolute;
-    top: 96px;
+    top: 112px;
     right: 52px;
-    bottom: 82px;
+    bottom: 112px;
     width: 50%;
+    padding-top: 16px;
     background-color: var(--alt-bg);
     border: 1px solid #00ffff;
-    backdrop-filter: blur(60px);
-    -webkit-backdrop-filter: blur(60px);
+    border-radius: 0.2rem;
     color: #fff;
   }
 
@@ -826,7 +870,7 @@
     width: 25%;
     text-align: left;
     overflow: hidden scroll;
-    padding: 4px 0px 4px 4px;
+    padding: 4px 0px;
   }
 
   .red {
@@ -835,5 +879,37 @@
 
   .blue {
     background-color: rgba(0, 0, 255, 0.2);
+  }
+
+  .setup-img {
+    width: 50%; 
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  .setup-img-default {
+    background-image: url('../assets/icons/q3-white.svg');
+    background-size: 80% 80%;
+  }
+
+  .bots-bg {
+    width: 100%; 
+    height: 100%;
+    text-align: center; 
+    
+    padding: 4px 0px; 
+    background-size: 600%; 
+    background-position: center center;
+    -webkit-filter: blur(10px);
+    -moz-filter: blur(10px);
+    -o-filter: blur(10px);
+    -ms-filter: blur(10px);
+    filter: blur(10px);
+    transform: scale(1.17);
+  }
+
+  .ml-4 {
+    margin-left: 4px;
   }
 </style>
