@@ -9,7 +9,7 @@
   const props = defineProps<{ latestGithubVersion: string | null }>()
 
   const componentName = ref('Sarge Launcher')
-  const appVersion = 'v0.2.1'
+  const appVersion = 'v0.3.0'
   const updateAvailable = ref(props.latestGithubVersion && appVersion != props.latestGithubVersion)
   const { config } = useConfig()
   const { pickClient } = useClient()
