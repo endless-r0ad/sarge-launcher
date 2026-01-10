@@ -599,9 +599,7 @@
         ), url(${levelshots[selectedLevel.level_name.toLowerCase()]});`" />
       <div v-else class="setup-img setup-img-default" />
       <div style="position: absolute; width: 50%; left: 0; text-align: center;">
-        <div style="height: 34px; line-height: 34px;">
-          <h4 style="margin: 0px;">{{ selectedLevel.level_name }}</h4>
-        </div>
+        <h4 style="margin: 8px 0px;">{{ selectedLevel.level_name }}</h4>
       </div>
       <div style="width: 50%; overflow: clip; ">
         <div
@@ -610,9 +608,8 @@
         </div>
       </div>
       <div v-if="activeClient?.gamename == 'defrag'" style="position: absolute; width: 50%; right: 0; text-align: center; height: 53%; overflow: hidden scroll;">
-        <div style="height: 34px; line-height: 34px;">
-          <h4 style="margin: 0px;">Local Records</h4>
-        </div>
+        <h4 style="margin: 8px 0px;">Local Records</h4> 
+        <h4 v-html="activeClientQ3Name" style="margin: 0px 0px 4px 0px;"></h4> 
         <div v-for="rec in localDefragRecords[selectedLevel.level_name.toLowerCase()]" 
           style="display: flex; text-align: left; justify-content: center; margin-left: 16px;">
           <span style="width: 20%;">{{ rec[1]?.toUpperCase() }}</span>
@@ -622,7 +619,7 @@
       </div>
       <div v-if="teamFreeBotsAllowed" style="position: absolute; width: 50%; right: 0; text-align: center; height: 53%; overflow: hidden scroll;">
         <div style="height: 34px; line-height: 34px;">
-          <button class="bot-button" style="margin: 6px 0px 6px 0px; color: #fff;">{{ activeClientQ3Name }}</button>
+          <button class="bot-button" style="margin: 6px 0px 6px 0px;"><span v-html="activeClientQ3Name"></span></button>
         </div>
         <div v-for="b in bots_team_free" style="white-space: nowrap; margin-left: 2px;">
           <button @click="bots_team_free.splice(bots_team_free.indexOf(b), 1)" class="close-button">
@@ -634,7 +631,7 @@
       </div>
       <div v-if="isTeamGameType" style="border: 1px solid rgba(255, 0, 0, 0.7); position: absolute; width: calc(25% - 2px); right: 25%; height: calc(58% - 11px); text-align: left; overflow: hidden scroll;">
         <div style="height: 34px; line-height: 34px;">
-          <button v-if="teamSelect == 'Red'" class="bot-button" style="margin: 6px 0px 6px 29px; color: #fff">{{ activeClientQ3Name }}</button>
+          <button v-if="teamSelect == 'Red'" class="bot-button" style="margin: 6px 0px 6px 29px;"><span v-html="activeClientQ3Name"></span></button>
         </div> 
         <div v-for="b in bots_team_red" style="white-space: nowrap; margin-left: 2px;">
           <button @click="bots_team_red.splice(bots_team_red.indexOf(b), 1)" class="close-button">
@@ -646,7 +643,7 @@
       </div>
       <div v-if="isTeamGameType" style="border: 1px solid rgba(0, 0, 255, 0.7); position: absolute; width: calc(25% - 2px); right: 0; height: calc(58% - 11px); text-align: left; overflow: hidden scroll;">
         <div style="height: 34px; line-height: 34px;">
-          <button v-if="teamSelect == 'Blue'" class="bot-button" style="margin: 6px 0px 6px 29px; color: #fff">{{ activeClientQ3Name }}</button>
+          <button v-if="teamSelect == 'Blue'" class="bot-button" style="margin: 6px 0px 6px 29px;"><span v-html="activeClientQ3Name"></span></button>
         </div> 
         <div v-for="b in bots_team_blue" style="white-space: nowrap; margin-left: 2px;">
           <button @click="bots_team_blue.splice(bots_team_blue.indexOf(b), 1)" class="close-button">

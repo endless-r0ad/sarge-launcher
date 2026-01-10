@@ -34,7 +34,7 @@ pub async fn get_q3_configs(dir: &Path) -> Result<Vec<Q3Config>, std::io::Error>
 	Ok(q3_configs)
 }
 
-pub fn parse_colorstring(q3_string: String) -> (String, String) {
+pub fn parse_colorstring(q3_string: &str) -> (String, String) {
 	let mut byte_pos: usize = 0;
 	let mut vhtml_s: String = String::new(); // for v-html frontend
 	let mut current_color: String = String::from("7"); // default white
@@ -193,16 +193,22 @@ pub fn read_q3config(q3config: &mut HashMap<String, HashMap<String, String>>, co
             }
             let parts: Vec<&str> = l.splitn(3, ' ').collect();
             if parts.len() == 3 {
+                let val = parts[2][1..parts[2].len()-1].to_string();
                 if let Some(v) = q3config.get_mut(parts[0]) {
                     if let Some(k) = v.get_mut(parts[1]) {
-                        *k = parts[2].to_string();
+                        *k = val;
                     } else {
-                        v.insert(parts[1].to_string(), parts[2].to_string());
+                        v.insert(parts[1].to_string(), val);
                     }       
                 } else {
-                    q3config.entry(parts[0].to_string()).or_insert(HashMap::from([(parts[1].to_string(), parts[2].to_string())]));
+                    q3config.entry(parts[0].to_string()).or_insert(HashMap::from([(parts[1].to_string(), val)]));
                 }
             }
+        }
+        if q3config.contains_key("seta") && q3config["seta"].contains_key("name") {
+            let q3_string = q3config["seta"]["name"].clone();
+            let x = q3config.get_mut("seta").unwrap();
+            *x.entry(String::from("vhtml_name")).or_insert(parse_colorstring(&q3_string).1) = parse_colorstring(&q3_string).1;
         }
         return Ok(true)
     }

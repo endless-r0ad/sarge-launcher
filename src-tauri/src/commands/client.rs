@@ -97,8 +97,9 @@ pub async fn get_client_search_paths(app: AppHandle, client: Q3Executable) -> Re
             fs_homepath = app.path().app_data_dir()?;
             fs_homepath.pop();
             fs_homepath.extend(["Quake3", &client.gamename]);
+        } else {
+            fs_homepath = PathBuf::from(&exe_path);
         }
-        fs_homepath = PathBuf::from(&exe_path);
     }
 
     #[cfg(target_os = "linux")]

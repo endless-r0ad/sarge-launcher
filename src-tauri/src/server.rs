@@ -18,7 +18,7 @@ pub struct ServerPlayer {
 }
 
 impl ServerPlayer {
-	fn new(name: String, frags: String, ping: String) -> Self {
+	fn new(name: &str, frags: String, ping: String) -> Self {
 		let parsed_name = q3_util::parse_colorstring(name);
 		Self {
 			name: parsed_name.0,
@@ -168,7 +168,7 @@ impl Quake3Server {
 		for i in (0..gamestate_list.len()).step_by(2) {
 			match gamestate_list[i] {
 				"sv_hostname" => {
-					let parsed_host = q3_util::parse_colorstring(gamestate_list[i + 1].to_owned());
+					let parsed_host = q3_util::parse_colorstring(gamestate_list[i + 1]);
 					self.host = parsed_host.0;
 					self.hostcolored = parsed_host.1;
 				}
@@ -209,7 +209,7 @@ impl Quake3Server {
 				name = p[2].to_string();
 			}
 
-			let new_player = ServerPlayer::new(name[1..name.len() - 1].to_owned(), p[0].to_owned(), p[1].to_owned());
+			let new_player = ServerPlayer::new(&name[1..name.len() - 1], p[0].to_owned(), p[1].to_owned());
 
 			if new_player.ping == 0 {
 				self.bots += 1;

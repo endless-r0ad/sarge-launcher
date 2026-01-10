@@ -12,8 +12,8 @@ const activeClientQ3Config = ref<{ [key: string]: { [key: string]: string } }>({
 const activeClientQ3Name = computed(() => {
   let seta = activeClientQ3Config.value['seta']
 
-  if (seta && seta['name']) {
-    return seta['name']
+  if (seta && seta['vhtml_name']) {
+    return seta['vhtml_name']
   }
   return 'UnnamedPlayer'
 })
