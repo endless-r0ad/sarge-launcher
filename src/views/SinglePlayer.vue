@@ -282,7 +282,7 @@
   const gameType = ref(0)
 
   const gametypes = computed(() => {
-    switch (activeClient.value!.gamename) {
+    switch (activeClient.value?.gamename) {
       case 'cpma':
         return ['1v1', 'TDM', 'FFA', 'CTF', 'CA', 'DA', 'FT', 'CTFS', 'NTF', 'HM', '2v2']
       case 'q3ut4':
