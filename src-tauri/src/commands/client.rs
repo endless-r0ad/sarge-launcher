@@ -210,35 +210,37 @@ pub async fn get_client_q3config(search_paths: Vec<String>) -> Result<HashMap<St
 }
 
 fn get_mac_exe_details(q3_exe: &mut Q3Executable, mut mac_path: PathBuf) -> PathBuf {
-    if mac_path.is_dir() && mac_path.extension() == Some(&OsString::from("app")) {
-        mac_path.extend(["Contents", "Info.plist"]);
+    if !mac_path.is_dir() || mac_path.extension() != Some(&OsString::from("app")) {
+        return mac_path
+    }
+    mac_path.extend(["Contents", "Info.plist"]);
 
-        if mac_path.is_file() {
-            let s = read_to_string(&mac_path).unwrap();
-            let lines: Vec<&str> = s.lines().collect();
+    if !mac_path.is_file() { 
+        log::error!("Info.plist does not exist or is not a file for app: {}", &q3_exe.name);
+        return mac_path
+    }
 
-            for (i, l) in lines.iter().enumerate() {
-                let trim = l.trim();
-                if trim == "<key>CFBundleExecutable</key>" {
-                    let val = lines[i+1].trim();
-                    let start = val.find(">");
-                    let end = val.find("</");
-                    if start.is_some() && end.is_some() {
-                        let exe = &val[start.unwrap()+1..end.unwrap()];
+    let s = read_to_string(&mac_path).unwrap();
+    let lines: Vec<&str> = s.lines().collect();
 
-                        mac_path.pop();
-                        mac_path.extend(["MacOS", exe]);
+    for (i, l) in lines.iter().enumerate() {
+        let trim = l.trim();
+        if trim == "<key>CFBundleExecutable</key>" {
+            let val = lines[i+1].trim();
+            let start = val.find(">");
+            let end = val.find("</");
+            if start.is_some() && end.is_some() {
+                let exe = &val[start.unwrap()+1..end.unwrap()];
 
-                        if mac_path.is_file() {
-                            q3_exe.exe_path = mac_path.to_str().unwrap().to_string();
-                            q3_exe.name = exe.to_string();
-                        }
-                    }
-                    break;
+                mac_path.pop();
+                mac_path.extend(["MacOS", exe]);
+
+                if mac_path.is_file() {
+                    q3_exe.exe_path = mac_path.to_str().unwrap().to_string();
+                    q3_exe.name = exe.to_string();
                 }
             }
-        } else {
-            log::error!("Info.plist does not exist or is not a file for app: {}", &q3_exe.name);
+            break;
         }
     }
     mac_path
