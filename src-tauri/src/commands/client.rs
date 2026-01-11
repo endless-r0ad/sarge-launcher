@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Mutex;
+use std::ffi::OsString;
+use std::fs::read_to_string;
 
 use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::DialogExt;
@@ -13,9 +15,10 @@ use crate::q3_util::{get_defrag_recs, get_q3_configs, read_q3config};
 
 #[tauri::command(async)]
 pub async fn pick_client(app: AppHandle) -> Result<Option<Q3Executable>, String> {
-	let q3_exe: Q3Executable;
-    let exe_path: &Path;
-
+	let mut q3_exe: Q3Executable;
+    let mut exe_path: &Path;
+    let mac_exe_path: PathBuf;
+    
 	let mut file_path = app.dialog().file().set_title("Select a Quake 3 Client").blocking_pick_file();
 
 	if let Some(picked_file) = &mut file_path {
@@ -35,6 +38,12 @@ pub async fn pick_client(app: AppHandle) -> Result<Option<Q3Executable>, String>
 	} else {
 		return Ok(None);
 	}
+
+    #[cfg(target_os = "macos")]
+    {
+        mac_exe_path = get_mac_exe_details(&mut q3_exe, exe_path.to_owned());
+        exe_path = &mac_exe_path.as_path();
+    }
 
 	if exe_path.is_executable() {
 		Ok(Some(q3_exe))
@@ -198,4 +207,39 @@ pub async fn get_client_q3config(search_paths: Vec<String>) -> Result<HashMap<St
     }
 
 	Ok(q3config)
+}
+
+fn get_mac_exe_details(q3_exe: &mut Q3Executable, mut mac_path: PathBuf) -> PathBuf {
+    if mac_path.is_dir() && mac_path.extension() == Some(&OsString::from("app")) {
+        mac_path.extend(["Contents", "Info.plist"]);
+
+        if mac_path.is_file() {
+            let s = read_to_string(&mac_path).unwrap();
+            let lines: Vec<&str> = s.lines().collect();
+
+            for (i, l) in lines.iter().enumerate() {
+                let trim = l.trim();
+                if trim == "<key>CFBundleExecutable</key>" {
+                    let val = lines[i+1].trim();
+                    let start = val.find(">");
+                    let end = val.find("</");
+                    if start.is_some() && end.is_some() {
+                        let exe = &val[start.unwrap()+1..end.unwrap()];
+
+                        mac_path.pop();
+                        mac_path.extend(["MacOS", exe]);
+
+                        if mac_path.is_file() {
+                            q3_exe.exe_path = mac_path.to_str().unwrap().to_string();
+                            q3_exe.name = exe.to_string();
+                        }
+                    }
+                    break;
+                }
+            }
+        } else {
+            log::error!("Info.plist does not exist or is not a file for app: {}", &q3_exe.name);
+        }
+    }
+    mac_path
 }
