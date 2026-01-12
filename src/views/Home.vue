@@ -46,8 +46,16 @@
           </p>
         </a>
         <a class="link" href="https://github.com/endless-r0ad/sarge-launcher" target="_blank">
-          <p style="position: absolute; right: 15%; top: 16%; font-size: 75%;">
+          <p :style="`position: absolute; right: ${props.latestGithubVersion && appVersion != props.latestGithubVersion ? 29 : 15}%; top: 16%; font-size: 75%;`">
             {{ appVersion }}
+          </p>
+        </a>
+        <a v-if="props.latestGithubVersion && appVersion != props.latestGithubVersion" 
+          class="link" 
+          href="https://github.com/endless-r0ad/sarge-launcher/releases" 
+          target="_blank">
+          <p style="position: absolute; right: 15%; top: 16%; font-size: 75%; color: #00ffff;">
+            -> {{ props.latestGithubVersion }}
           </p>
         </a>
         <p style="margin-top: 72px">
