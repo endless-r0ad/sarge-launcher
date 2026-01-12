@@ -41,7 +41,9 @@ pub async fn pick_client(app: AppHandle) -> Result<Option<Q3Executable>, String>
 
     #[cfg(target_os = "macos")]
     {
-        mac_exe_path = get_mac_exe_details(&mut q3_exe, exe_path.to_owned());
+        mac_exe_path = get_mac_exe_path(exe_path.to_owned());
+        q3_exe.exe_path = mac_exe_path.to_str().unwrap().to_string();
+        q3_exe.name = mac_exe_path.file_stem().unwrap().to_string_lossy().into_owned();
         exe_path = &mac_exe_path.as_path();
     }
 
@@ -209,18 +211,22 @@ pub async fn get_client_q3config(search_paths: Vec<String>) -> Result<HashMap<St
 	Ok(q3config)
 }
 
-fn get_mac_exe_details(q3_exe: &mut Q3Executable, mut mac_path: PathBuf) -> PathBuf {
+fn get_mac_exe_path(mut mac_path: PathBuf) -> PathBuf {
     if !mac_path.is_dir() || mac_path.extension() != Some(&OsString::from("app")) {
         return mac_path
     }
     mac_path.extend(["Contents", "Info.plist"]);
 
     if !mac_path.is_file() { 
-        log::error!("Info.plist does not exist or is not a file for app: {}", &q3_exe.name);
+        log::error!("Info.plist does not exist or is not a file for {}", mac_path.to_string_lossy());
         return mac_path
     }
 
-    let s = read_to_string(&mac_path).unwrap();
+    let s = read_to_string(&mac_path).unwrap_or_else(|e| {
+        log::error!("Failed to read Info.plist {}", e.to_string());
+        String::from("")
+    });
+
     let lines: Vec<&str> = s.lines().collect();
 
     for (i, l) in lines.iter().enumerate() {
@@ -231,14 +237,8 @@ fn get_mac_exe_details(q3_exe: &mut Q3Executable, mut mac_path: PathBuf) -> Path
             let end = val.find("</");
             if start.is_some() && end.is_some() {
                 let exe = &val[start.unwrap()+1..end.unwrap()];
-
                 mac_path.pop();
                 mac_path.extend(["MacOS", exe]);
-
-                if mac_path.is_file() {
-                    q3_exe.exe_path = mac_path.to_str().unwrap().to_string();
-                    q3_exe.name = exe.to_string();
-                }
             }
             break;
         }
