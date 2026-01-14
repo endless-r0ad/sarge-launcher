@@ -119,7 +119,12 @@ pub async fn get_defrag_recs(dir: &Path) -> Result<HashMap<String, Vec<Vec<Strin
 			}
 
 			let mut rec_bytes = std::fs::read(Path::new(&path))?;
-			rec_bytes.truncate(rec_bytes.len() - 4);
+
+            if rec_bytes.len() != 136 || parts_len < 3 {
+                continue;
+            }
+            
+            rec_bytes.truncate(132);
 			rec_bytes.reverse();
 
 			let last_finish_byte = rec_bytes.iter().position(|&r| r != 0x00).unwrap();
