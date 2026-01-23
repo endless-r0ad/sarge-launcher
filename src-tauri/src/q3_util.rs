@@ -198,7 +198,14 @@ pub fn read_q3config(q3config: &mut HashMap<String, HashMap<String, String>>, co
             }
             let parts: Vec<&str> = l.splitn(3, ' ').collect();
             if parts.len() == 3 {
-                let val = parts[2][1..parts[2].len()-1].to_string();
+                let mut val = parts[2].to_string();
+                if val.starts_with("\"") {
+                    val.remove(0);
+                }
+                if val.ends_with("\"") {
+                    val.remove(val.len()-1);
+                }
+
                 if let Some(v) = q3config.get_mut(parts[0]) {
                     if let Some(k) = v.get_mut(parts[1]) {
                         *k = val;
