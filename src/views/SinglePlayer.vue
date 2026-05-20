@@ -558,7 +558,7 @@
       <div v-for="(_, index) in 48" class="row" :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"></div>
     </div>
     <div v-if="!activeClient">
-      <div class="center"><button class="select-path-button" @click="pickQ3Client()">Set a Quake 3 Client</button></div>
+      <div class="center"><button class="select-path-button" @click="pickQ3Client()">Link a Quake 3 Client</button></div>
       <div v-for="(_, index) in 48" class="row" :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"></div>
     </div>
   </div>

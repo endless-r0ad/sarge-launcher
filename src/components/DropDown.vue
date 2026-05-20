@@ -5,9 +5,10 @@
   import { type Q3Executable } from '@/models/client'
   import { useConfig } from '@/composables/config'
   import { useClient } from '@/composables/client'
+  import { removeDotSuffix } from '@/utils/util'
 
-  const { config,  } = useConfig()
-  const { activeClient, toggleQ3Client, deleteQ3Client, getClientDefaultGamename } = useClient()
+  const { config } = useConfig()
+  const { activeClient, toggleQ3Client, deleteQ3Client, clientIsOverridden } = useClient()
 
   const isDropDownVisible = ref(false)
   const settingsHovered = ref(false)
@@ -17,12 +18,6 @@
     if (!activeClient.value) { return 'Quake 3 Client'}
     return removeDotSuffix(activeClient.value.name)
   })
-
-  function removeDotSuffix(name: string) {
-    let dot = name.indexOf('.')
-    let withoutSuffix =  name.substring(0, dot == -1 ? name.length : dot)
-    return withoutSuffix
-  }
 
   function toggleClientSelect(client: Q3Executable) {
     if (settingsClicked.value) {
@@ -57,14 +52,6 @@
     }
   }
 
-  function clientIsOverridden() {
-    if (!activeClient.value) { return false }
-    if (activeClient.value.gamename != getClientDefaultGamename(activeClient.value)) {
-      return true
-    }
-    return false
-  }
-
   onMounted(() => {
     document.addEventListener('keydown', handleKeyPress)
   })
@@ -83,7 +70,7 @@
   >
 
     {{ activeClientNameOrDefault }}
-    <span v-if="clientIsOverridden()" class="overridden">{{ activeClient?.gamename }}</span>
+    <span v-if="clientIsOverridden(activeClient)" class="overridden">{{ activeClient?.gamename }}</span>
 
     <div class="clients-wrapper" v-if="isDropDownVisible">
       <div
@@ -190,46 +177,6 @@
   .client:last-of-type {
     border-bottom-left-radius: 0.2rem;
     border-bottom-right-radius: 0.2rem;
-  }
-
-  .defrag {
-    background: url('../assets/images/defrag.svg') 90% center no-repeat;
-    background-size: 30%;
-  }
-
-  .cpma {
-    background: url('../assets/images/cpma.png') 90% center no-repeat;
-    background-size: 30%;
-  }
-
-  .baseoa {
-    background: url('../assets/images/baseoa.svg') 90% center no-repeat;
-    background-size: 30%;
-  }
-
-  .q3ut4 {
-    background: url('../assets/images/q3ut4.png') 90% center no-repeat;
-    background-size: 28%;
-  }
-
-  .baseq3 {
-    background: url('../assets/images/baseq3.png') 90% center no-repeat;
-    background-size: 30%;
-  }
-
-  .osp {
-    background: url('../assets/images/osp.png') 94% center no-repeat;
-    background-size: 35%;
-  }
-
-  .excessiveplus {
-    background: url('../assets/images/excessiveplus.png') 94% center no-repeat;
-    background-size: 39%;
-  }
-
-  .rat {
-    background: url('../assets/images/rat.png') 85% center no-repeat;
-    background-size: 20%;
   }
 
   .settings-button {

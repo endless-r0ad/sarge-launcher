@@ -10,8 +10,10 @@
   import { info, error } from '@tauri-apps/plugin-log'
   import { useConfig } from './composables/config'
   import { useClient } from './composables/client'
+  import { useAppData } from './composables/appdata'
 
   const { config } = useConfig()
+  const { appdata } = useAppData()
   const { activeClient, activeClientDefaultArgs, activeClientUserArgs } = useClient()
 
   const isMounted = ref(false)
@@ -58,7 +60,7 @@
     } catch (err) {
       const e: Error = ensureError(err)
       if (e.message.includes('expected struct Q3Executable') || e.message.includes('missing required key activeClient')) {
-        alert('info', 'Please configure a Quake 3 client to launch')
+        alert('info', 'Link a Quake 3 client first')
       } else {
         alert('error', e.message)
       }

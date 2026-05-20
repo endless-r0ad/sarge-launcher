@@ -181,6 +181,11 @@ export function useClient() {
 		}
   }
 
+  function clientIsOverridden(client: Q3Executable | null) {
+    if (!client) { return false }
+    return (client.gamename != getClientDefaultGamename(client))
+  }
+
   function clientAlreadyActivated(): boolean {
     return config.value.q3_clients.some((x) => x.active)
   }
@@ -208,6 +213,7 @@ export function useClient() {
     activeClientProtocol,
     clientServerGame,
     getClientDefaultGamename,
+    clientIsOverridden,
     updateClient,
     toggleQ3Client,
     deleteQ3Client,

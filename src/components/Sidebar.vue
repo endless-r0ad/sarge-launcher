@@ -36,10 +36,18 @@
 
       <div style="margin: 8px"></div>
 
+      <router-link to="/resource" class="link">
+        <span v-if="$route.path == '/resource'" class="blue-dot"></span>
+        <img src="../assets/icons/new-window.svg" width="31px" height="31px" />
+      </router-link>
+
+      <div style="margin: 8px"></div>
+
       <div class="link" :class="{ settings: props.showSettings }" @click="emit('toggleSettings')">
         <span v-if="props.showSettings"></span>
         <img src="../assets/icons/settings.svg" width="32px" height="32px" />
       </div>
+      
     </div>
 
     <div class="sidebar-line"></div>

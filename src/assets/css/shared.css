@@ -34,7 +34,7 @@ label {
 }
 
 #selected {
-  background-image: linear-gradient(to right, rgba(0, 143, 168, 0.514) 1%, rgba(255, 255, 255, 0.02));
+  background-color: var(--alt-bg) !important;
 }
 
 .table-header-base {
@@ -396,6 +396,46 @@ div::-webkit-scrollbar-thumb {
 .item {
   margin-bottom: 8px;
   text-align: left;
+}
+
+.defrag {
+  background: url('../../assets/images/defrag.svg') 90% center no-repeat;
+  background-size: 30%;
+}
+
+.cpma {
+  background: url('../../assets/images/cpma.png') 90% center no-repeat;
+  background-size: 30%;
+}
+
+.baseoa {
+  background: url('../../assets/images/baseoa.svg') 90% center no-repeat;
+  background-size: 30%;
+}
+
+.q3ut4 {
+  background: url('../../assets/images/q3ut4.png') 90% center no-repeat;
+  background-size: 28%;
+}
+
+.baseq3 {
+  background: url('../../assets/images/baseq3.png') 90% center no-repeat;
+  background-size: 30%;
+}
+
+.osp {
+  background: url('../../assets/images/osp.png') 94% center no-repeat;
+  background-size: 35%;
+}
+
+.excessiveplus {
+  background: url('../../assets/images/excessiveplus.png') 94% center no-repeat;
+  background-size: 39%;
+}
+
+.rat {
+  background: url('../../assets/images/rat.png') 85% center no-repeat;
+  background-size: 20%;
 }
 
 .q3c-0 {

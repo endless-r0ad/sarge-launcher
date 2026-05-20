@@ -1,4 +1,5 @@
 import Home from '@/views/Home.vue'
+import Resource from '@/views/Resource.vue'
 import SinglePLayer from '@/views/SinglePlayer.vue'
 import Server from '@/views/Server.vue'
 import Demo from '@/views/Demo.vue'
@@ -14,6 +15,11 @@ const routes: RouteRecordRaw[] = [
     path: '/home',
     name: 'home',
     component: Home,
+  },
+  {
+    path: '/resource',
+    name: 'resource',
+    component: Resource,
   },
   {
     path: '/singleplayer',

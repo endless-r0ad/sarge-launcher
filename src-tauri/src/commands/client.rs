@@ -50,7 +50,7 @@ pub async fn pick_client(app: AppHandle) -> Result<Option<Q3Executable>, String>
 	if exe_path.is_executable() {
 		Ok(Some(q3_exe))
 	} else {
-		Err(format!("{:?} is not an executable file, please choose a quake 3 client executable", q3_exe.name))
+		Err(format!("{:?} is not an executable file, select a quake 3 client executable", q3_exe.name))
 	}
 }
 

@@ -1,9 +1,15 @@
 <script setup lang="ts">
   import Modal from '@/components/Modal.vue'
-  import { defineEmits, ref, onMounted, onActivated } from 'vue'
+  import Loading from '@/components/Loading.vue'
+  import ClientProfile from '@/components/ClientProfile.vue'
+  import { defineEmits, ref, onMounted, onActivated, onDeactivated } from 'vue'
   import { ensureError } from '@/utils/util'
   import { useConfig } from '@/composables/config'
   import { useClient } from '@/composables/client'
+  import { removeDotSuffix, newCustomServer } from '@/utils/util'
+  import { useAppData } from '@/composables/appdata'
+  import { invoke } from '@tauri-apps/api/core'
+  import { type Quake3Server } from '@/models/server'
 
   const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
   const props = defineProps<{ latestGithubVersion: string | null }>()
@@ -12,7 +18,8 @@
   const appVersion = 'v0.3.1'
   const updateAvailable = ref(props.latestGithubVersion && appVersion != props.latestGithubVersion)
   const { config } = useConfig()
-  const { pickClient } = useClient()
+  const { appdata } = useAppData()
+  const { pickClient, activeClient, deleteQ3Client, toggleQ3Client, clientIsOverridden } = useClient()
 
   const hoveredCard = ref('')
 
@@ -27,12 +34,79 @@
     }
   }
 
+  const favoritedServers = ref<Quake3Server[]>([])
+  const loadingFaveServers = ref(false)
+
+  async function refreshFavoriteServers() {
+    loadingFaveServers.value = true
+    favoritedServers.value = []
+
+    let servers = appdata.value.pinned;
+
+    servers.forEach(address => {
+      let ip_and_port = address.split(':')
+      let faveServer: Quake3Server = newCustomServer(ip_and_port, address)
+      favoritedServers.value.push(faveServer)
+    });
+
+    if (favoritedServers.value.length === 0) { 
+      loadingFaveServers.value = false
+      return 
+    } 
+
+    try {
+
+      favoritedServers.value = await invoke('refresh_all_servers', 
+                { 
+                  allServers: favoritedServers.value, 
+                  numThreads: (config.value.server_browser_threads == 0 ? 1 : config.value.server_browser_threads),
+                  timeout: config.value.server_timeout
+                })
+    }
+    catch(err) {
+      emit('alert', 'error', ensureError(err).message)
+    }
+
+    favoritedServers.value.sort((a, b) => {
+      if (a['playersconnected'] > b['playersconnected']) {
+        return -1;
+      }
+      if (a['playersconnected'] < b['playersconnected']) {
+        return 1;
+      }
+      return 0;
+    });
+
+    loadingFaveServers.value = false
+
+  }
+
+  const showClientProfile = ref(false)
+  const showQ3Config = ref(false)
+
+  function showIfActiveClient() {
+    if (activeClient.value) {
+      return true
+    }
+    emit('alert', 'info', 'Link a Quake 3 client first')
+    return false
+  }
+
   onMounted(() => emit('emitComponentName', componentName.value))
-  onActivated(() => emit('emitComponentName', componentName.value))
+
+  onActivated(async() => {
+    emit('emitComponentName', componentName.value)
+    await refreshFavoriteServers() 
+  })
+
+  onDeactivated(() => hoveredCard.value = '')
 </script>
 
 <template>
   <Teleport to="#modal">
+    <Modal v-if="showClientProfile" :popup-type="'center'" @close="showClientProfile=false">
+      <ClientProfile :profiledClient="activeClient!" @deleteClient="showClientProfile=false; deleteQ3Client(activeClient!);"/>
+    </Modal>
     <Modal v-if="config.welcome_message || updateAvailable" :popupType="'center'" @close="config.welcome_message = false; updateAvailable = false">
       <div style="width: 400px">
         <img style="position: absolute; left: 15%; top: 4%" src="../assets/icons/sarge.svg" />
@@ -70,144 +144,135 @@
     </Modal>
   </Teleport>
 
-  <div class="client-grid" draggable="false">
+  <div class="client-grid no-select" draggable="false">
     <div
-      class="grid-bg about-bg grow"
-      @mouseover="hoveredCard = 'about'"
+      class="grid-bg plus-bg grow"
+      @mouseover="hoveredCard = 'link client'"
       @mouseleave="hoveredCard = ''"
-      @click="config.welcome_message = true"
-      style="grid-column: 1; grid-row: 1"
+      style="cursor: pointer; background-color: var(--secondary-bg); grid-column: 1; grid-row: 1"
     >
-      <div v-if="hoveredCard == 'about'" class="tint">
-        <span class="center card-name" draggable="false">{{ hoveredCard }}</span>
+      <div v-if="hoveredCard == 'link client'" class="tint" @click="pickQ3Client()">
+        <span class="center card-name">{{ hoveredCard }}</span>
+      </div>
+    </div>
+    
+    <div class="grid-bg" style="grid-column: 1 / 4; grid-row: 2 / 4" >
+      <div class="client-container">
+        <div
+          v-for="(client, index) in config.q3_clients"
+          class="client"
+          :class="client.gamename"
+          :key="client.exe_path"
+          :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"
+          :id="client.exe_path === activeClient?.exe_path ? 'selected' : 'c'"
+          @click="toggleQ3Client(client)"
+        >
+          {{ removeDotSuffix(client.name) }}
+          <h6 v-if="clientIsOverridden(client)" style="font-size: 70%; 
+    color: orange; 
+    font-weight: 800;
+    margin: -24px 0 0px 0;">
+            {{ client.gamename }}
+      </h6>
+        </div>
+      </div>
+    </div>
+    <div class="grid-bg" style="grid-column: 4 / 6; grid-row: 1 / 3" >
+      <div v-if="loadingFaveServers" style="position: relative; height: 100%;">
+        <Loading :position="'center'" :size="90" />
+      </div>
+      <div v-else class="client-container">
+        <div
+          v-for="(server, index) in favoritedServers"
+          class="server"
+          :key="server.address"
+          :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"
+        >
+          <span style="width: 11%; padding-right: 12px;">{{ server.game }}</span>
+          <span v-html="server.hostcolored" style="width: 36%; padding-right: 12px;"></span>
+          <span style="width: 10%" class="data">{{ server.playersconnected }}/{{ server.maxclients }}</span>
+
+        </div>
       </div>
     </div>
     <div
-      class="grid-bg grow"
-      @mouseover="hoveredCard = 'quake 3 arena'"
+      class="grid-bg q3-bg grow"
+      @mouseover="hoveredCard = 'config'"
       @mouseleave="hoveredCard = ''"
-      style="grid-column: 2 / 5; grid-row: 1 / 3"
+      style="grid-column: 1 / 4; grid-row: 4"
     >
-      <a class="link" href="https://www.youtube.com/watch?v=SgvrOGmJFbg&list=PLGGojOY6nta5NmPMshZE9l5y3WOaQtU7O" target="_blank">
-        <img src="../assets/images/contenders.png" class="q3-video" />
-        <div v-if="hoveredCard == 'quake 3 arena'" class="center card-name tint">
-          <span class="center">{{ hoveredCard }}</span>
-        </div>
-      </a>
+      <div v-if="hoveredCard == 'config'" class="tint" @click="showQ3Config=showIfActiveClient()">
+        <span class="center card-name" draggable="false">{{ activeClient?.name }} q3config.cfg</span>
+      </div>
     </div>
     <div
-      class="grid-bg plus-bg grow"
-      @mouseover="hoveredCard = 'add client'"
+      class="grid-bg play-bg grow"
+      @mouseover="hoveredCard = 'launch client'"
       @mouseleave="hoveredCard = ''"
-      style="cursor: pointer; background-color: var(--secondary-bg); grid-column: 5; grid-row: 1"
+      style="cursor: pointer; background-color: var(--secondary-bg); grid-column: 2; grid-row: 1"
     >
-      <div v-if="hoveredCard == 'add client'" class="tint" @click="pickQ3Client()">
+      <div v-if="hoveredCard == 'launch client'" class="tint" @click="emit('spawnQuake', [])">
         <span class="center card-name">{{ hoveredCard }}</span>
       </div>
     </div>
     <div
-      class="grid-bg quake-bg grow"
-      @mouseover="hoveredCard = 'buy'"
+      class="grid-bg settings-bg grow"
+      @mouseover="hoveredCard = 'client profile'"
       @mouseleave="hoveredCard = ''"
-      style="grid-column: 1; grid-row: 2 / 4"
+      style="cursor: pointer; background-color: var(--secondary-bg); grid-column: 3; grid-row: 1"
     >
-      <a class="link" href="https://store.steampowered.com/app/2200/Quake_III_Arena/" target="_blank">
-        <div v-if="hoveredCard == 'buy'" class="tint spotlight">
-          <div class="center card-name">buy</div>
-        </div>
-      </a>
+      <div v-if="hoveredCard == 'client profile'" class="tint" @click="showClientProfile=showIfActiveClient()">
+        <span class="center card-name">{{ hoveredCard }}</span>
+      </div>
     </div>
 
     <div
-      class="grid-bg upgrade-bg grow"
-      @mouseover="hoveredCard = 'quake3e'"
+      class="grid-bg sp-bg grow"
+      @mouseover="hoveredCard = 'Single Player'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 4; grid-row: 3"
     >
-      <a class="link" href="https://github.com/ec-/Quake3e" target="_blank">
-        <div v-if="hoveredCard == 'quake3e'" class="tint">
+      <router-link to="/singleplayer" class="link">
+        <div v-if="hoveredCard == 'Single Player'" class="tint">
           <span class="center card-name">{{ hoveredCard }}</span>
         </div>
-      </a>
+      </router-link>
     </div>
     <div
-      class="grid-bg map-bg grow"
-      @mouseover="hoveredCard = 'quake 3 mapping'"
-      @mouseleave="hoveredCard = ''"
-      style="grid-column: 1 / 3; grid-row: 4"
-    >
-      <a class="link" href="https://trello.com/b/zJp4pE3m/id-tech-3-mapping" target="_blank">
-        <div v-if="hoveredCard == 'quake 3 mapping'" class="tint spotlight">
-          <span class="center card-name">{{ hoveredCard }}</span>
-        </div>
-      </a>
-    </div>
-    <div
-      class="grid-bg mod-bg grow"
-      @mouseover="hoveredCard = 'quake 3 mods'"
-      @mouseleave="hoveredCard = ''"
-      style="grid-column: 2 / 4; grid-row: 3"
-    >
-      <a class="link" href="https://lvlworld.com/mods" target="_blank">
-        <div v-if="hoveredCard == 'quake 3 mods'" class="tint spotlight">
-          <span class="center card-name">{{ hoveredCard }}</span>
-        </div>
-      </a>
-    </div>
-    <div
-      class="grid-bg upgrade-bg grow"
-      @mouseover="hoveredCard = 'ioquake3'"
-      @mouseleave="hoveredCard = ''"
-      style="grid-column: 3; grid-row: 4"
-    >
-      <a class="link" href="https://ioquake3.org/" target="_blank">
-        <div v-if="hoveredCard == 'ioquake3'" class="tint">
-          <span class="center card-name">{{ hoveredCard }}</span>
-        </div>
-      </a>
-    </div>
-    <div
-      class="grid-bg urt-bg grow"
-      @mouseover="hoveredCard = 'urban terror'"
-      @mouseleave="hoveredCard = ''"
-      style="grid-column: 5; grid-row: 3"
-    >
-      <a class="link" href="https://www.urbanterror.info/home/" target="_blank" rel="noopener">
-        <div v-if="hoveredCard == 'urban terror'" class="tint">
-          <span class="center card-name">{{ hoveredCard }}</span>
-        </div>
-      </a>
-    </div>
-    <div class="grid-bg cpma-bg grow" @mouseover="hoveredCard = 'cpma'" @mouseleave="hoveredCard = ''" style="grid-column: 5; grid-row: 2">
-      <a class="link" href="https://playmorepromode.com/" target="_blank">
-        <div v-if="hoveredCard == 'cpma'" class="tint">
-          <span class="center card-name">{{ hoveredCard }}</span>
-        </div>
-      </a>
-    </div>
-    <div
-      class="grid-bg defrag-bg grow"
-      @mouseover="hoveredCard = 'defrag'"
+      class="grid-bg servers-bg grow"
+      @mouseover="hoveredCard = 'Servers'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 4; grid-row: 4"
     >
-      <a class="link" href="https://defrag.racing/" target="_blank">
-        <div v-if="hoveredCard == 'defrag'" class="tint">
+      <router-link to="/server" class="link">
+        <div v-if="hoveredCard == 'Servers'" class="tint">
           <span class="center card-name">{{ hoveredCard }}</span>
         </div>
-      </a>
+      </router-link>
     </div>
     <div
-      class="grid-bg oa-bg grow"
-      @mouseover="hoveredCard = 'openarena'"
+      class="grid-bg demos-bg grow"
+      @mouseover="hoveredCard = 'Demos'"
+      @mouseleave="hoveredCard = ''"
+      style="grid-column: 5; grid-row: 3"
+    >
+      <router-link to="/demo" class="link">
+        <div v-if="hoveredCard == 'Demos'" class="tint">
+          <span class="center card-name">{{ hoveredCard }}</span>
+        </div>
+      </router-link>
+    </div>
+    <div
+      class="grid-bg resources-bg grow"
+      @mouseover="hoveredCard = 'Resources'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 5; grid-row: 4"
     >
-      <a class="link" href="https://openarena.ws/news.html" target="_blank">
-        <div v-if="hoveredCard == 'openarena'" class="tint">
+      <router-link to="/resource" class="link">
+        <div v-if="hoveredCard == 'Resources'" class="tint">
           <span class="center card-name">{{ hoveredCard }}</span>
         </div>
-      </a>
+      </router-link>
     </div>
   </div>
 </template>
@@ -219,10 +284,36 @@
     grid-template-columns: repeat(5, minmax(111px, 20%));
     grid-template-rows: repeat(4, minmax(74px, 25%));
     grid-gap: 16px;
-
     padding: 4px;
     color: white;
     user-select: none;
+  }
+
+  .client-container {
+    height: 100%;
+    width: 100%;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    font-weight: bold;
+  }
+
+  .client {
+    width: 100%; 
+    height: 48px; 
+    padding: 12px 12px 12px 48px; 
+    line-height: 48px;
+    font-size: 120%;
+  }
+
+  .server {
+    width: 100%; 
+    height: 32px; 
+    padding: 12px 12px 12px 32px; 
+    line-height: 32px;
+  }
+
+  .active {
+    background-color: #fff;
   }
 
   .grid-bg {
@@ -233,54 +324,44 @@
     color: white;
   }
 
-  .plus-bg {
-    background-image: url('../assets/icons/plus.svg');
+  .q3-bg {
+    background-image: url('../assets/icons/q3-white.svg');
     background-size: 10%;
   }
 
-  .mod-bg {
-    background-image: url('../assets/images/code.png');
-    background-size: 100%;
-    background-position: 20% 40%;
+  .plus-bg {
+    background-image: url('../assets/icons/plus.svg');
+    background-size: 20%;
   }
 
-  .quake-bg {
-    background-image: url('../assets/images/q3_box_art.jpg');
+  .play-bg {
+    background-image: url('../assets/icons/play.svg');
+    background-size: 20%;
   }
 
-  .about-bg {
-    background-image: url('../assets/icons/sarge.svg');
-    background-size: 40%;
+  .settings-bg {
+    background-image: url('../assets/icons/settings.svg');
+    background-size: 24%;
   }
 
-  .upgrade-bg {
-    background-image: url('../assets/icons/q3-white.svg');
-    background-size: 40%;
+  .sp-bg {
+    background-image: url('../assets/icons/single-player.svg');
+    background-size: 30%;
   }
 
-  .urt-bg {
-    background-image: url('../assets/images/q3ut4.png');
-    background-size: 60%;
+  .servers-bg {
+    background-image: url('../assets/icons/globe.svg');
+    background-size: 30%;
   }
 
-  .defrag-bg {
-    background-image: url('../assets/images/defrag.svg');
-    background-size: 60%;
+  .demos-bg {
+    background-image: url('../assets/icons/replay.svg');
+    background-size: 30%;
   }
 
-  .cpma-bg {
-    background-image: url('../assets/images/cpma.png');
-    background-size: 60%;
-  }
-
-  .map-bg {
-    background-image: url('../assets/images/map-nightmare.jpg');
-    background-position: center center;
-  }
-
-  .oa-bg {
-    background-image: url('../assets/images/baseoa.svg');
-    background-size: 70%;
+  .resources-bg {
+    background-image: url('../assets/icons/new-window.svg');
+    background-size: 30%;
   }
 
   .grow {
@@ -296,10 +377,6 @@
     min-height: 100%;
     min-width: 100%;
     background-color: rgba(0, 0, 0, 0.6);
-  }
-
-  .spotlight {
-    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 1%, rgba(255, 255, 255, 0.001) 25.35%);
   }
 
   .center {
@@ -321,18 +398,5 @@
     z-index: 998;
   }
 
-  .q3-video {
-    display: block;
-    top: 0;
-    bottom: 0;
-    right: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  .q3-video:hover {
-    background-color: rgba(0, 0, 0, 0.7);
-  }
 
 </style>
