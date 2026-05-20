@@ -8,7 +8,7 @@
   import { useClickRow } from '@/composables/clickrow'
   import { useLevelshot } from '@/composables/levelshot'
   import { useClient } from '@/composables/client'
-  import { type WatchHandle, watch, nextTick, defineEmits, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
+  import { type WatchHandle, watch, nextTick, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
   import { type Bot } from '@/models/singleplayer'
   import { Q3_BOT_NAMES, UT_BOT_NAMES, CPMA_BOT_NAMES, OA_BOT_NAMES } from '@/utils/util'
 

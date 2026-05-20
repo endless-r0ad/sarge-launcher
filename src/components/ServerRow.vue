@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import Loading from '@/components/Loading.vue'
-  import { defineProps, defineEmits, computed, onMounted, onUnmounted } from 'vue'
+  import { computed, onMounted, onUnmounted } from 'vue'
   import { type Quake3Server } from '@/models/server'
   import { getServerProtocol } from '@/utils/util'
   

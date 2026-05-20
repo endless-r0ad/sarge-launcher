@@ -6,7 +6,7 @@
   import { info } from '@tauri-apps/plugin-log'
   import { ensureError } from '@/utils/util'
   import { type Demo } from '@/models/demo'
-  import { type WatchHandle, watch, nextTick, defineEmits, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
+  import { type WatchHandle, watch, nextTick, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
   import { useVirtualScroll } from '@/composables/virtualscroll'
   import { useClickRow } from '@/composables/clickrow'
   import { useLevelshot } from '@/composables/levelshot'

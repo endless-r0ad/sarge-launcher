@@ -1,6 +1,5 @@
 <script setup lang="ts">
   import DropDown from '@/components/DropDown.vue'
-  import { defineProps, defineEmits } from 'vue'
   import { ensureError } from '@/utils/util'
   import { useClient } from '@/composables/client'
 

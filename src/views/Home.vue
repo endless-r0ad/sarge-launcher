@@ -2,7 +2,7 @@
   import Modal from '@/components/Modal.vue'
   import Loading from '@/components/Loading.vue'
   import ClientProfile from '@/components/ClientProfile.vue'
-  import { defineEmits, ref, onMounted, onActivated, onDeactivated } from 'vue'
+  import { ref, onMounted, onActivated, onDeactivated } from 'vue'
   import { ensureError } from '@/utils/util'
   import { useConfig } from '@/composables/config'
   import { useClient } from '@/composables/client'
@@ -14,7 +14,7 @@
   const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
   const props = defineProps<{ latestGithubVersion: string | null }>()
 
-  const componentName = ref('Sarge Launcher')
+  const componentName = ref('Client Setup')
   const appVersion = 'v0.3.1'
   const updateAvailable = ref(props.latestGithubVersion && appVersion != props.latestGithubVersion)
   const { config } = useConfig()

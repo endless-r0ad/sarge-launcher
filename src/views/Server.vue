@@ -15,7 +15,7 @@
   import { useConfig } from '@/composables/config'
   import { useAppData } from '@/composables/appdata'
   import { useClient } from '@/composables/client'
-  import { watch, nextTick, defineEmits, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
+  import { watch, nextTick, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
   
   const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
   defineProps<{ latestGithubVersion: string | null }>()

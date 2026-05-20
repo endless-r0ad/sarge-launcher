@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { watch, defineProps, defineEmits, ref, computed, onMounted, onUnmounted } from 'vue'
+  import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
   import { type Demo } from '@/models/demo'
   import { invoke } from '@tauri-apps/api/core'
 

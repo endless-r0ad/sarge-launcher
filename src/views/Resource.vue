@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import Modal from '@/components/Modal.vue'
-  import { defineEmits, ref, onMounted, onActivated } from 'vue'
+  import { ref, onMounted, onActivated } from 'vue'
   import { ensureError } from '@/utils/util'
   import { useConfig } from '@/composables/config'
   import { useClient } from '@/composables/client'
