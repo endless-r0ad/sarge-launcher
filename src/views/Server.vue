@@ -50,7 +50,7 @@
   const { activeClient, clientServerGame } = useClient()
 
   watch(activeClient, async(newVal, oldVal) => {
-    if (config.value.refresh_by_mod && newVal?.gamename != oldVal?.gamename) {
+    if (config.value.refresh_by_mod && newVal && newVal.gamename != oldVal?.gamename) {
       serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash')
       toggleShowUnreachableServers()
     }

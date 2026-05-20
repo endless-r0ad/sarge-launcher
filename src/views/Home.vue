@@ -168,18 +168,21 @@
           @click="toggleQ3Client(client)"
         >
           {{ removeDotSuffix(client.name) }}
-          <h6 v-if="clientIsOverridden(client)" style="font-size: 70%; 
-    color: orange; 
-    font-weight: 800;
-    margin: -24px 0 0px 0;">
+          <h6 v-if="clientIsOverridden(client)" class="overridden" style="margin: -24px 0 0 0;">
             {{ client.gamename }}
-      </h6>
+          </h6>
+        </div>
+        <div v-if="config.q3_clients.length == 0" style="position: relative; height: 100%;">
+          <span class="center card-name">Linked Q3 Clients</span>
         </div>
       </div>
     </div>
     <div class="grid-bg" style="grid-column: 4 / 6; grid-row: 1 / 3" >
       <div v-if="loadingFaveServers" style="position: relative; height: 100%;">
         <Loading :position="'center'" :size="90" />
+      </div>
+      <div v-if="favoritedServers.length == 0" style="position: relative; height: 100%;">
+        <span class="center card-name">Pinned Servers</span>
       </div>
       <div v-else class="client-container">
         <div
@@ -188,9 +191,8 @@
           :key="server.address"
           :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"
         >
-          <span style="width: 11%; padding-right: 12px;">{{ server.game }}</span>
-          <span v-html="server.hostcolored" style="width: 36%; padding-right: 12px;"></span>
-          <span style="width: 10%" class="data">{{ server.playersconnected }}/{{ server.maxclients }}</span>
+          <span v-html="server.hostcolored" style="padding-right: 12px;"></span>
+          <span style="text-align: right;" class="data">{{ server.playersconnected }}/{{ server.maxclients }}</span>
 
         </div>
       </div>
@@ -307,9 +309,9 @@
 
   .server {
     width: 100%; 
-    height: 32px; 
-    padding: 12px 12px 12px 32px; 
-    line-height: 32px;
+    height: 28px; 
+    padding: 4px 4px 4px 12px; 
+    line-height: 28px;
   }
 
   .active {
@@ -398,5 +400,10 @@
     z-index: 998;
   }
 
+  .overridden {
+    font-size: 70%; 
+    color: orange; 
+    font-weight: 800;
+  }
 
 </style>

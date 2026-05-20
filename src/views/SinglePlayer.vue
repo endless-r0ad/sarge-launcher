@@ -181,23 +181,30 @@
     selectedLevel.value = null
   })
 
-  const localDefragRecords = ref<{ [key: string]: [string[]] }>({})
-
-  async function getLevels() {
-    if (!activeClient.value || loading.value) {
-      return
-    }
-
-    const startTime = performance.now()
-
-    loading.value = true
-    loadingEvent.value = 'getting levels...'
+  function resetView() {
+    loading.value = false
+    loadingEvent.value = ''
     selectedLevel.value = null
     levelsLastRefresh.value = []
     searchQuery.value = ''
     sortDesc.value = false
     currentSort.value = ''
     showBaseLevelsOnly.value = false
+  }
+
+  const localDefragRecords = ref<{ [key: string]: [string[]] }>({})
+
+  async function getLevels() {
+    if (!activeClient.value || loading.value) {
+      resetView()
+      return
+    }
+
+    const startTime = performance.now()
+
+    resetView()
+    loading.value = true
+    loadingEvent.value = 'getting levels...'
 
     try {
       levels.value = await invoke('get_levels', { searchPaths: activeClientPaths.value, getAllData: true })
@@ -210,7 +217,6 @@
       emit('alert', 'error', ensureError(err).message)
     }
 
-    showBaseLevelsOnly.value = false
     loading.value = false
     loadingEvent.value = ''
     handleScroll()
