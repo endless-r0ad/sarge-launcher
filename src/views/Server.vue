@@ -18,7 +18,6 @@
   import { watch, nextTick, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
   
   const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
-  defineProps<{ latestGithubVersion: string | null }>()
   
   const componentName = ref('Server Browser')
 

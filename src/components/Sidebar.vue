@@ -26,7 +26,7 @@
 
       <router-link to="/server" class="link">
         <span v-if="$route.path == '/server'" class="blue-dot"></span>
-        <img src="../assets/icons/globe.svg" width="31px" height="31px" />
+        <img src="../assets/icons/globe.svg" width="32px" height="32px" />
       </router-link>
 
       <div style="margin: 8px"></div>
@@ -40,7 +40,7 @@
 
       <router-link to="/resource" class="link">
         <span v-if="$route.path == '/resource'" class="blue-dot"></span>
-        <img src="../assets/icons/new-window.svg" width="31px" height="31px" />
+        <img src="../assets/icons/new-window.svg" width="32px" height="32px" />
       </router-link>
       
     </div>
@@ -115,7 +115,7 @@
 
   .link {
     display: block;
-    padding: 8px 8px 2px 8px;
+    padding: 8px 8px 4px 8px;
     text-align: center;
     border-radius: 0.8rem;
     cursor: pointer;

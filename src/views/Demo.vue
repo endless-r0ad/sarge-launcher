@@ -14,7 +14,6 @@
   import { useClient } from '@/composables/client'
 
   const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
-  defineProps<{ latestGithubVersion: string | null }>()
 
   const componentName = ref('Demo Browser')
   const { config } = useConfig()

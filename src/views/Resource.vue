@@ -1,16 +1,12 @@
 <script setup lang="ts">
-  import Modal from '@/components/Modal.vue'
   import { ref, onMounted, onActivated } from 'vue'
   import { ensureError } from '@/utils/util'
   import { useConfig } from '@/composables/config'
   import { useClient } from '@/composables/client'
 
   const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
-  const props = defineProps<{ latestGithubVersion: string | null }>()
 
   const componentName = ref('External Resources')
-  const appVersion = 'v0.3.1'
-  const updateAvailable = ref(props.latestGithubVersion && appVersion != props.latestGithubVersion)
   const { config } = useConfig()
   const { pickClient } = useClient()
 
@@ -32,44 +28,6 @@
 </script>
 
 <template>
-  <Teleport to="#modal">
-    <Modal v-if="config.welcome_message || updateAvailable" :popupType="'center'" @close="config.welcome_message = false; updateAvailable = false">
-      <div style="width: 400px">
-        <img style="position: absolute; left: 15%; top: 4%" src="../assets/icons/sarge.svg" />
-        <h2 style="position: absolute; right: 15%; top: 4%">SARGE LAUNCHER</h2>
-        <a v-if="props.latestGithubVersion && appVersion != props.latestGithubVersion" 
-          class="link" 
-          href="https://github.com/endless-r0ad/sarge-launcher/releases" 
-          target="_blank">
-          <p style="position: absolute; right: 42%; top: 16%; font-size: 75%; color: #00ffff;">
-            update available
-          </p>
-        </a>
-        <a class="link" href="https://github.com/endless-r0ad/sarge-launcher" target="_blank">
-          <p :style="`position: absolute; right: ${props.latestGithubVersion && appVersion != props.latestGithubVersion ? 29 : 15}%; top: 16%; font-size: 75%;`">
-            {{ appVersion }}
-          </p>
-        </a>
-        <a v-if="props.latestGithubVersion && appVersion != props.latestGithubVersion" 
-          class="link" 
-          href="https://github.com/endless-r0ad/sarge-launcher/releases" 
-          target="_blank">
-          <p style="position: absolute; right: 15%; top: 16%; font-size: 75%; color: #00ffff;">
-            -> {{ props.latestGithubVersion }}
-          </p>
-        </a>
-        <p style="margin-top: 72px">
-          Sarge Launcher is a utility for Quake 3 Arena and Q3A mods that provides some useful features for both n00bs and
-          veterans. If you are new, you should purchase the game first, then update your client to ioquake3 or quake3e.
-        </p>
-        <p>
-          Sarge Launcher is not responsible for installing any mods or downloading any content for Q3A -
-          YOU are solely responsible for that!
-        </p>
-      </div>
-    </Modal>
-  </Teleport>
-
   <div class="client-grid no-select" draggable="false">
     <div
       class="grid-bg about-bg grow"

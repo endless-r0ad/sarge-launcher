@@ -4,6 +4,7 @@
   import Modal from '@/components/Modal.vue'
   import Sidebar from '@/components/Sidebar.vue'
   import Settings from '@/components/Settings.vue'
+  import SargeStatus from './components/SargeStatus.vue'
   import { ensureError, getLatestGithubRelease } from '@/utils/util'
   import { ref, onMounted } from 'vue'
   import { invoke } from '@tauri-apps/api/core'
@@ -12,16 +13,22 @@
   import { useClient } from './composables/client'
   import { useAppData } from './composables/appdata'
 
+  useAppData()
   const { config } = useConfig()
-  const { appdata } = useAppData()
   const { activeClient, activeClientDefaultArgs, activeClientUserArgs } = useClient()
 
   const isMounted = ref(false)
+
+  const appVersion = 'v0.3.0'
   const latestRelease = ref<string | null>(null)
+  const updateAvailable = ref(false)
+  const showUpdate = ref(false)
 
   onMounted(async () => {
     try {
       latestRelease.value = await getLatestGithubRelease()
+      updateAvailable.value = latestRelease.value != null && appVersion != latestRelease.value
+      showUpdate.value = updateAvailable.value
     } catch (err) {
       error(ensureError(err).message)
     }
@@ -79,7 +86,6 @@
       <KeepAlive>
         <component
           :is="Component"
-          :latestGithubVersion="latestRelease"
           @spawnQuake="spawnQuake"
           @emitComponentName="getComponentName"
           @alert="alert"
@@ -95,6 +101,16 @@
     
     <Modal v-if="showSettings" :popupType="'center'" @close="showSettings=false">
       <Settings />
+    </Modal>
+
+    <Modal v-if="isMounted && (showUpdate || config.welcome_message)" 
+          :popupType="'center'" 
+          @close="config.welcome_message = false; showUpdate = false">
+      <SargeStatus :updateAvailable="updateAvailable" 
+                   :welcomeMessage="config.welcome_message" 
+                   :appVersion="appVersion" 
+                   :latestRelease="latestRelease" 
+      />
     </Modal>
   </div>
 </template>
