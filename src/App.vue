@@ -19,7 +19,7 @@
 
   const isMounted = ref(false)
 
-  const appVersion = 'v0.3.0'
+  const appVersion = 'v0.3.1'
   const latestRelease = ref<string | null>(null)
   const updateAvailable = ref(false)
   const showUpdate = ref(false)
