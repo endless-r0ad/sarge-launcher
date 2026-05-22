@@ -6,6 +6,7 @@
   import { ensureError } from '@/utils/util'
   import { useConfig } from '@/composables/config'
   import { useClient } from '@/composables/client'
+  import { useClickRow } from '@/composables/clickrow'
   import { removeDotSuffix, newCustomServer } from '@/utils/util'
   import { useAppData } from '@/composables/appdata'
   import { invoke } from '@tauri-apps/api/core'
@@ -33,6 +34,11 @@
 
   const favoritedServers = ref<Quake3Server[]>([])
   const loadingFaveServers = ref(false)
+
+  const selectedServer = ref<Quake3Server | null>(null)
+  const lastSelectedServer = ref<Quake3Server | null>(null)
+
+  const { handleClick, dblClickHappenedOnSameObject, resetDblClickTimeout } = useClickRow(selectedServer, lastSelectedServer)
 
   async function refreshFavoriteServers() {
     loadingFaveServers.value = true
@@ -70,6 +76,15 @@
     });
 
     loadingFaveServers.value = false
+  }
+
+  async function clickServer(selectedServ: Quake3Server, _index: number){
+    handleClick(selectedServ)
+
+    if (dblClickHappenedOnSameObject.value) {
+      //spawnQuake()
+      resetDblClickTimeout()
+    }
   }
 
   const showClientProfile = ref(false)
@@ -143,9 +158,13 @@
           class="server"
           :key="server.address"
           :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"
+          :id="server === selectedServer ? 'selected' : `pinned-${index}`"
+          @click="clickServer(server, index);"
           >
-          <span v-html="server.hostcolored" style="padding-right: 12px;"></span>
-          <span style="text-align: right;" class="data">{{ server.playersconnected }}/{{ server.maxclients }}</span>
+          <span v-html="server.hostcolored" class="data"></span>
+          <span style="float: right; margin-right: 18px;" class="data">
+            <span :class="server.playersconnected > 0 ? 'q3c-5' : ''">{{ server.playersconnected }}</span>/{{ server.maxclients }}
+          </span>
         </div>
       </div>
     </div>
@@ -161,7 +180,7 @@
     <div class="grid-bg play-bg grow"
       @mouseover="hoveredCard = 'launch client'"
       @mouseleave="hoveredCard = ''"
-      style="cursor: pointer; background-color: var(--secondary-bg); grid-column: 2; grid-row: 1"
+      style="grid-column: 2; grid-row: 1"
       >
       <div v-if="hoveredCard == 'launch client'" class="tint" @click="emit('spawnQuake', [])">
         <span class="center card-name">{{ hoveredCard }}</span>
@@ -170,7 +189,7 @@
     <div class="grid-bg settings-bg grow"
       @mouseover="hoveredCard = 'client profile'"
       @mouseleave="hoveredCard = ''"
-      style="cursor: pointer; background-color: var(--secondary-bg); grid-column: 3; grid-row: 1"
+      style="grid-column: 3; grid-row: 1"
       >
       <div v-if="hoveredCard == 'client profile'" class="tint" @click="showClientProfile=showIfActiveClient()">
         <span class="center card-name">{{ hoveredCard }}</span>
@@ -246,6 +265,7 @@
     height: 28px; 
     padding: 4px 4px 4px 12px; 
     line-height: 28px;
+    font-size: 12px;
   }
 
   .q3-bg {
