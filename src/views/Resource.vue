@@ -193,6 +193,11 @@
     background-size: 70%;
   }
 
+  .esr-bg {
+    background-image: url('../assets/images/esrlogo.png');
+    background-size: 60%;
+  }
+
   .center {
     position: absolute;
     left: 50%;

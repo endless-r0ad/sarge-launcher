@@ -28,7 +28,7 @@
   </div>
   <div v-if="welcomeMessage" style="width: 320px;">
     <p>
-      Sarge Launcher is a utility for Quake 3 Arena and Q3A mods that provides some useful features for both n00bs and
+      Sarge Launcher is a custom frontend for Quake 3 Arena and Q3A mods that provides some useful features for both n00bs and
       veterans.
     </p>
     <p>

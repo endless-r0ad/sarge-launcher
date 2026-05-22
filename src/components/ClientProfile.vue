@@ -63,7 +63,7 @@
   <div style="width: 540px; height: 340px">
     <h2 style="margin: 8px 0px">{{ localClient.name }}</h2>
     <div class="profile-item" style="float: right; position: absolute; right: 20px; top: 32px">
-      <button class="refresh-button" style="font-size: 90%; border-color: orange" @click="emit('deleteClient')">Remove Client</button>
+      <button class="refresh-button" style="font-size: 90%; border-color: orange" @click="emit('deleteClient')">Unlink Client</button>
     </div>
     <div class="profile-item">
       <button class="refresh-button" style="font-size: 90%" @click="reveal(localClient.exe_path)">{{ localClient.parent_path }}</button>

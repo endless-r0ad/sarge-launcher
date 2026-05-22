@@ -70,7 +70,7 @@
         <Loading v-if="refreshing" :position="'relative'" :size="15" />
       </span>
       <span style="width: 7%" class="data">{{ server.ping }}</span>
-      <span style="width: 16%" class="data">{{ server.ip }}:{{ server.port }}</span>
+      <span style="width: 16%; user-select: text" class="data">{{ server.ip }}:{{ server.port }}</span>
       <span style="width: 2%">
         <div v-if="!isSelected || (isSelected && !displayDetails)" class="plus" id="expandDetails" @click="emit('showDetails')">+</div>
         <div v-if="displayDetails && isSelected" class="minus" id="expandDetails" @click="emit('hideDetails')">-</div>

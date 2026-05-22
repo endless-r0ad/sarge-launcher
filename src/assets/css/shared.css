@@ -262,6 +262,7 @@ div::-webkit-scrollbar-thumb {
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
+  user-select: none;
 }
 
 .row-details {

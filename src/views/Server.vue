@@ -580,7 +580,7 @@
   </div>
 
   
-  <div class="scrollable-container" 
+  <div class="scrollable-container no-select" 
       @keydown.up.prevent="keySelect(-1)" 
       @keydown.down.prevent="keySelect(1)" 
       @keydown.enter.prevent="spawnQuake()"
@@ -599,7 +599,8 @@
           <img src="../assets/icons/pin.svg" class="pin-icon">
         </div>
         <ServerRow v-for="(server, index) in pinnedServers" 
-          class="row pinned"
+          class="row"
+          :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"
           :key="server.address"      
           :id="server === selectedServer ? 'selected' : `pinned-${index}`"
           :server="server"
@@ -747,14 +748,6 @@
     line-height: 48px;
     font-size: large;
     font-weight: 600;
-  }
-
-  .pinned {
-    background-color: var(--alt-bg);
-  }
-
-  .pinned:nth-of-type(even) {
-    background-color: rgba(9, 61, 82, 0.5)
   }
 
   .pin-icon {

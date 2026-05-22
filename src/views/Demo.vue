@@ -321,7 +321,7 @@
   </div>
 
   <div
-    class="scrollable-container"
+    class="scrollable-container no-select"
     @keydown.up.prevent="keySelect(-1)"
     @keydown.down.prevent="keySelect(1)"
     @keydown.enter.prevent="spawnQuake()"
