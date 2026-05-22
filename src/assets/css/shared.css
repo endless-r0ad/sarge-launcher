@@ -438,6 +438,50 @@ div::-webkit-scrollbar-thumb {
   background-size: 20%;
 }
 
+.grid {
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(111px, 20%));
+  grid-template-rows: repeat(4, minmax(74px, 25%));
+  grid-gap: 16px;
+  padding: 4px;
+  color: white;
+  user-select: none;
+}
+
+.grid-bg {
+  background-color: var(--secondary-bg);
+  background-repeat: no-repeat;
+  background-size: 100%;
+  background-position: center center;
+  color: white;
+}
+
+.grow {
+  transition: all 0.35s ease-in-out;
+}
+
+.grow:hover {
+  transform: scale(1.02);
+  cursor: pointer;
+}
+
+.tint {
+  min-height: 100%;
+  min-width: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.spotlight {
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 1%, rgba(255, 255, 255, 0.001) 25.35%);
+}
+
+.overridden {
+  font-size: 70%;
+  color: orange;
+  font-weight: 800;
+}
+
 .q3c-0 {
   color: rgb(0, 0, 0);
 }

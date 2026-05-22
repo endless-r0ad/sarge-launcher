@@ -52,7 +52,6 @@
     } 
 
     try {
-
       favoritedServers.value = await invoke('refresh_all_servers', 
                 { 
                   allServers: favoritedServers.value, 
@@ -65,17 +64,12 @@
     }
 
     favoritedServers.value.sort((a, b) => {
-      if (a['playersconnected'] > b['playersconnected']) {
-        return -1;
-      }
-      if (a['playersconnected'] < b['playersconnected']) {
-        return 1;
-      }
+      if (a['playersconnected'] > b['playersconnected']) { return -1; }
+      if (a['playersconnected'] < b['playersconnected']) { return 1; }
       return 0;
     });
 
     loadingFaveServers.value = false
-
   }
 
   const showClientProfile = ref(false)
@@ -106,12 +100,11 @@
     </Modal>
   </Teleport>
 
-  <div class="client-grid no-select" draggable="false">
-    <div
-      class="grid-bg plus-bg grow"
+  <div class="grid no-select" draggable="false">
+    <div class="grid-bg plus-bg grow"
       @mouseover="hoveredCard = 'link client'"
       @mouseleave="hoveredCard = ''"
-      style="cursor: pointer; background-color: var(--secondary-bg); grid-column: 1; grid-row: 1"
+      style="grid-column: 1; grid-row: 1"
     >
       <div v-if="hoveredCard == 'link client'" class="tint" @click="pickQ3Client()">
         <span class="center card-name">{{ hoveredCard }}</span>
@@ -120,15 +113,14 @@
     
     <div class="grid-bg" style="grid-column: 1 / 4; grid-row: 2 / 4" >
       <div class="client-container">
-        <div
-          v-for="(client, index) in config.q3_clients"
+        <div v-for="(client, index) in config.q3_clients"
           class="client"
           :class="client.gamename"
           :key="client.exe_path"
           :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"
           :id="client.exe_path === activeClient?.exe_path ? 'selected' : 'c'"
           @click="toggleQ3Client(client)"
-        >
+          >
           {{ removeDotSuffix(client.name) }}
           <h6 v-if="clientIsOverridden(client)" class="overridden" style="margin: -24px 0 0 0;">
             {{ client.gamename }}
@@ -147,91 +139,82 @@
         <span class="center card-name">Pinned Servers</span>
       </div>
       <div v-else class="client-container">
-        <div
-          v-for="(server, index) in favoritedServers"
+        <div v-for="(server, index) in favoritedServers"
           class="server"
           :key="server.address"
           :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"
-        >
+          >
           <span v-html="server.hostcolored" style="padding-right: 12px;"></span>
           <span style="text-align: right;" class="data">{{ server.playersconnected }}/{{ server.maxclients }}</span>
-
         </div>
       </div>
     </div>
-    <div
-      class="grid-bg q3-bg grow"
+    <div class="grid-bg q3-bg grow"
       @mouseover="hoveredCard = 'config'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 1 / 4; grid-row: 4"
-    >
+      >
       <div v-if="hoveredCard == 'config'" class="tint" @click="showQ3Config=showIfActiveClient()">
         <span class="center card-name" draggable="false">{{ activeClient?.name }} q3config.cfg</span>
       </div>
     </div>
-    <div
-      class="grid-bg play-bg grow"
+    <div class="grid-bg play-bg grow"
       @mouseover="hoveredCard = 'launch client'"
       @mouseleave="hoveredCard = ''"
       style="cursor: pointer; background-color: var(--secondary-bg); grid-column: 2; grid-row: 1"
-    >
+      >
       <div v-if="hoveredCard == 'launch client'" class="tint" @click="emit('spawnQuake', [])">
         <span class="center card-name">{{ hoveredCard }}</span>
       </div>
     </div>
-    <div
-      class="grid-bg settings-bg grow"
+    <div class="grid-bg settings-bg grow"
       @mouseover="hoveredCard = 'client profile'"
       @mouseleave="hoveredCard = ''"
       style="cursor: pointer; background-color: var(--secondary-bg); grid-column: 3; grid-row: 1"
-    >
+      >
       <div v-if="hoveredCard == 'client profile'" class="tint" @click="showClientProfile=showIfActiveClient()">
         <span class="center card-name">{{ hoveredCard }}</span>
       </div>
     </div>
 
-    <div
-      class="grid-bg sp-bg grow"
+    <div class="grid-bg sp-bg grow"
       @mouseover="hoveredCard = 'Single Player'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 4; grid-row: 3"
-    >
+      >
       <router-link to="/singleplayer" class="link">
         <div v-if="hoveredCard == 'Single Player'" class="tint">
           <span class="center card-name">{{ hoveredCard }}</span>
         </div>
       </router-link>
     </div>
-    <div
-      class="grid-bg servers-bg grow"
+    <div class="grid-bg servers-bg grow"
       @mouseover="hoveredCard = 'Servers'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 4; grid-row: 4"
-    >
+      >
       <router-link to="/server" class="link">
         <div v-if="hoveredCard == 'Servers'" class="tint">
           <span class="center card-name">{{ hoveredCard }}</span>
         </div>
       </router-link>
     </div>
-    <div
-      class="grid-bg demos-bg grow"
+    <div class="grid-bg demos-bg grow"
       @mouseover="hoveredCard = 'Demos'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 5; grid-row: 3"
-    >
+      >
       <router-link to="/demo" class="link">
         <div v-if="hoveredCard == 'Demos'" class="tint">
           <span class="center card-name">{{ hoveredCard }}</span>
         </div>
       </router-link>
     </div>
-    <div
-      class="grid-bg resources-bg grow"
+    <div class="grid-bg resources-bg grow"
       @mouseover="hoveredCard = 'Resources'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 5; grid-row: 4"
-    >
+      >
       <router-link to="/resource" class="link">
         <div v-if="hoveredCard == 'Resources'" class="tint">
           <span class="center card-name">{{ hoveredCard }}</span>
@@ -242,17 +225,6 @@
 </template>
 
 <style scoped>
-  .client-grid {
-    height: 100%;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(111px, 20%));
-    grid-template-rows: repeat(4, minmax(74px, 25%));
-    grid-gap: 16px;
-    padding: 4px;
-    color: white;
-    user-select: none;
-  }
-
   .client-container {
     height: 100%;
     width: 100%;
@@ -274,18 +246,6 @@
     height: 28px; 
     padding: 4px 4px 4px 12px; 
     line-height: 28px;
-  }
-
-  .active {
-    background-color: #fff;
-  }
-
-  .grid-bg {
-    background-color: var(--secondary-bg);
-    background-repeat: no-repeat;
-    background-size: 100%;
-    background-position: center center;
-    color: white;
   }
 
   .q3-bg {
@@ -328,21 +288,6 @@
     background-size: 30%;
   }
 
-  .grow {
-    transition: all 0.35s ease-in-out;
-  }
-
-  .grow:hover {
-    transform: scale(1.02);
-    cursor: pointer;
-  }
-
-  .tint {
-    min-height: 100%;
-    min-width: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-  }
-
   .center {
     position: absolute;
     left: 50%;
@@ -360,12 +305,6 @@
   .link {
     color: white;
     z-index: 998;
-  }
-
-  .overridden {
-    font-size: 70%; 
-    color: orange; 
-    font-weight: 800;
   }
 
 </style>

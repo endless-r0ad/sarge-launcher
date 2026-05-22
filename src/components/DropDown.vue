@@ -137,12 +137,6 @@
     background-color: var(--main-bg);
   }
 
-  .overridden {
-    font-size: 70%; 
-    color: orange; 
-    font-weight: 800;
-  }
-
   .clients-wrapper {
     position: fixed;
     top: calc(3vh + 44px);
