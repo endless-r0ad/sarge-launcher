@@ -7,12 +7,13 @@
   import { useConfig } from '@/composables/config'
   import { useClient } from '@/composables/client'
   import { useClickRow } from '@/composables/clickrow'
-  import { removeDotSuffix, newCustomServer } from '@/utils/util'
+  import { removeDotSuffix, newCustomServer, getServerProtocol } from '@/utils/util'
   import { useAppData } from '@/composables/appdata'
+  import { useSpawnQuake } from '@/composables/spawnquake'
   import { invoke } from '@tauri-apps/api/core'
   import { type Quake3Server } from '@/models/server'
 
-  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
+  const emit = defineEmits<{emitComponentName: [string], alert: [string, string]}>()
 
   const componentName = ref('Client Setup')
   const { config } = useConfig()
@@ -82,9 +83,22 @@
     handleClick(selectedServ)
 
     if (dblClickHappenedOnSameObject.value) {
-      //spawnQuake()
+      spawnQuakeFaveServer()
       resetDblClickTimeout()
     }
+  }
+
+  const { spawnQuake } = useSpawnQuake()
+
+  function spawnQuakeFaveServer(){
+    if (selectedServer.value == null) { return }
+
+    try {
+      let args = ['+set', 'fs_game', selectedServer.value.game, '+set', 'protocol', getServerProtocol(selectedServer.value), '+connect', selectedServer.value.address];
+      spawnQuake(args)
+    } catch(err) {
+      emit('alert', 'error', ensureError(err).message)
+    }       
   }
 
   const showClientProfile = ref(false)
@@ -182,7 +196,7 @@
       @mouseleave="hoveredCard = ''"
       style="grid-column: 2; grid-row: 1"
       >
-      <div v-if="hoveredCard == 'launch client'" class="tint" @click="emit('spawnQuake', [])">
+      <div v-if="hoveredCard == 'launch client'" class="tint" @click="spawnQuake([])">
         <span class="center card-name">{{ hoveredCard }}</span>
       </div>
     </div>

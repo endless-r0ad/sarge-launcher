@@ -11,8 +11,9 @@
   import { type WatchHandle, watch, nextTick, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
   import { type Bot } from '@/models/singleplayer'
   import { Q3_BOT_NAMES, UT_BOT_NAMES, CPMA_BOT_NAMES, OA_BOT_NAMES } from '@/utils/util'
+  import { useSpawnQuake } from '@/composables/spawnquake'
 
-  const emit = defineEmits<{ spawnQuake: [string[]], emitComponentName: [string], alert: [string, string] }>()
+  const emit = defineEmits<{ emitComponentName: [string], alert: [string, string] }>()
 
   const componentName = ref('Single Player')
 
@@ -366,66 +367,19 @@
     selectedLevel.value = null
   }
 
-  function spawnQuake() {
-    if (selectedLevel.value) {
-      let gametype = gameType.value // activeClient.value?.gamename == 'cpma' ? gameType.value -1 : gameType.value
-      let gametypeName = gametypes.value[gameType.value]
-      let args = []
-      let launch = ''
+  const { spawnQuakeSinglePlayer, spawnQuakeDefrag } = useSpawnQuake()
 
+  function spawnQuakeLocal() {
+    try {
       if (activeClient.value?.gamename == 'defrag') {
-        launch = cheats.value ? '+dev' + gametypes.value[gametype] : '+' + gametypes.value[gametype]
+        spawnQuakeDefrag(selectedLevel.value, gametypes.value[gameType.value] ?? '', cheats.value, overbounces.value)
       } else {
-        if (gametypeName == 'SP') {
-          launch = cheats.value ? '+spdevmap' : '+spmap'
-        } else {
-          launch = cheats.value ? '+devmap' : '+map'
-        }
-      }
-
-      args = [launch, selectedLevel.value.level_name]
-
-      if (activeClient.value?.gamename != 'defrag') {
-        if (activeClient.value?.gamename == 'cpma') {
-          args.push(...['+set', 'mode_start', gametypes.value[gametype]!])
-        } else {
-          args.push(...['+set', 'g_gametype', gametype.toString()])
-        }
-      }
-
-      if (activeClient.value?.gamename == 'defrag') {
-        args.push(...['+set', 'df_ob_KillOBs', overbounces.value ? '0' : '1'])
-      }
-
-      args.push(...['+set', 'sv_maxclients', sv_maxclients.value.toString()])
-      args.push(...['+set', gametypeName == 'SP' ? 'g_spskill' : 'skill', difficulty.value.toString(), '+wait', '3'])
-
-      if (teamFreeBotsAllowed.value) {
-        if (bots_team_free.value.length && activeClient.value?.gamename == 'q3ut4') {
-          args.push(...['+set', 'bot_enable', '1'])
-        }
-        bots_team_free.value.forEach((bot) => {
-          args.push(...['+addbot', bot.name, bot.difficulty.toString()])
-        })
-      }
-
-      if (isTeamGameType.value) {
-        if ((bots_team_red.value.length || bots_team_blue.value.length) && activeClient.value?.gamename == 'q3ut4') {
-          args.push(...['+set', 'bot_enable', '1'])
-        }
-        bots_team_red.value.forEach((bot) => {
-          args.push(...['+addbot', bot.name, bot.difficulty.toString(), bot.team])
-        })
-
-        bots_team_blue.value.forEach((bot) => {
-          args.push(...['+addbot', bot.name, bot.difficulty.toString(), bot.team])
-        })
-      }
-
-      args.push(...['+wait', '5'])
-      args.push(...['+team', teamSelect.value])
-
-      emit('spawnQuake', args)
+        spawnQuakeSinglePlayer(selectedLevel.value, gameType.value, gametypes.value, cheats.value, sv_maxclients.value, 
+                              difficulty.value, teamFreeBotsAllowed.value, isTeamGameType.value, teamSelect.value, 
+                              bots_team_free.value, bots_team_red.value, bots_team_blue.value)
+      } 
+    } catch(err) {
+      emit('alert', 'error', ensureError(err).message)
     }
   }
 
@@ -466,7 +420,7 @@
     handleClick(clicked)
 
     if (dblClickHappenedOnSameObject.value) {
-      spawnQuake()
+      spawnQuakeLocal()
       resetDblClickTimeout()
     }
   }
@@ -499,7 +453,7 @@
       <input class="search" type="text" placeholder="search" v-model="searchQuery" />
     </div>
     <div class="table-header-left">
-      <button class="connect-button" :disabled="!selectedLevel" @click="spawnQuake()">Connect</button>
+      <button class="connect-button" :disabled="!selectedLevel" @click="spawnQuakeLocal()">Connect</button>
       <button class="refresh-button" @click="getLevels()">Refresh</button>
       <span style="margin-left: 24px; text-align: left; color: #fff">
         <span class="sort-header" @click="sortMaps('level_name')">map</span>
@@ -512,7 +466,7 @@
     class="scrollable-container single-player no-select"
     @keydown.up.prevent="keySelect(-1)"
     @keydown.down.prevent="keySelect(1)"
-    @keydown.enter.prevent="spawnQuake()"
+    @keydown.enter.prevent="spawnQuakeLocal()"
     @keydown.esc.prevent="escapeButton()"
     ref="levelTable"
     id="levelTable"
@@ -717,7 +671,7 @@
     </div>
     
     <div style="text-align: center">
-      <button class="setup-button" style="font-size: 120%;" :disabled="!selectedLevel" @click="spawnQuake()">Connect</button>
+      <button class="setup-button" style="font-size: 120%;" :disabled="!selectedLevel" @click="spawnQuakeLocal()">Connect</button>
     </div>
   </div>
 </template>

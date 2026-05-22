@@ -2,7 +2,6 @@
   import DemoRow from '@/components/DemoRow.vue'
   import Loading from '@/components/Loading.vue'
   import { invoke } from '@tauri-apps/api/core'
-  import { sep } from '@tauri-apps/api/path'
   import { info } from '@tauri-apps/plugin-log'
   import { ensureError } from '@/utils/util'
   import { type Demo } from '@/models/demo'
@@ -12,8 +11,9 @@
   import { useLevelshot } from '@/composables/levelshot'
   import { useConfig } from '@/composables/config'
   import { useClient } from '@/composables/client'
+  import { useSpawnQuake } from '@/composables/spawnquake'
 
-  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
+  const emit = defineEmits<{emitComponentName: [string], alert: [string, string]}>()
 
   const componentName = ref('Demo Browser')
   const { config } = useConfig()
@@ -206,23 +206,11 @@
     selectedDemo.value = null
   }
 
-  async function spawnQuake() {
-    if (selectedDemo.value == null) { return }
+  const { spawnQuakeDemo } = useSpawnQuake()
 
+  async function spawnQuakeLocal() {
     try {
-      let args = ['+set', 'fs_game', selectedDemo.value.gamename, '+exec', 'sarge-launcher-demo.cfg']
-      let demos_index = selectedDemo.value.path.indexOf(sep() + 'demos')
-      let relative_path = selectedDemo.value.path.substring(demos_index + 7)
-      let path = relative_path.substring(0, relative_path.lastIndexOf('.'))
-  
-      await invoke('create_demo_script', {
-        activeClient: activeClient.value, 
-        fsGame: selectedDemo.value.gamename, 
-        demoPath: path, 
-        close: config.value.autoclose_demo, 
-        loopD: config.value.loop_demo
-      })      
-      emit('spawnQuake', args)
+      spawnQuakeDemo(selectedDemo.value)
     } catch (err) {
       emit('alert', 'error', ensureError(err).message)
     }   
@@ -286,7 +274,7 @@
     handleClick(clicked, target)
 
     if (dblClickHappenedOnSameObject.value) {
-      spawnQuake()
+      spawnQuakeLocal()
       resetDblClickTimeout()
     }
   }
@@ -302,7 +290,7 @@
       <input class="search" type="text" placeholder="search" v-model="searchQuery" />
     </div>
     <div class="table-header-left">
-      <button class="connect-button" :disabled="selectedDemo == null" @click="spawnQuake()">Connect</button>
+      <button class="connect-button" :disabled="!selectedDemo" @click="spawnQuakeLocal()">Connect</button>
       <button class="refresh-button" @click="getDemos(false)">Refresh</button>
     </div>
 
@@ -324,7 +312,7 @@
     class="scrollable-container no-select"
     @keydown.up.prevent="keySelect(-1)"
     @keydown.down.prevent="keySelect(1)"
-    @keydown.enter.prevent="spawnQuake()"
+    @keydown.enter.prevent="spawnQuakeLocal()"
     @keydown.esc.prevent="escapeButton()"
     ref="demoTable"
     id="demoTable"

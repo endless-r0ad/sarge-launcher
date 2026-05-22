@@ -2,12 +2,14 @@
   import DropDown from '@/components/DropDown.vue'
   import { ensureError } from '@/utils/util'
   import { useClient } from '@/composables/client'
+  import { useSpawnQuake } from '@/composables/spawnquake'
 
   defineProps<{ currentView: string; }>()
   
   const { activeClient, pickClient } = useClient()
+  const { spawnQuake } = useSpawnQuake()
 
-  const emit = defineEmits<{ spawnQuake: [string[]], alert: [string, string] }>()
+  const emit = defineEmits<{ alert: [string, string] }>()
 
   async function pickQ3Client() {
     try {
@@ -29,7 +31,7 @@
     </div>
 
     <div class="nav-right">
-      <div v-if="activeClient" class="launch-client-button" @click="emit('spawnQuake', [])" />
+      <div v-if="activeClient" class="launch-client-button" @click="spawnQuake([])" />
       <div class="add-client-button" @click="pickQ3Client()"></div>
 
       <DropDown />

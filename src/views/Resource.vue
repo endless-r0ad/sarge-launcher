@@ -2,7 +2,7 @@
   import { ref, onMounted, onActivated } from 'vue'
   import { useConfig } from '@/composables/config'
 
-  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
+  const emit = defineEmits<{emitComponentName: [string], alert: [string, string]}>()
 
   const componentName = ref('External Resources')
   const { config } = useConfig()

@@ -10,19 +10,18 @@
   import { invoke } from '@tauri-apps/api/core'
   import { info, error } from '@tauri-apps/plugin-log'
   import { useConfig } from './composables/config'
-  import { useClient } from './composables/client'
   import { useAppData } from './composables/appdata'
 
   useAppData()
   const { config } = useConfig()
-  const { activeClient, activeClientDefaultArgs, activeClientUserArgs } = useClient()
-
-  const isMounted = ref(false)
 
   const appVersion = 'v0.3.1'
+  const isMounted = ref(false)
   const latestRelease = ref<string | null>(null)
   const updateAvailable = ref(false)
   const showUpdate = ref(false)
+  const currentComponent = ref('')
+  const showSettings = ref(false)
 
   onMounted(async () => {
     try {
@@ -36,14 +35,6 @@
     isMounted.value = true
   })
   
-  const currentComponent = ref('')
-
-  function getComponentName(componentName: string) { 
-    currentComponent.value = componentName 
-  }
-
-  const showSettings = ref(false)
-
   const alertMessage = ref('')
   const alertType = ref('')
 
@@ -53,32 +44,11 @@
     alertMessage.value = msg
   }
 
-  const q3ClientProcessId = ref<number | null>(null)
-
-  async function spawnQuake(viewSuppliedArgs: string[]) {
-    try {
-      if (config.value.manage_q3_instance) {
-        await invoke('kill_q3_client', { processId: q3ClientProcessId.value })
-      }
-      q3ClientProcessId.value = await invoke('spawn_client', {
-        activeClient: activeClient.value,
-        q3Args: activeClientDefaultArgs.value.concat(viewSuppliedArgs).concat(activeClientUserArgs.value)
-      })
-    } catch (err) {
-      const e: Error = ensureError(err)
-      if (e.message.includes('expected struct Q3Executable') || e.message.includes('missing required key activeClient')) {
-        alert('info', 'Link a Quake 3 client first')
-      } else {
-        alert('error', e.message)
-      }
-    }
-  }
-
 </script>
 
 <template>
   <Loading v-if="!isMounted" :position="'center'" :message="'loading...'" :size="90" />
-  <Header v-if="isMounted" :currentView="currentComponent" @spawnQuake="spawnQuake" @alert="alert" />
+  <Header v-if="isMounted" :currentView="currentComponent" @alert="alert" />
   <Sidebar v-if="isMounted" :showSettings="showSettings" @toggleSettings="showSettings=!showSettings" @exitApp="invoke('exit_app')" />
 
   <main v-if="isMounted" class="main-view">
@@ -86,8 +56,7 @@
       <KeepAlive>
         <component
           :is="Component"
-          @spawnQuake="spawnQuake"
-          @emitComponentName="getComponentName"
+          @emitComponentName="currentComponent = $event"
           @alert="alert"
         />
       </KeepAlive>
