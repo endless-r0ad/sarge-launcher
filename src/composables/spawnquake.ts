@@ -96,8 +96,7 @@ export function useSpawnQuake() {
                                         bots_team_blue: Bot[]) {
     if (!selectedLevel) { return }
 
-    let gametype = gameType // activeClient.value?.gamename == 'cpma' ? gameType.value -1 : gameType.value
-    let gametypeName = gametypes[gameType]
+    let gametypeName = gametypes[gameType] ?? ''
     let args = []
     let launch = ''
 
@@ -107,13 +106,23 @@ export function useSpawnQuake() {
     args = [launch, selectedLevel.level_name]
 
     if (activeClient.value?.gamename == 'cpma') {
-      args.push(...['+set', 'mode_start', gametypes[gametype]!])
+      args.push(...['+set', 'server_useMapModes' , '0', '+set', 'mode_start', gametypeName])
     } else {
-      args.push(...['+set', 'g_gametype', gametype.toString()])
+      args.push(...['+set', 'g_gametype', gameType.toString()])
     }
 
     args.push(...['+set', 'sv_maxclients', sv_maxclients.toString()])
     args.push(...['+set', gametypeName == 'SP' ? 'g_spskill' : 'skill', difficulty.toString(), '+wait', '3'])
+
+    if (activeClient.value?.gamename == 'q3ut4' && gametypeName == 'JUMP') {
+      args.push(...['+set', 'g_stamina', '2'])
+      args.push(...['+set', 'g_allowPosSaving', '1'])
+      args.push(...['+set', 'g_allowGoto', '1'])
+      args.push(...['+set', 'g_novest', '1'])
+      args.push(...['+set', 'g_warmup', '0'])
+      args.push(...['+set', 'g_nodamage', '1'])
+      args.push(...['+set', 'g_respawndelay', '0'])
+    }
 
     if (teamFreeBotsAllowed) {
       if (bots_team_free.length && activeClient.value?.gamename == 'q3ut4') {
