@@ -1,6 +1,6 @@
 [package]
 name = "sarge-launcher"
-version = "0.3.1"
+version = "0.4.0"
 description = "A custom frontend for Quake 3 Arena and Q3A mods"
 authors = ["endless-r0ad"]
 license = "GPL-3.0"
