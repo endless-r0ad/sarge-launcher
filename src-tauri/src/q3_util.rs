@@ -1,10 +1,10 @@
-use crate::client::Q3Config;
+use crate::client::Q3ExecableConfig;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::fs::read_to_string;
 
-pub async fn get_q3_configs(dir: &Path) -> Result<Vec<Q3Config>, std::io::Error> {
-	let mut q3_configs: Vec<Q3Config> = vec![];
+pub async fn get_q3_configs(dir: &Path) -> Result<Vec<Q3ExecableConfig>, std::io::Error> {
+	let mut q3_configs: Vec<Q3ExecableConfig> = vec![];
 
 	for entry in std::fs::read_dir(dir)? {
 		let entry = entry?;
@@ -25,7 +25,7 @@ pub async fn get_q3_configs(dir: &Path) -> Result<Vec<Q3Config>, std::io::Error>
 
 			let config_p = path.to_str().unwrap();
 
-			q3_configs.push(Q3Config {
+			q3_configs.push(Q3ExecableConfig {
 				name: name.unwrap().to_str().unwrap().to_string(),
 				path: config_p.to_string(),
 			})

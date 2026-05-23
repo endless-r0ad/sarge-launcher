@@ -1,6 +1,4 @@
 <script setup lang="ts">
-  import { defineProps, defineEmits } from 'vue'
-
   const props = defineProps<{ showSettings: boolean }>()
   const emit = defineEmits<{ toggleSettings: []; exitApp: [] }>()
 </script>
@@ -8,13 +6,17 @@
 <template>
   <div class="sidebar no-select">
     <div class="logo">
-      <router-link to="/home" style="background: transparent">
-        <img v-if="$route.path == '/home'" src="../assets/icons/q3-accent.svg" width="50px" />
-        <img v-else src="../assets/icons/q3-white.svg" width="50px" />
-      </router-link>
+        <img src="../assets/icons/q3-white.svg" width="50px" />
     </div>
 
     <div>
+      <router-link to="/clientdash" class="link">
+        <span v-if="$route.path == '/clientdash'" class="blue-dot"></span>
+        <img src="../assets/icons/q3-white.svg" width="32px" height="32px" />
+      </router-link>
+
+      <div style="margin: 8px"></div>
+
       <router-link to="/singleplayer" class="link">
         <span v-if="$route.path == '/singleplayer'" class="blue-dot"></span>
         <img src="../assets/icons/single-player.svg" width="32px" height="32px" />
@@ -24,7 +26,7 @@
 
       <router-link to="/server" class="link">
         <span v-if="$route.path == '/server'" class="blue-dot"></span>
-        <img src="../assets/icons/globe.svg" width="31px" height="31px" />
+        <img src="../assets/icons/globe.svg" width="32px" height="32px" />
       </router-link>
 
       <div style="margin: 8px"></div>
@@ -36,15 +38,21 @@
 
       <div style="margin: 8px"></div>
 
-      <div class="link" :class="{ settings: props.showSettings }" @click="emit('toggleSettings')">
-        <span v-if="props.showSettings"></span>
-        <img src="../assets/icons/settings.svg" width="32px" height="32px" />
-      </div>
+      <router-link to="/resource" class="link">
+        <span v-if="$route.path == '/resource'" class="blue-dot"></span>
+        <img src="../assets/icons/new-window.svg" width="32px" height="32px" />
+      </router-link>
+      
     </div>
 
     <div class="sidebar-line"></div>
 
     <div class="exit">
+      <div class="link" :class="{ settings: props.showSettings }" @click="emit('toggleSettings')">
+        <img src="../assets/icons/settings.svg" width="32px" height="32px" />
+      </div>
+      <div style="margin: 20px"></div>
+
       <img src="../assets/icons/x.svg" @click="emit('exitApp')" width="20px" />
     </div>
   </div>
@@ -107,13 +115,13 @@
 
   .link {
     display: block;
-    padding: 8px 8px 2px 8px;
+    padding: 8px 8px 4px 8px;
     text-align: center;
     border-radius: 0.8rem;
     cursor: pointer;
   }
 
-  .link:hover {
+  .link:hover, .settings {
     background-color: var(--secondary-bg);
   }
 

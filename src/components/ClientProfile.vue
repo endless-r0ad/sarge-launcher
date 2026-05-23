@@ -1,6 +1,6 @@
 <script setup lang="ts">
-  import type { Q3Executable, Q3Config } from '@/models/client'
-  import { defineProps, defineEmits, onMounted, onBeforeUnmount, ref, computed, watch, type Ref } from 'vue'
+  import type { Q3Executable, Q3ExecableConfig } from '@/models/client'
+  import { onMounted, onBeforeUnmount, ref, computed, watch, type Ref } from 'vue'
   import { useClient } from '@/composables/client'
   import { invoke } from '@tauri-apps/api/core'
   import { getClientGameProtocol } from '@/utils/util'
@@ -12,7 +12,8 @@
   const { 
     getClientConfigs,
     getClientDefaultGamename,
-    updateClient
+    updateClient,
+    activeClientPaths
   } = useClient()
 
   const localClient: Ref<Q3Executable> = ref({ ... props.profiledClient })
@@ -30,7 +31,7 @@
     await invoke('reveal_item_in_dir', {path: p})
   }
 
-  const configs = ref<Q3Config[]>([])
+  const configs = ref<Q3ExecableConfig[]>([])
 
   async function getConfigs() {
     configs.value = await getClientConfigs(localClient.value)
@@ -38,12 +39,8 @@
 
   const sortedConfigs = computed(() => {
     return [...configs.value].sort((a, b) => {
-      if (a.name.toLowerCase() < b.name.toLowerCase()) {
-        return -1
-      }
-      if (a.name.toLowerCase() > b.name.toLowerCase()) {
-        return 1
-      }
+      if (a.name.toLowerCase() < b.name.toLowerCase()) { return -1 }
+      if (a.name.toLowerCase() > b.name.toLowerCase()) { return 1 }
       return 0
     })
   })
@@ -60,10 +57,10 @@
 </script>
 
 <template>
-  <div style="width: 540px; height: 340px">
+  <div style="width: 540px; height: min-content;">
     <h2 style="margin: 8px 0px">{{ localClient.name }}</h2>
     <div class="profile-item" style="float: right; position: absolute; right: 20px; top: 32px">
-      <button class="refresh-button" style="font-size: 90%; border-color: orange" @click="emit('deleteClient')">Remove Client</button>
+      <button class="refresh-button" style="font-size: 90%; border-color: orange" @click="emit('deleteClient')">Unlink Client</button>
     </div>
     <div class="profile-item">
       <button class="refresh-button" style="font-size: 90%" @click="reveal(localClient.exe_path)">{{ localClient.parent_path }}</button>
@@ -98,9 +95,18 @@
           :style="localClient.extra_launch_args != '' ? 'outline: 1px solid orange;' : ''" />
     </div>
     <div class="profile-item">
+      <label class="ml-1">Search Paths (ordered by priority)</label>
+      <div v-for="(c, i) in activeClientPaths" 
+          @click="reveal(c)" 
+          class="row config" 
+          :style="i % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"
+          :key="c">
+        {{ c }}
+      </div>
+    </div>
+    <div class="profile-item">
       <button class="refresh-button" @click="getConfigs()" style="font-size: 90%">Browse Configs</button>
     </div>
-    
     <div style="height: 140px; overflow-y: scroll">
       <div v-for="(c, i) in sortedConfigs" 
           @click="reveal(c.path)" 
@@ -116,12 +122,12 @@
 <style scoped>
   .config {
     font-size: 80%;
-    padding-left: 8px;
+    padding-left: 20px;
   }
 
   .config:hover {
     font-size: 80%;
-    background-image: linear-gradient(to right, rgba(0, 143, 168, 0.514) 1%, rgba(255, 255, 255, 0.02));
+    background-color: var(--alt-bg) !important;
     cursor: pointer;
   }
 

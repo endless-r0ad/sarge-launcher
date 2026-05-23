@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import Loading from '@/components/Loading.vue'
-  import { defineProps, defineEmits, computed, onMounted, onUnmounted } from 'vue'
+  import { computed, onMounted, onUnmounted } from 'vue'
   import { type Quake3Server } from '@/models/server'
   import { getServerProtocol } from '@/utils/util'
   
@@ -65,12 +65,14 @@
       <span v-html="server.hostcolored" style="width: 36%" class="data"></span>
       <span style="width: 1%"></span>
       <span style="width: 16%" class="data">{{ server.map }}</span>
-      <span style="width: 10%" class="data">{{ server.playersconnected }}/{{ server.maxclients }}</span>
+      <span style="width: 10%" class="data">
+        <span :class="server.playersconnected > 0 ? 'q3c-5' : ''">{{ server.playersconnected }}</span>/{{ server.maxclients }}
+      </span>
       <span style="width: 2%" class="data">
         <Loading v-if="refreshing" :position="'relative'" :size="15" />
       </span>
       <span style="width: 7%" class="data">{{ server.ping }}</span>
-      <span style="width: 16%" class="data">{{ server.ip }}:{{ server.port }}</span>
+      <span style="width: 16%; user-select: text" class="data">{{ server.ip }}:{{ server.port }}</span>
       <span style="width: 2%">
         <div v-if="!isSelected || (isSelected && !displayDetails)" class="plus" id="expandDetails" @click="emit('showDetails')">+</div>
         <div v-if="displayDetails && isSelected" class="minus" id="expandDetails" @click="emit('hideDetails')">-</div>

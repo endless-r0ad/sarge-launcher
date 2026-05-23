@@ -1,116 +1,58 @@
 <script setup lang="ts">
-  import Modal from '@/components/Modal.vue'
-  import { defineEmits, ref, onMounted, onActivated } from 'vue'
-  import { ensureError } from '@/utils/util'
+  import { ref, onMounted, onActivated } from 'vue'
   import { useConfig } from '@/composables/config'
-  import { useClient } from '@/composables/client'
 
-  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
-  const props = defineProps<{ latestGithubVersion: string | null }>()
+  const emit = defineEmits<{emitComponentName: [string], alert: [string, string]}>()
 
-  const componentName = ref('Sarge Launcher')
-  const appVersion = 'v0.3.1'
-  const updateAvailable = ref(props.latestGithubVersion && appVersion != props.latestGithubVersion)
+  const componentName = ref('External Resources')
   const { config } = useConfig()
-  const { pickClient } = useClient()
 
   const hoveredCard = ref('')
-
-  async function pickQ3Client() {
-    try {
-      let isNewClient = await pickClient()
-      if (!isNewClient) {
-        emit('alert', 'info', 'client already added')
-      }
-    } catch (err) {
-      emit('alert', 'error', ensureError(err).message)
-    }
-  }
 
   onMounted(() => emit('emitComponentName', componentName.value))
   onActivated(() => emit('emitComponentName', componentName.value))
 </script>
 
 <template>
-  <Teleport to="#modal">
-    <Modal v-if="config.welcome_message || updateAvailable" :popupType="'center'" @close="config.welcome_message = false; updateAvailable = false">
-      <div style="width: 400px">
-        <img style="position: absolute; left: 15%; top: 4%" src="../assets/icons/sarge.svg" />
-        <h2 style="position: absolute; right: 15%; top: 4%">SARGE LAUNCHER</h2>
-        <a v-if="props.latestGithubVersion && appVersion != props.latestGithubVersion" 
-          class="link" 
-          href="https://github.com/endless-r0ad/sarge-launcher/releases" 
-          target="_blank">
-          <p style="position: absolute; right: 42%; top: 16%; font-size: 75%; color: #00ffff;">
-            update available
-          </p>
-        </a>
-        <a class="link" href="https://github.com/endless-r0ad/sarge-launcher" target="_blank">
-          <p :style="`position: absolute; right: ${props.latestGithubVersion && appVersion != props.latestGithubVersion ? 29 : 15}%; top: 16%; font-size: 75%;`">
-            {{ appVersion }}
-          </p>
-        </a>
-        <a v-if="props.latestGithubVersion && appVersion != props.latestGithubVersion" 
-          class="link" 
-          href="https://github.com/endless-r0ad/sarge-launcher/releases" 
-          target="_blank">
-          <p style="position: absolute; right: 15%; top: 16%; font-size: 75%; color: #00ffff;">
-            -> {{ props.latestGithubVersion }}
-          </p>
-        </a>
-        <p style="margin-top: 72px">
-          Sarge Launcher is a utility for Quake 3 Arena and Q3A mods that provides some useful features for both n00bs and
-          veterans. If you are new, you should purchase the game first, then update your client to ioquake3 or quake3e.
-        </p>
-        <p>
-          Sarge Launcher is not responsible for installing any mods or downloading any content for Q3A -
-          YOU are solely responsible for that!
-        </p>
-      </div>
-    </Modal>
-  </Teleport>
-
-  <div class="client-grid" draggable="false">
-    <div
-      class="grid-bg about-bg grow"
+  <div class="grid no-select" draggable="false">
+    <div class="grid-bg about-bg grow"
       @mouseover="hoveredCard = 'about'"
       @mouseleave="hoveredCard = ''"
       @click="config.welcome_message = true"
       style="grid-column: 1; grid-row: 1"
-    >
+      >
       <div v-if="hoveredCard == 'about'" class="tint">
         <span class="center card-name" draggable="false">{{ hoveredCard }}</span>
       </div>
     </div>
-    <div
-      class="grid-bg grow"
-      @mouseover="hoveredCard = 'quake 3 arena'"
+    <div class="grid-bg grow"
+      @mouseover="hoveredCard = 'youtube playlist'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 2 / 5; grid-row: 1 / 3"
-    >
+      >
       <a class="link" href="https://www.youtube.com/watch?v=SgvrOGmJFbg&list=PLGGojOY6nta5NmPMshZE9l5y3WOaQtU7O" target="_blank">
         <img src="../assets/images/contenders.png" class="q3-video" />
-        <div v-if="hoveredCard == 'quake 3 arena'" class="center card-name tint">
+        <div v-if="hoveredCard == 'youtube playlist'" class="center card-name tint">
           <span class="center">{{ hoveredCard }}</span>
         </div>
       </a>
     </div>
-    <div
-      class="grid-bg plus-bg grow"
-      @mouseover="hoveredCard = 'add client'"
+    <div class="grid-bg esr-bg grow"
+      @mouseover="hoveredCard = 'esreality'"
       @mouseleave="hoveredCard = ''"
-      style="cursor: pointer; background-color: var(--secondary-bg); grid-column: 5; grid-row: 1"
-    >
-      <div v-if="hoveredCard == 'add client'" class="tint" @click="pickQ3Client()">
-        <span class="center card-name">{{ hoveredCard }}</span>
-      </div>
+      style="grid-column: 5; grid-row: 1"
+      >
+      <a class="link" href="https://www.esreality.com" target="_blank">
+        <div v-if="hoveredCard == 'esreality'" class="tint">
+          <span class="center card-name">{{ hoveredCard }}</span>
+        </div>
+      </a>
     </div>
-    <div
-      class="grid-bg quake-bg grow"
+    <div class="grid-bg quake-bg grow"
       @mouseover="hoveredCard = 'buy'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 1; grid-row: 2 / 4"
-    >
+      >
       <a class="link" href="https://store.steampowered.com/app/2200/Quake_III_Arena/" target="_blank">
         <div v-if="hoveredCard == 'buy'" class="tint spotlight">
           <div class="center card-name">buy</div>
@@ -118,60 +60,55 @@
       </a>
     </div>
 
-    <div
-      class="grid-bg upgrade-bg grow"
+    <div class="grid-bg upgrade-bg grow"
       @mouseover="hoveredCard = 'quake3e'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 4; grid-row: 3"
-    >
+      >
       <a class="link" href="https://github.com/ec-/Quake3e" target="_blank">
         <div v-if="hoveredCard == 'quake3e'" class="tint">
           <span class="center card-name">{{ hoveredCard }}</span>
         </div>
       </a>
     </div>
-    <div
-      class="grid-bg map-bg grow"
+    <div class="grid-bg map-bg grow"
       @mouseover="hoveredCard = 'quake 3 mapping'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 1 / 3; grid-row: 4"
-    >
+      >
       <a class="link" href="https://trello.com/b/zJp4pE3m/id-tech-3-mapping" target="_blank">
         <div v-if="hoveredCard == 'quake 3 mapping'" class="tint spotlight">
           <span class="center card-name">{{ hoveredCard }}</span>
         </div>
       </a>
     </div>
-    <div
-      class="grid-bg mod-bg grow"
+    <div class="grid-bg mod-bg grow"
       @mouseover="hoveredCard = 'quake 3 mods'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 2 / 4; grid-row: 3"
-    >
+      >
       <a class="link" href="https://lvlworld.com/mods" target="_blank">
         <div v-if="hoveredCard == 'quake 3 mods'" class="tint spotlight">
           <span class="center card-name">{{ hoveredCard }}</span>
         </div>
       </a>
     </div>
-    <div
-      class="grid-bg upgrade-bg grow"
+    <div class="grid-bg upgrade-bg grow"
       @mouseover="hoveredCard = 'ioquake3'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 3; grid-row: 4"
-    >
+      >
       <a class="link" href="https://ioquake3.org/" target="_blank">
         <div v-if="hoveredCard == 'ioquake3'" class="tint">
           <span class="center card-name">{{ hoveredCard }}</span>
         </div>
       </a>
     </div>
-    <div
-      class="grid-bg urt-bg grow"
+    <div class="grid-bg urt-bg grow"
       @mouseover="hoveredCard = 'urban terror'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 5; grid-row: 3"
-    >
+      >
       <a class="link" href="https://www.urbanterror.info/home/" target="_blank" rel="noopener">
         <div v-if="hoveredCard == 'urban terror'" class="tint">
           <span class="center card-name">{{ hoveredCard }}</span>
@@ -185,24 +122,22 @@
         </div>
       </a>
     </div>
-    <div
-      class="grid-bg defrag-bg grow"
+    <div class="grid-bg defrag-bg grow"
       @mouseover="hoveredCard = 'defrag'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 4; grid-row: 4"
-    >
+      >
       <a class="link" href="https://defrag.racing/" target="_blank">
         <div v-if="hoveredCard == 'defrag'" class="tint">
           <span class="center card-name">{{ hoveredCard }}</span>
         </div>
       </a>
     </div>
-    <div
-      class="grid-bg oa-bg grow"
+    <div class="grid-bg oa-bg grow"
       @mouseover="hoveredCard = 'openarena'"
       @mouseleave="hoveredCard = ''"
       style="grid-column: 5; grid-row: 4"
-    >
+      >
       <a class="link" href="https://openarena.ws/news.html" target="_blank">
         <div v-if="hoveredCard == 'openarena'" class="tint">
           <span class="center card-name">{{ hoveredCard }}</span>
@@ -212,32 +147,7 @@
   </div>
 </template>
 
-<style scoped>
-  .client-grid {
-    height: 100%;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(111px, 20%));
-    grid-template-rows: repeat(4, minmax(74px, 25%));
-    grid-gap: 16px;
-
-    padding: 4px;
-    color: white;
-    user-select: none;
-  }
-
-  .grid-bg {
-    background-color: var(--secondary-bg);
-    background-repeat: no-repeat;
-    background-size: 100%;
-    background-position: center center;
-    color: white;
-  }
-
-  .plus-bg {
-    background-image: url('../assets/icons/plus.svg');
-    background-size: 10%;
-  }
-
+<style scoped>  
   .mod-bg {
     background-image: url('../assets/images/code.png');
     background-size: 100%;
@@ -283,23 +193,9 @@
     background-size: 70%;
   }
 
-  .grow {
-    transition: all 0.35s ease-in-out;
-  }
-
-  .grow:hover {
-    transform: scale(1.02);
-    cursor: pointer;
-  }
-
-  .tint {
-    min-height: 100%;
-    min-width: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-  }
-
-  .spotlight {
-    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 1%, rgba(255, 255, 255, 0.001) 25.35%);
+  .esr-bg {
+    background-image: url('../assets/images/esrlogo.png');
+    background-size: 60%;
   }
 
   .center {

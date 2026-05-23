@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import type { MasterServer } from '@/models/master'
-  import { defineEmits, onBeforeUnmount, ref, toRaw, type Ref, onUpdated, computed } from 'vue'
+  import { onBeforeUnmount, ref, toRaw, type Ref, onUpdated, computed } from 'vue'
   import { useAppData } from '@/composables/appdata'
 
   const props = defineProps<{ q3MasterProtocol: number }>()

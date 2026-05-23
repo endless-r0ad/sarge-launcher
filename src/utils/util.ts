@@ -245,6 +245,12 @@ export function getServerProtocol(serv: Quake3Server): string {
   return '68'
 }
 
+export function removeDotSuffix(name: string) {
+  let dot = name.indexOf('.')
+  let withoutSuffix =  name.substring(0, dot == -1 ? name.length : dot)
+  return withoutSuffix
+}
+
 export async function getLatestGithubRelease() {
   const url = "https://api.github.com/repos/endless-r0ad/sarge-launcher/releases/latest"
 

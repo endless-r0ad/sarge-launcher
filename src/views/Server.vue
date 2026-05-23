@@ -6,7 +6,7 @@
   import MasterSettings from '@/components/MasterSettings.vue'
   import { invoke } from '@tauri-apps/api/core'
   import { info } from '@tauri-apps/plugin-log'
-  import { ensureError, newCustomServer, validServerAddress, validIp, getServerProtocol } from '@/utils/util'
+  import { ensureError, newCustomServer, validServerAddress, validIp } from '@/utils/util'
   import { type Quake3Server } from '@/models/server'
   import { type MasterServer } from '@/models/master'
   import { useVirtualScroll } from '@/composables/virtualscroll'
@@ -15,10 +15,10 @@
   import { useConfig } from '@/composables/config'
   import { useAppData } from '@/composables/appdata'
   import { useClient } from '@/composables/client'
-  import { watch, nextTick, defineEmits, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
+  import { useSpawnQuake } from '@/composables/spawnquake'
+  import { watch, nextTick, ref, computed, onMounted, onActivated, onDeactivated } from 'vue'
   
-  const emit = defineEmits<{spawnQuake: [string[]], emitComponentName: [string], alert: [string, string]}>()
-  defineProps<{ latestGithubVersion: string | null }>()
+  const emit = defineEmits<{emitComponentName: [string], alert: [string, string]}>()
   
   const componentName = ref('Server Browser')
 
@@ -50,7 +50,7 @@
   const { activeClient, clientServerGame } = useClient()
 
   watch(activeClient, async(newVal, oldVal) => {
-    if (config.value.refresh_by_mod && newVal?.gamename != oldVal?.gamename) {
+    if (config.value.refresh_by_mod && newVal && newVal.gamename != oldVal?.gamename) {
       serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash')
       toggleShowUnreachableServers()
     }
@@ -292,7 +292,7 @@
       setServerPassword(popupInput.value)
       await writeAppData()
       let args = ['+set', 'fs_game', selectedServer.value!.game, '+password', popupInput.value, '+connect', selectedServer.value!.address];
-      emit('spawnQuake', args)   
+      spawnQuake(args)   
 
       if (closeAfterHandle) {
         popupInput.value = '', showPopup.value = '';
@@ -403,19 +403,18 @@
     })
   }
 
-  function spawnQuake(){
-    if (selectedServer.value == null) { return }
+  const { spawnQuakeServer, spawnQuake } = useSpawnQuake()
 
+  function spawnQuakeLocal(){
     try {
-      let args = ['+set', 'fs_game', selectedServer.value.game, '+set', 'protocol', getServerProtocol(selectedServer.value), '+connect', selectedServer.value.address];
-      if ('g_needpass' in selectedServer.value.othersettings && selectedServer.value.othersettings['g_needpass'] == '1') {
+      spawnQuakeServer(selectedServer.value)
+    } catch(err) {
+      if (ensureError(err).message == 'needs password') {
         showPopup.value = 'password'
         popupInput.value = appdata.value.server_password
       } else {
-        emit('spawnQuake', args)
+        emit('alert', 'error', ensureError(err).message)
       }
-    } catch(err) {
-      emit('alert', 'error', ensureError(err).message)
     }       
   }
 
@@ -543,7 +542,7 @@
     handleClick(selectedServ, target)
 
     if (dblClickHappenedOnSameObject.value) {
-      spawnQuake()
+      spawnQuakeLocal()
       resetDblClickTimeout()
     }
   }
@@ -559,7 +558,7 @@
         <span class="trash-server-button" :class="{'activated-button': showPopup == 'trash'}" @click="showPopup='trash'" />
     </div>
     <div class="table-header-left">        
-      <button class="connect-button" :disabled="selectedServer == null" @click="spawnQuake();">Connect</button>            
+      <button class="connect-button" :disabled="!selectedServer || !activeClient" @click="spawnQuakeLocal();">Connect</button>            
       <button class="refresh-button" @click="refreshServers(false);">Refresh</button>
       <span class="refresh-master-button" @click="refreshServers(true);" />
     </div> 
@@ -581,10 +580,10 @@
   </div>
 
   
-  <div class="scrollable-container" 
+  <div class="scrollable-container no-select" 
       @keydown.up.prevent="keySelect(-1)" 
       @keydown.down.prevent="keySelect(1)" 
-      @keydown.enter.prevent="spawnQuake()"
+      @keydown.enter.prevent="spawnQuakeLocal()"
       id="serverTable"
       ref="serverTable"
       >
@@ -600,7 +599,8 @@
           <img src="../assets/icons/pin.svg" class="pin-icon">
         </div>
         <ServerRow v-for="(server, index) in pinnedServers" 
-          class="row pinned"
+          class="row"
+          :style="index % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"
           :key="server.address"      
           :id="server === selectedServer ? 'selected' : `pinned-${index}`"
           :server="server"
@@ -748,14 +748,6 @@
     line-height: 48px;
     font-size: large;
     font-weight: 600;
-  }
-
-  .pinned {
-    background-color: var(--alt-bg);
-  }
-
-  .pinned:nth-of-type(even) {
-    background-color: rgba(9, 61, 82, 0.5)
   }
 
   .pin-icon {

@@ -4,22 +4,30 @@
   import Modal from '@/components/Modal.vue'
   import Sidebar from '@/components/Sidebar.vue'
   import Settings from '@/components/Settings.vue'
+  import SargeStatus from './components/SargeStatus.vue'
   import { ensureError, getLatestGithubRelease } from '@/utils/util'
   import { ref, onMounted } from 'vue'
   import { invoke } from '@tauri-apps/api/core'
   import { info, error } from '@tauri-apps/plugin-log'
   import { useConfig } from './composables/config'
-  import { useClient } from './composables/client'
+  import { useAppData } from './composables/appdata'
 
+  useAppData()
   const { config } = useConfig()
-  const { activeClient, activeClientDefaultArgs, activeClientUserArgs } = useClient()
 
+  const appVersion = 'v0.3.1'
   const isMounted = ref(false)
   const latestRelease = ref<string | null>(null)
+  const updateAvailable = ref(false)
+  const showUpdate = ref(false)
+  const currentComponent = ref('')
+  const showSettings = ref(false)
 
   onMounted(async () => {
     try {
       latestRelease.value = await getLatestGithubRelease()
+      updateAvailable.value = latestRelease.value != null && appVersion != latestRelease.value
+      showUpdate.value = updateAvailable.value
     } catch (err) {
       error(ensureError(err).message)
     }
@@ -27,14 +35,6 @@
     isMounted.value = true
   })
   
-  const currentComponent = ref('')
-
-  function getComponentName(componentName: string) { 
-    currentComponent.value = componentName 
-  }
-
-  const showSettings = ref(false)
-
   const alertMessage = ref('')
   const alertType = ref('')
 
@@ -44,32 +44,11 @@
     alertMessage.value = msg
   }
 
-  const q3ClientProcessId = ref<number | null>(null)
-
-  async function spawnQuake(viewSuppliedArgs: string[]) {
-    try {
-      if (config.value.manage_q3_instance) {
-        await invoke('kill_q3_client', { processId: q3ClientProcessId.value })
-      }
-      q3ClientProcessId.value = await invoke('spawn_client', {
-        activeClient: activeClient.value,
-        q3Args: activeClientDefaultArgs.value.concat(viewSuppliedArgs).concat(activeClientUserArgs.value)
-      })
-    } catch (err) {
-      const e: Error = ensureError(err)
-      if (e.message.includes('expected struct Q3Executable') || e.message.includes('missing required key activeClient')) {
-        alert('info', 'Please configure a Quake 3 client to launch')
-      } else {
-        alert('error', e.message)
-      }
-    }
-  }
-
 </script>
 
 <template>
   <Loading v-if="!isMounted" :position="'center'" :message="'loading...'" :size="90" />
-  <Header v-if="isMounted" :currentView="currentComponent" @spawnQuake="spawnQuake" @alert="alert" />
+  <Header v-if="isMounted" :currentView="currentComponent" @alert="alert" />
   <Sidebar v-if="isMounted" :showSettings="showSettings" @toggleSettings="showSettings=!showSettings" @exitApp="invoke('exit_app')" />
 
   <main v-if="isMounted" class="main-view">
@@ -77,9 +56,7 @@
       <KeepAlive>
         <component
           :is="Component"
-          :latestGithubVersion="latestRelease"
-          @spawnQuake="spawnQuake"
-          @emitComponentName="getComponentName"
+          @emitComponentName="currentComponent = $event"
           @alert="alert"
         />
       </KeepAlive>
@@ -93,6 +70,16 @@
     
     <Modal v-if="showSettings" :popupType="'center'" @close="showSettings=false">
       <Settings />
+    </Modal>
+
+    <Modal v-if="isMounted && (showUpdate || config.welcome_message)" 
+          :popupType="'center'" 
+          @close="config.welcome_message = false; showUpdate = false">
+      <SargeStatus :updateAvailable="updateAvailable" 
+                   :welcomeMessage="config.welcome_message" 
+                   :appVersion="appVersion" 
+                   :latestRelease="latestRelease" 
+      />
     </Modal>
   </div>
 </template>

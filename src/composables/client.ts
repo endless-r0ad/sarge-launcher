@@ -1,6 +1,6 @@
 import { ref, onMounted, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import type { Q3Executable, Q3Config } from '@/models/client'
+import type { Q3Executable, Q3ExecableConfig } from '@/models/client'
 import { useConfig } from '@/composables/config'
 import { error } from '@tauri-apps/plugin-log'
 import { ensureError, getClientGameProtocol } from '@/utils/util'
@@ -61,12 +61,10 @@ export function useClient() {
     let q3Config: { [key: string]: { [key: string]: string } } = {}
     try {
       q3Config = await invoke('get_client_q3config', {searchPaths: paths})
-      return q3Config
     } catch (err) {
       error(ensureError(err).message)
     }
     return q3Config
-
   }
 
   async function addQ3Client(client: Q3Executable) {
@@ -143,10 +141,10 @@ export function useClient() {
     }
   }
 
-  async function getClientConfigs(client: Q3Executable): Promise<Q3Config[]> {
+  async function getClientConfigs(client: Q3Executable): Promise<Q3ExecableConfig[]> {
     try {
       let paths = await getClientPaths(client)
-      let q3Configs: Q3Config[] = await invoke('get_client_available_configs', {searchPaths: paths})
+      let q3Configs: Q3ExecableConfig[] = await invoke('get_client_available_configs', {searchPaths: paths})
       return q3Configs
     } catch (err) {
       error(ensureError(err).message)
@@ -181,6 +179,11 @@ export function useClient() {
 		}
   }
 
+  function clientIsOverridden(client: Q3Executable | null) {
+    if (!client) { return false }
+    return (client.gamename != getClientDefaultGamename(client))
+  }
+
   function clientAlreadyActivated(): boolean {
     return config.value.q3_clients.some((x) => x.active)
   }
@@ -202,12 +205,14 @@ export function useClient() {
   return {
     activeClient,
     activeClientPaths,
+    activeClientQ3Config,
     activeClientQ3Name,
     activeClientDefaultArgs,
     activeClientUserArgs,
     activeClientProtocol,
     clientServerGame,
     getClientDefaultGamename,
+    clientIsOverridden,
     updateClient,
     toggleQ3Client,
     deleteQ3Client,

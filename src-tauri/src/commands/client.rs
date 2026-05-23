@@ -9,7 +9,7 @@ use std::fs::read_to_string;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::DialogExt;
 
-use crate::client::{Q3Config, Q3Executable};
+use crate::client::{Q3ExecableConfig, Q3Executable};
 use crate::config::SargeLauncher;
 use crate::q3_util::{get_defrag_recs, get_q3_configs, read_q3config};
 
@@ -50,7 +50,7 @@ pub async fn pick_client(app: AppHandle) -> Result<Option<Q3Executable>, String>
 	if exe_path.is_executable() {
 		Ok(Some(q3_exe))
 	} else {
-		Err(format!("{:?} is not an executable file, please choose a quake 3 client executable", q3_exe.name))
+		Err(format!("{:?} is not an executable file, select a quake 3 client executable", q3_exe.name))
 	}
 }
 
@@ -171,8 +171,8 @@ pub async fn get_defrag_rec_files(search_paths: Vec<String>) -> Result<HashMap<S
 }
 
 #[tauri::command(async)]
-pub async fn get_client_available_configs(search_paths: Vec<String>) -> Result<Vec<Q3Config>, tauri::Error> {
-    let mut q3_configs: Vec<Q3Config> = vec![];
+pub async fn get_client_available_configs(search_paths: Vec<String>) -> Result<Vec<Q3ExecableConfig>, tauri::Error> {
+    let mut q3_configs: Vec<Q3ExecableConfig> = vec![];
 
     for p in search_paths {
         let path = Path::new(&p);

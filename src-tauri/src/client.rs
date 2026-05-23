@@ -10,7 +10,7 @@ pub struct Q3Executable {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Q3Config {
+pub struct Q3ExecableConfig {
 	pub name: String,
 	pub path: String
 }

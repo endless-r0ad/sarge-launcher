@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { defineProps, defineEmits, onMounted, onBeforeUnmount } from 'vue'
+  import { onMounted, onBeforeUnmount } from 'vue'
 
   const props = defineProps<{ popupType: string }>()
 
