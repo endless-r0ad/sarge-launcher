@@ -1,4 +1,4 @@
-import ClientSetup from '@/views/ClientSetup.vue'
+import ClientDashboard from '@/views/ClientDashboard.vue'
 import Resource from '@/views/Resource.vue'
 import SinglePLayer from '@/views/SinglePlayer.vue'
 import Server from '@/views/Server.vue'
@@ -9,12 +9,12 @@ import { type RouteRecordRaw } from 'vue-router'
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: '/clientsetup',
+    redirect: '/clientdash',
   },
   {
-    path: '/clientsetup',
-    name: 'clientsetup',
-    component: ClientSetup,
+    path: '/clientdash',
+    name: 'clientdash',
+    component: ClientDashboard,
   },
   {
     path: '/resource',

@@ -65,7 +65,9 @@
       <span v-html="server.hostcolored" style="width: 36%" class="data"></span>
       <span style="width: 1%"></span>
       <span style="width: 16%" class="data">{{ server.map }}</span>
-      <span style="width: 10%" class="data">{{ server.playersconnected }}/{{ server.maxclients }}</span>
+      <span style="width: 10%" class="data">
+        <span :class="server.playersconnected > 0 ? 'q3c-5' : ''">{{ server.playersconnected }}</span>/{{ server.maxclients }}
+      </span>
       <span style="width: 2%" class="data">
         <Loading v-if="refreshing" :position="'relative'" :size="15" />
       </span>

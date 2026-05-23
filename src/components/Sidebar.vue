@@ -10,8 +10,8 @@
     </div>
 
     <div>
-      <router-link to="/clientsetup" class="link">
-        <span v-if="$route.path == '/clientsetup'" class="blue-dot"></span>
+      <router-link to="/clientdash" class="link">
+        <span v-if="$route.path == '/clientdash'" class="blue-dot"></span>
         <img src="../assets/icons/q3-white.svg" width="32px" height="32px" />
       </router-link>
 

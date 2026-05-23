@@ -7,7 +7,7 @@ export interface Q3Executable {
   active: boolean
 }
 
-export interface Q3Config {
+export interface Q3ExecableConfig {
   name: string
   path: string
 }

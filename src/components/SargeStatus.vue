@@ -1,11 +1,6 @@
 <script setup lang="ts">
 
-  const props = defineProps<{ 
-    updateAvailable: boolean,
-    welcomeMessage: boolean,
-    appVersion: string,
-    latestRelease: string | null
-  }>()
+  defineProps<{ updateAvailable: boolean, welcomeMessage: boolean, appVersion: string, latestRelease: string | null }>()
 
 </script>
 
@@ -32,7 +27,7 @@
       veterans.
     </p>
     <p>
-      Get started by linking Sarge Launcher to your Q3 client(s) on the Client Setup
+      Get started by linking Sarge Launcher to your Q3 client(s) on the Client Dash
     </p>
     <p>
       If you do not have Quake 3 yet you should purchase the game, then update your client to ioquake3 or quake3e.

@@ -2,6 +2,7 @@
   import Modal from '@/components/Modal.vue'
   import Loading from '@/components/Loading.vue'
   import ClientProfile from '@/components/ClientProfile.vue'
+  import Q3Config from '@/components/Q3Config.vue'
   import { ref, onMounted, onActivated, onDeactivated } from 'vue'
   import { ensureError } from '@/utils/util'
   import { useConfig } from '@/composables/config'
@@ -15,7 +16,7 @@
 
   const emit = defineEmits<{emitComponentName: [string], alert: [string, string]}>()
 
-  const componentName = ref('Client Setup')
+  const componentName = ref('Client Dashboard')
   const { config } = useConfig()
   const { appdata } = useAppData()
   const { pickClient, activeClient, deleteQ3Client, toggleQ3Client, clientIsOverridden } = useClient()
@@ -94,7 +95,10 @@
     if (selectedServer.value == null) { return }
 
     try {
-      let args = ['+set', 'fs_game', selectedServer.value.game, '+set', 'protocol', getServerProtocol(selectedServer.value), '+connect', selectedServer.value.address];
+      let args = ['+set', 'fs_game', selectedServer.value.game, 
+                  '+set', 'protocol', getServerProtocol(selectedServer.value), 
+                  '+connect', selectedServer.value.address]
+
       spawnQuake(args)
     } catch(err) {
       emit('alert', 'error', ensureError(err).message)
@@ -126,6 +130,9 @@
   <Teleport to="#modal">
     <Modal v-if="showClientProfile" :popup-type="'center'" @close="showClientProfile=false">
       <ClientProfile :profiledClient="activeClient!" @deleteClient="showClientProfile=false; deleteQ3Client(activeClient!);"/>
+    </Modal>
+    <Modal v-if="showQ3Config" :popup-type="'center'" @close="showQ3Config=false">
+      <Q3Config />
     </Modal>
   </Teleport>
 
@@ -196,7 +203,7 @@
       @mouseleave="hoveredCard = ''"
       style="grid-column: 2; grid-row: 1"
       >
-      <div v-if="hoveredCard == 'launch client'" class="tint" @click="spawnQuake([])">
+      <div v-if="hoveredCard == 'launch client'" class="tint" @click="activeClient ? spawnQuake([]) : emit('alert', 'info', 'Link a Quake 3 client first')">
         <span class="center card-name">{{ hoveredCard }}</span>
       </div>
     </div>
