@@ -14,7 +14,7 @@ The point is to give a consolidated experience for idtech 3 games, specifically 
 - Client Management - toggle relaunching, autoclose/loop demo playback, override client fs_gamename (launching OpenArena as defrag for example)
 - and more!
 
-![](./docs/static/sarge-launcher.gif)
+![](./docs/static/launcher.gif)
 
 ## Development Setup
 
