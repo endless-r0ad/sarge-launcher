@@ -113,7 +113,7 @@
 
       serverDetailsLastRefresh.value = await invoke('refresh_all_servers', 
                 { 
-                  allServers: serverIPs.value.filter((x) => refreshByMod ? x.game.includes(clientServerGame.value!) || x.list == 'trash' : true), 
+                  allServers: serverIPs.value.filter((x) => refreshByMod ? x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash' : true), 
                   numThreads: (config.value.server_browser_threads == 0 ? 1 : config.value.server_browser_threads),
                   timeout: config.value.server_timeout
                 })
