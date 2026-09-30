@@ -43,19 +43,22 @@ pub async fn refresh_all_servers(
 
             handles.push(s.spawn(move || {
                 
+                let mut chunk_servs: Vec<Quake3Server> = vec![];
+
                 for i in 0..chunk.len() {
                     let mut serv: Quake3Server = chunk[i].to_owned();
 
                     if serv.list == "trash" {
                         serv.set_trash();
-                        refreshed.lock().unwrap().push(serv);
+                        chunk_servs.push(serv);
                         continue;
                     }
 
                     serv.query_server(&socket, 0);
-
-                    refreshed.lock().unwrap().push(serv);
+                    chunk_servs.push(serv);
                 }
+
+                refreshed.lock().unwrap().extend(chunk_servs);
             }));
         }
         for handle in handles {
