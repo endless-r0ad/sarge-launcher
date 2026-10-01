@@ -30,8 +30,6 @@ impl Default for SargeLauncher {
 pub struct Config {
 	path: String,
 	welcome_message: bool,
-	server_browser_threads: usize,
-	server_timeout: u16,
 	show_unreachable: bool,
 	manage_q3_instance: bool,
     refresh_by_mod: bool,
@@ -47,8 +45,6 @@ impl Config {
 		Self {
 			path: path,
 			welcome_message: true,
-			server_browser_threads: 50,
-			server_timeout: 300,
 			show_unreachable: false,
 			manage_q3_instance: true,
             refresh_by_mod: false,

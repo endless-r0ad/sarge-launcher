@@ -4,8 +4,6 @@ import { type MasterServer } from '@/models/master'
 export interface Config {
   path: string
   welcome_message: boolean
-  server_browser_threads: number
-  server_timeout: number
   show_unreachable: boolean
   manage_q3_instance: boolean
   refresh_by_mod: boolean
