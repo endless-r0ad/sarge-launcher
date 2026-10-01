@@ -18,19 +18,21 @@ pub async fn refresh_all_servers(app: AppHandle, mut all_servers: Vec<Quake3Serv
 		return Err(String::from("Zero servers to refresh, check network connection or master server status"))
 	}
 
-    for s in &mut all_servers {
-        s.reset_data();
-    }
+    tauri::async_runtime::spawn_blocking(move || {
+        for s in &mut all_servers {
+            s.reset_data();
+        }
 
-    get_saved_servers(&app, &mut all_servers);
+        get_saved_servers(&app, &mut all_servers);
 
-    let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
-    socket.set_read_timeout(Some(Duration::from_millis(TIMEOUT_MS))).unwrap();
+        let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
+        socket.set_read_timeout(Some(Duration::from_millis(TIMEOUT_MS))).unwrap();
 
-    query_servers_batch(&socket, &mut all_servers, QUERY_ATTEMPTS, TIMEOUT_MS);
+        query_servers_batch(&socket, &mut all_servers, QUERY_ATTEMPTS, TIMEOUT_MS);
 
+        Ok(all_servers)
 
-    Ok(all_servers)
+    }).await.map_err(|e| e.to_string())?
 	
 }
 
@@ -124,7 +126,9 @@ pub fn query_servers_batch(socket: &UdpSocket, chunk: &mut [Quake3Server], max_a
 
     while attempt < max_attempts && !pending.is_empty() {
         for &addr in pending.keys() {
-            let _ = socket.send_to(GETSTATUS, addr);
+            if let Err(e) = socket.send_to(GETSTATUS, addr) {
+                log::error!("send_to {} failed: {}", addr, e);
+            }
         }
 
         let deadline = Instant::now() + Duration::from_millis(timeout_ms);
