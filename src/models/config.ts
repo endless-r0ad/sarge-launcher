@@ -7,6 +7,7 @@ export interface Config {
   show_unreachable: boolean
   manage_q3_instance: boolean
   show_trashed_servers: boolean
+  server_timeout: number
   autoclose_demo: boolean
   loop_demo: boolean
   get_full_demo_data: boolean

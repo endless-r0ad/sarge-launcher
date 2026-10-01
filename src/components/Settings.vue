@@ -23,6 +23,7 @@
       config.value.manage_q3_instance != localConfig.value.manage_q3_instance ||
       config.value.show_unreachable != localConfig.value.show_unreachable ||
       config.value.show_trashed_servers != localConfig.value.show_trashed_servers ||
+      config.value.server_timeout != localConfig.value.server_timeout ||
       config.value.autoclose_demo != localConfig.value.autoclose_demo ||
       config.value.loop_demo != localConfig.value.loop_demo ||
       config.value.get_full_demo_data != localConfig.value.get_full_demo_data
@@ -44,6 +45,13 @@
   <div class="item">
     <input type="checkbox" v-model="config.show_trashed_servers" />
     <label class="ml-1">Show Trashed Servers</label>
+  </div>
+  <div class="conf-plus">
+    +
+    <label style="margin-left: 4px">Server Timeout - {{ config.server_timeout }}ms</label>
+  </div>
+  <div class="item">
+    <input type="range" min="300" max="2000" step="100" class="slider" v-model.number="config.server_timeout" />
   </div>
   <div class="item" style="padding-top: 10px; border-top: 1px solid var(--main-bg)">
     <input type="checkbox" v-model="config.autoclose_demo" />

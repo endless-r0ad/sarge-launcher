@@ -30,6 +30,7 @@ impl Default for SargeLauncher {
 pub struct Config {
 	path: String,
 	welcome_message: bool,
+    server_timeout: u64,
 	show_unreachable: bool,
 	manage_q3_instance: bool,
 	show_trashed_servers: bool,
@@ -44,6 +45,7 @@ impl Config {
 		Self {
 			path: path,
 			welcome_message: true,
+            server_timeout: 1000,
 			show_unreachable: false,
 			manage_q3_instance: true,
 			show_trashed_servers: true,

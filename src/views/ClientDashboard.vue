@@ -60,7 +60,7 @@
     } 
 
     try {
-      favoritedServers.value = await invoke('refresh_all_servers', { allServers: favoritedServers.value })
+      favoritedServers.value = await invoke('refresh_all_servers', { allServers: favoritedServers.value, timeout: config.value.server_timeout })
     }
     catch(err) {
       emit('alert', 'error', ensureError(err).message)

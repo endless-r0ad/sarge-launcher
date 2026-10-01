@@ -9,16 +9,17 @@ use tauri::{AppHandle, Manager};
 use crate::config::SargeLauncher;
 use crate::server::{Quake3Server, GETSTATUS};
 
-const TIMEOUT_MS: u64 = 1500;
 const QUERY_ATTEMPTS: usize = 2;
 
 #[tauri::command(async)]
-pub async fn refresh_all_servers(app: AppHandle, mut all_servers: Vec<Quake3Server>) -> Result<Vec<Quake3Server>, String> {
-	if all_servers.len() == 0 {
-		return Err(String::from("Zero servers to refresh, check network connection or master server status"))
-	}
-
+pub async fn refresh_all_servers(app: AppHandle, mut all_servers: Vec<Quake3Server>, timeout: u64) -> Result<Vec<Quake3Server>, String> {
+	
     tauri::async_runtime::spawn_blocking(move || {
+
+        if all_servers.len() == 0 {
+            return Err(String::from("Zero servers to refresh, check network connection or master server status"))
+        }
+        
         for s in &mut all_servers {
             s.reset_data();
         }
@@ -26,9 +27,9 @@ pub async fn refresh_all_servers(app: AppHandle, mut all_servers: Vec<Quake3Serv
         get_saved_servers(&app, &mut all_servers);
 
         let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
-        socket.set_read_timeout(Some(Duration::from_millis(TIMEOUT_MS))).unwrap();
+        socket.set_read_timeout(Some(Duration::from_millis(timeout))).unwrap();
 
-        query_servers_batch(&socket, &mut all_servers, QUERY_ATTEMPTS, TIMEOUT_MS);
+        query_servers_batch(&socket, &mut all_servers, QUERY_ATTEMPTS, timeout);
 
         Ok(all_servers)
 
@@ -37,7 +38,7 @@ pub async fn refresh_all_servers(app: AppHandle, mut all_servers: Vec<Quake3Serv
 }
 
 #[tauri::command(async)]
-pub async fn refresh_single_server(mut refresh_server: Quake3Server) -> Result<Quake3Server, String> {
+pub async fn refresh_single_server(mut refresh_server: Quake3Server, timeout: u64) -> Result<Quake3Server, String> {
 
     let server_list = refresh_server.list.clone();
     let is_custom = refresh_server.custom.clone();
@@ -47,7 +48,7 @@ pub async fn refresh_single_server(mut refresh_server: Quake3Server) -> Result<Q
     refresh_server.custom = is_custom;
 
 	let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
-	let _ = socket.set_read_timeout(Some(Duration::from_millis(TIMEOUT_MS))).unwrap();
+	let _ = socket.set_read_timeout(Some(Duration::from_millis(timeout))).unwrap();
     
 	refresh_server.query_server(&socket, 0);
 

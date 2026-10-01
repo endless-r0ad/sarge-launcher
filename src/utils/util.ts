@@ -21,6 +21,7 @@ export function defaultConfig(): Config {
     show_unreachable: false,
     manage_q3_instance: true,
     show_trashed_servers: true,
+    server_timeout: 1000,
     autoclose_demo: true,
     loop_demo: false,
     get_full_demo_data: true,
