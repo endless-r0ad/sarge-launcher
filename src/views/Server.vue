@@ -114,8 +114,6 @@
       serverDetailsLastRefresh.value = await invoke('refresh_all_servers', 
                 { 
                   allServers: serverIPs.value.filter((x) => refreshByMod ? x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash' : true), 
-                  numThreads: (config.value.server_browser_threads == 0 ? 1 : config.value.server_browser_threads),
-                  timeout: config.value.server_timeout
                 })
     }
     catch(err) {
@@ -138,7 +136,6 @@
     const executionTime = performance.now() - startTime;
 
     let logMsg = `${serverDetailsLastRefresh.value.length - trashLength.value} servers refreshed in ${parseFloat((executionTime/1000).toFixed(2))}`
-    logMsg += ` seconds using ${config.value.server_browser_threads} threads and ${config.value.server_timeout}ms timeout`
     info(logMsg)
   }
 
