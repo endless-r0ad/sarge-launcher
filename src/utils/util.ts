@@ -20,7 +20,6 @@ export function defaultConfig(): Config {
     welcome_message: true,
     show_unreachable: false,
     manage_q3_instance: true,
-    refresh_by_mod: false,
     show_trashed_servers: true,
     autoclose_demo: true,
     loop_demo: false,

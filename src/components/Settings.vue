@@ -21,7 +21,6 @@
   onBeforeUnmount(async () => {
     if (
       config.value.manage_q3_instance != localConfig.value.manage_q3_instance ||
-      config.value.refresh_by_mod != localConfig.value.refresh_by_mod ||
       config.value.show_unreachable != localConfig.value.show_unreachable ||
       config.value.show_trashed_servers != localConfig.value.show_trashed_servers ||
       config.value.autoclose_demo != localConfig.value.autoclose_demo ||
@@ -39,10 +38,6 @@
     <label class="ml-1">Manage Q3 Instance</label>
   </div>
   <div class="item" style="padding-top: 10px; border-top: 1px solid var(--main-bg)">
-    <input type="checkbox" v-model="config.refresh_by_mod" />
-    <label class="ml-1">Show Client Game Servers</label>
-  </div>
-  <div class="item">
     <input type="checkbox" v-model="config.show_unreachable" />
     <label class="ml-1">Show Unreachable Servers</label>
   </div>
