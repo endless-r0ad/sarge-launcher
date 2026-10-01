@@ -186,6 +186,8 @@
     refreshingSingleServer.value = null;
   }
 
+  const mastersActive = computed(() => { return appdata.value.masters.some(x => x.active) })
+
   const pinnedServers = computed(() => { return serverDetails.value.filter((s) => s.list == 'pinned') }) 
       
   const mainServers = computed(() => { return serverDetails.value.filter((s) => s.list == 'main') }) 
@@ -696,13 +698,14 @@
             @mouseleave="masterServerHover=false" 
             class="refresh-button"
             :class="{'activated-button': showPopup == 'masterSettings'}"
+            :style="mastersActive ? '' : 'background-color: #b65718;'"
             @click="showPopup='masterSettings'">
         Master Servers
       </button>
-      <div v-if="masterServerHover" class="footer-popup">
+      <div v-if="masterServerHover && mastersActive" class="footer-popup">
         <div v-for="master in appdata.masters" style="padding-right: 40px;">
           <div v-if="master.active" style="display: inline-block; width: 15%;">{{ numServersByMaster(master) }} </div>
-          <div v-if="master.active" style="display: inline-block;">{{ master.game }}: {{ master.name }}</div>                 
+          <div v-if="master.active" style="display: inline-block;">{{ master.game }}: {{ master.name }}</div>
         </div>
       </div> 
     </div>   
@@ -749,7 +752,7 @@
       </label>  
     </Modal>
       
-    <Modal v-if="showPopup=='masterSettings'" :popupType="'center'" @close="popupInput = '', showPopup = ''">   
+    <Modal v-if="showPopup=='masterSettings'" :popupType="'center'" @close="popupInput = '', showPopup = ''">
       <MasterSettings 
         v-if="showPopup=='masterSettings'" 
         :q3MasterProtocol="q3MasterProtocol" 
@@ -833,6 +836,12 @@
 
   .activated-button {    
     background-color: var(--main-bg);
+    border-radius: 0.2rem;
+    cursor: pointer;
+  }
+
+  .no-active-masters {    
+    background-color: #b65718;
     border-radius: 0.2rem;
     cursor: pointer;
   }
