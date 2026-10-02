@@ -7,7 +7,7 @@ use crate::master::MasterServer;
 use crate::q3_util;
 use std::collections::HashMap;
 
-const GETSTATUS: &[u8] = b"\xff\xff\xff\xffgetstatus\x00";
+pub const GETSTATUS: &[u8] = b"\xff\xff\xff\xffgetstatus\x00";
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct ServerPlayer {
@@ -98,7 +98,7 @@ impl Quake3Server {
         let ping_start = Instant::now();
 
         if attempts > 1 {
-            self.set_error(Error::new(ErrorKind::TimedOut, "No response from server after max retries"));
+            self.set_error(Error::new(ErrorKind::TimedOut, "No response after max retries"));
             return
         }
 
@@ -117,9 +117,7 @@ impl Quake3Server {
         match response {
             Ok((_bytes, _src)) => {
                 self.ping = ping_start.elapsed().as_millis() as u16;
-                self
-                    .parse_status_response(&response_buf)
-                    .unwrap_or_else(|e| self.errormessage = e.to_string());
+                self.parse_getstatus(&response_buf).unwrap_or_else(|e| self.errormessage = e.to_string());  
                 return
             }
             Err(_err) => {
@@ -128,7 +126,7 @@ impl Quake3Server {
         }
     }
 
-	pub fn parse_status_response(&mut self, &response_buf: &[u8; 2400]) -> Result<(), tauri::Error> {
+	pub fn parse_getstatus(&mut self, &response_buf: &[u8; 2400]) -> Result<(), tauri::Error> {
 		let mut index = 0;
 
 		if &response_buf[index..(index + 19)] != b"\xff\xff\xff\xffstatusResponse\n" {

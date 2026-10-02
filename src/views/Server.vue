@@ -49,10 +49,18 @@
   const { config } = useConfig()
   const { activeClient, clientServerGame } = useClient()
 
-  watch(activeClient, async(newVal, oldVal) => {
-    if (config.value.refresh_by_mod && newVal && newVal.gamename != oldVal?.gamename) {
+  watch(clientServerGame, async(newVal, oldVal) => {
+    if (showClientGameOnly.value && newVal && newVal != oldVal) {
       serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash')
       toggleShowUnreachableServers()
+    }
+    if (showClientGameOnly && !newVal) {
+      showClientGameOnly.value = false
+      serverDetailsLastRefresh.value = serverIPs.value
+      toggleShowUnreachableServers()
+    }
+    if (newVal != oldVal) {
+      resetFilters()
     }
   })
 
@@ -87,21 +95,26 @@
     }
   }
 
-  async function refreshServers(fullRefresh: boolean){
+  function resetFilters() {
+    currentSort.value = ''
+    sortDesc.value = false
+    selectedServer.value = null
+    lastSelectedServer.value = null
+    searchQuery.value = ''
+  }
+
+  async function refreshServers(fullRefresh: boolean) {
 
     if (loading.value || refreshingSingleServer.value) { return }
 
     const startTime = performance.now();
     loading.value = true
 
-    currentSort.value = ''
-    sortDesc.value = false
-    selectedServer.value = null      
+    resetFilters()     
     serverDetails.value = []
     serverDetailsLastRefresh.value = []
-    searchQuery.value = ''
       
-    let refreshByMod = clientServerGame.value && config.value.refresh_by_mod && !fullRefresh
+    let refreshByMod = clientServerGame.value && showClientGameOnly.value && !fullRefresh
 
     if (fullRefresh) {
       await queryMasterServers()
@@ -113,8 +126,7 @@
 
       serverDetailsLastRefresh.value = await invoke('refresh_all_servers', 
                 { 
-                  allServers: serverIPs.value.filter((x) => refreshByMod ? x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash' : true), 
-                  numThreads: (config.value.server_browser_threads == 0 ? 1 : config.value.server_browser_threads),
+                  allServers: serverIPs.value.filter((x) => refreshByMod ? x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash' : true),
                   timeout: config.value.server_timeout
                 })
     }
@@ -124,7 +136,7 @@
 
     if (fullRefresh) {
       serverIPs.value = serverDetailsLastRefresh.value
-      if (activeClient.value && config.value.refresh_by_mod) {
+      if (activeClient.value && showClientGameOnly.value) {
         serverDetailsLastRefresh.value = serverDetailsLastRefresh.value.filter((x) => x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash')
       }
     }
@@ -138,7 +150,6 @@
     const executionTime = performance.now() - startTime;
 
     let logMsg = `${serverDetailsLastRefresh.value.length - trashLength.value} servers refreshed in ${parseFloat((executionTime/1000).toFixed(2))}`
-    logMsg += ` seconds using ${config.value.server_browser_threads} threads and ${config.value.server_timeout}ms timeout`
     info(logMsg)
   }
 
@@ -176,6 +187,8 @@
     refreshingSingleServer.value = null;
   }
 
+  const mastersActive = computed(() => { return appdata.value.masters.some(x => x.active) })
+
   const pinnedServers = computed(() => { return serverDetails.value.filter((s) => s.list == 'pinned') }) 
       
   const mainServers = computed(() => { return serverDetails.value.filter((s) => s.list == 'main') }) 
@@ -185,7 +198,7 @@
   const trashServers = computed(() => { return serverDetails.value.filter((s) => s.list == 'trash') }) 
   const pinnedLength = computed(() => { return pinnedServers.value.length }) 
   const mainLength = computed(() => { return mainServers.value.length }) 
-  const trashLength = computed(() => { return trashServers.value.length }) 
+  const trashLength = computed(() => { return trashServers.value.length })
 
   const { 
      translateY,
@@ -443,17 +456,6 @@
     }
   })
 
-  watch(() => config.value.refresh_by_mod, (newVal, _oldVal) => {
-    if (newVal && activeClient.value) {
-      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash')
-      toggleShowUnreachableServers()
-    }
-    if (!newVal) {
-      serverDetailsLastRefresh.value = serverIPs.value
-      toggleShowUnreachableServers()
-    }
-  })
-
   const searchQuery = ref('')
 
   watch(searchQuery, (newSearch, _old) => { 
@@ -547,15 +549,37 @@
     }
   }
 
+  const showClientGameOnly = ref(false)
+
+  watch(showClientGameOnly, (newVal, _oldVal) => {
+    if (newVal && activeClient.value) {
+      serverDetailsLastRefresh.value = serverIPs.value.filter((x) => x.game.includes(clientServerGame.value!) || x.list == 'pinned' || x.list == 'trash')
+      toggleShowUnreachableServers()
+    }
+    if (!newVal) {
+      serverDetailsLastRefresh.value = serverIPs.value
+      toggleShowUnreachableServers()
+    }
+    resetFilters()
+  })
+
 </script>
 
 <template>
     
   <div class="table-header-base no-select">
     <div class="table-header-right">
-        <input class="search" type="text" placeholder="search" v-model="searchQuery"> 
-        <span class="add-custom-server" :class="{'activated-button': showPopup == 'add'}" @click="showPopup='add'" />
-        <span class="trash-server-button" :class="{'activated-button': showPopup == 'trash'}" @click="showPopup='trash'" />
+      <button
+        v-if="activeClient"
+        class="refresh-button"
+        :class="{ 'base-only': showClientGameOnly }"
+        @click="showClientGameOnly = !showClientGameOnly"
+      >
+        {{ clientServerGame }}
+      </button>
+      <input class="search" type="text" placeholder="search" v-model="searchQuery"> 
+      <span class="add-custom-server" :class="{'activated-button': showPopup == 'add'}" @click="showPopup='add'" />
+      <span class="trash-server-button" :class="{'activated-button': showPopup == 'trash'}" @click="showPopup='trash'" />
     </div>
     <div class="table-header-left">        
       <button class="connect-button" :disabled="!selectedServer || !activeClient" @click="spawnQuakeLocal();">Connect</button>            
@@ -615,7 +639,7 @@
           @hideDetails="displayDetails = false"
           @contextmenu.prevent="rightClickToSelect(server); refreshSingleServer(server);"
           @keydown.space.prevent="refreshSingleServer(server)"
-        />              
+        />
         <ServerRow v-for="(server, index) in getVirtualRows" 
           class="row"
           :style="getMainServerIndex(server) % 2 ? 'background-color: rgba(23, 32, 45, 0.3);' : ''"
@@ -675,13 +699,14 @@
             @mouseleave="masterServerHover=false" 
             class="refresh-button"
             :class="{'activated-button': showPopup == 'masterSettings'}"
+            :style="mastersActive ? '' : 'background-color: #b65718;'"
             @click="showPopup='masterSettings'">
         Master Servers
       </button>
-      <div v-if="masterServerHover" class="footer-popup">
+      <div v-if="masterServerHover && mastersActive" class="footer-popup">
         <div v-for="master in appdata.masters" style="padding-right: 40px;">
           <div v-if="master.active" style="display: inline-block; width: 15%;">{{ numServersByMaster(master) }} </div>
-          <div v-if="master.active" style="display: inline-block;">{{ master.game }}: {{ master.name }}</div>                 
+          <div v-if="master.active" style="display: inline-block;">{{ master.game }}: {{ master.name }}</div>
         </div>
       </div> 
     </div>   
@@ -728,7 +753,7 @@
       </label>  
     </Modal>
       
-    <Modal v-if="showPopup=='masterSettings'" :popupType="'center'" @close="popupInput = '', showPopup = ''">   
+    <Modal v-if="showPopup=='masterSettings'" :popupType="'center'" @close="popupInput = '', showPopup = ''">
       <MasterSettings 
         v-if="showPopup=='masterSettings'" 
         :q3MasterProtocol="q3MasterProtocol" 
@@ -816,6 +841,12 @@
     cursor: pointer;
   }
 
+  .no-active-masters {    
+    background-color: #b65718;
+    border-radius: 0.2rem;
+    cursor: pointer;
+  }
+
   .empty-pinned {
     background-color: var(--alt-bg);
     text-align: center; 
@@ -857,6 +888,12 @@
 
   .close-button:hover {
     background-color: var(--main-bg);
+    cursor: pointer;
+  }
+
+  .base-only {
+    background-color: rgba(0, 143, 168, 0.514);
+    border-radius: 0.2rem;
     cursor: pointer;
   }
     

@@ -60,12 +60,7 @@
     } 
 
     try {
-      favoritedServers.value = await invoke('refresh_all_servers', 
-                { 
-                  allServers: favoritedServers.value, 
-                  numThreads: (config.value.server_browser_threads == 0 ? 1 : config.value.server_browser_threads),
-                  timeout: config.value.server_timeout
-                })
+      favoritedServers.value = await invoke('refresh_all_servers', { allServers: favoritedServers.value, timeout: config.value.server_timeout })
     }
     catch(err) {
       emit('alert', 'error', ensureError(err).message)

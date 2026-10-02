@@ -18,12 +18,10 @@ export function defaultConfig(): Config {
   return {
     path: '',
     welcome_message: true,
-    server_browser_threads: 50,
-    server_timeout: 400,
     show_unreachable: false,
     manage_q3_instance: true,
-    refresh_by_mod: false,
     show_trashed_servers: true,
+    server_timeout: 1000,
     autoclose_demo: true,
     loop_demo: false,
     get_full_demo_data: true,
