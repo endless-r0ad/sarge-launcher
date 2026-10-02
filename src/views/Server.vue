@@ -169,7 +169,7 @@
     refreshingSingleServer.value = server
 
     try{
-      let refreshed: Quake3Server = await invoke('refresh_single_server', {refreshServer: refreshingSingleServer.value, timeout: 2000})
+      let refreshed: Quake3Server = await invoke('refresh_single_server', {refreshServer: refreshingSingleServer.value, timeout: 1000})
       let splice_index = serverDetails.value.indexOf(refreshingSingleServer.value)
       let splice_index2 = serverDetailsLastRefresh.value.indexOf(refreshingSingleServer.value)
 
