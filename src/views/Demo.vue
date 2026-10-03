@@ -207,14 +207,6 @@
   }
 
   const { spawnQuakeDemo } = useSpawnQuake()
-
-  async function spawnQuakeLocal() {
-    try {
-      spawnQuakeDemo(selectedDemo.value)
-    } catch (err) {
-      emit('alert', 'error', ensureError(err).message)
-    }   
-  }
   
   const totalDemos = computed(() => {
     return demos.value.length
@@ -274,7 +266,7 @@
     handleClick(clicked, target)
 
     if (dblClickHappenedOnSameObject.value) {
-      spawnQuakeLocal()
+      spawnQuakeDemo(selectedDemo.value)
       resetDblClickTimeout()
     }
   }
@@ -290,7 +282,7 @@
       <input class="search" type="text" placeholder="search" v-model="searchQuery" />
     </div>
     <div class="table-header-left">
-      <button class="connect-button" :disabled="!selectedDemo" @click="spawnQuakeLocal()">Connect</button>
+      <button class="connect-button" :disabled="!selectedDemo" @click="spawnQuakeDemo(selectedDemo)">Connect</button>
       <button class="refresh-button" @click="getDemos(false)">Refresh</button>
     </div>
 
@@ -312,7 +304,7 @@
     class="scrollable-container no-select"
     @keydown.up.prevent="keySelect(-1)"
     @keydown.down.prevent="keySelect(1)"
-    @keydown.enter.prevent="spawnQuakeLocal()"
+    @keydown.enter.prevent="spawnQuakeDemo(selectedDemo)"
     @keydown.esc.prevent="escapeButton()"
     ref="demoTable"
     id="demoTable"

@@ -1,10 +1,11 @@
 import { ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { sep } from '@tauri-apps/api/path'
+import { error } from '@tauri-apps/plugin-log'
 import type { Demo } from '@/models/demo'
 import { useConfig } from '@/composables/config'
 import { useClient } from './client'
-import { getServerProtocol} from '@/utils/util'
+import { getServerProtocol, ensureError} from '@/utils/util'
 import type { Quake3Server } from '@/models/server'
 import type { Level } from '@/models/level'
 import type { Bot } from '@/models/singleplayer'
@@ -64,7 +65,7 @@ export function useSpawnQuake() {
       })      
       await spawnQuake(args)
     } catch (err) {
-      throw err
+      error(ensureError(err).message)
     }   
   }
 
