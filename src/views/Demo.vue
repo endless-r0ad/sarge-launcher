@@ -207,6 +207,14 @@
   }
 
   const { spawnQuakeDemo } = useSpawnQuake()
+
+  async function spawnQuakeLocal(){
+    let resp = await spawnQuakeDemo(selectedDemo.value)
+
+    if (resp.length > 0) {
+      emit('alert', 'error', resp)
+    }
+  }
   
   const totalDemos = computed(() => {
     return demos.value.length
@@ -259,14 +267,14 @@
    rightClickToSelect
   } = useClickRow(selectedDemo, lastSelectedDemo, displayDetails);
 
-  function clickDemo(clicked: Demo, event: MouseEvent) {
+  async function clickDemo(clicked: Demo, event: MouseEvent) {
     let target = event.target as HTMLTextAreaElement;
     if (target.id == 'moreButton' || target.id == 'levelshot') { return }
 
     handleClick(clicked, target)
 
     if (dblClickHappenedOnSameObject.value) {
-      spawnQuakeDemo(selectedDemo.value)
+      await spawnQuakeLocal()
       resetDblClickTimeout()
     }
   }
@@ -282,7 +290,7 @@
       <input class="search" type="text" placeholder="search" v-model="searchQuery" />
     </div>
     <div class="table-header-left">
-      <button class="connect-button" :disabled="!selectedDemo" @click="spawnQuakeDemo(selectedDemo)">Connect</button>
+      <button class="connect-button" :disabled="!selectedDemo" @click="spawnQuakeLocal()">Connect</button>
       <button class="refresh-button" @click="getDemos(false)">Refresh</button>
     </div>
 
@@ -304,7 +312,7 @@
     class="scrollable-container no-select"
     @keydown.up.prevent="keySelect(-1)"
     @keydown.down.prevent="keySelect(1)"
-    @keydown.enter.prevent="spawnQuakeDemo(selectedDemo)"
+    @keydown.enter.prevent="spawnQuakeLocal()"
     @keydown.esc.prevent="escapeButton()"
     ref="demoTable"
     id="demoTable"

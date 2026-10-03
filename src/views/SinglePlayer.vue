@@ -369,17 +369,17 @@
 
   const { spawnQuakeSinglePlayer, spawnQuakeDefrag } = useSpawnQuake()
 
-  function spawnQuakeLocal() {
-    try {
+  async function spawnQuakeLocal() {
+    let resp = ''
       if (activeClient.value?.gamename == 'defrag') {
-        spawnQuakeDefrag(selectedLevel.value, gametypes.value[gameType.value] ?? '', cheats.value, overbounces.value)
+        resp = await spawnQuakeDefrag(selectedLevel.value, gametypes.value[gameType.value] ?? '', cheats.value, overbounces.value)
       } else {
-        spawnQuakeSinglePlayer(selectedLevel.value, gameType.value, gametypes.value, cheats.value, sv_maxclients.value, 
+        resp = await spawnQuakeSinglePlayer(selectedLevel.value, gameType.value, gametypes.value, cheats.value, sv_maxclients.value, 
                               difficulty.value, teamFreeBotsAllowed.value, isTeamGameType.value, teamSelect.value, 
                               bots_team_free.value, bots_team_red.value, bots_team_blue.value)
-      } 
-    } catch(err) {
-      emit('alert', 'error', ensureError(err).message)
+      }
+    if (resp != '') {
+      emit('alert', 'error', resp)
     }
   }
 

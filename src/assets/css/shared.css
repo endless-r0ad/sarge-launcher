@@ -284,7 +284,8 @@ div::-webkit-scrollbar-thumb {
 
 .custom {
   padding: 0 6px 0 7px;
-  font-weight: 500;
+  font-weight: 900;
+  color: #00ffff;
 }
 
 .plus {

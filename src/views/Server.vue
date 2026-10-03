@@ -418,17 +418,21 @@
 
   const { spawnQuakeServer, spawnQuake } = useSpawnQuake()
 
-  function spawnQuakeLocal(){
-    try {
-      spawnQuakeServer(selectedServer.value)
-    } catch(err) {
-      if (ensureError(err).message == 'needs password') {
-        showPopup.value = 'password'
-        popupInput.value = appdata.value.server_password
-      } else {
-        emit('alert', 'error', ensureError(err).message)
-      }
-    }       
+  async function spawnQuakeLocal(){
+    let resp = await spawnQuakeServer(selectedServer.value)
+
+    if (resp == 'needs password') {
+      showPopup.value = 'password'
+      popupInput.value = appdata.value.server_password
+    }
+
+    if (resp == 'no client') {
+      emit('alert', 'info', 'Link a Quake 3 client first')
+    }
+    
+    if (resp.length > 0 && resp != 'needs password' && resp != 'no client') {
+      emit('alert', 'error', resp)
+    }
   }
 
   const popupInput = ref('')
@@ -544,7 +548,7 @@
     handleClick(selectedServ, target)
 
     if (dblClickHappenedOnSameObject.value) {
-      spawnQuakeLocal()
+      await spawnQuakeLocal()
       resetDblClickTimeout()
     }
   }
