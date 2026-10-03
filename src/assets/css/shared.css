@@ -439,6 +439,11 @@ div::-webkit-scrollbar-thumb {
   background-size: 20%;
 }
 
+.arena {
+  background: url('../../assets/images/arena.png') 84% center no-repeat;
+  background-size: 28%;
+}
+
 .grid {
   height: 100%;
   display: grid;

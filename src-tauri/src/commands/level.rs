@@ -37,7 +37,9 @@ pub async fn get_levels(search_paths: Vec<String>, get_all_data: bool) -> Result
 
 	for p in search_paths {
 		let path = Path::new(&p);
-		levels.append(&mut Level::get_q3_levels(path, get_all_data).await?);
+        if path.is_dir() {
+            levels.append(&mut Level::get_q3_levels(path, get_all_data).await?);
+        }
 	}
 
 	Ok(levels)
