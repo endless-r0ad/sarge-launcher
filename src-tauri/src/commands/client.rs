@@ -127,15 +127,14 @@ pub async fn get_client_search_paths(app: AppHandle, client: Q3Executable) -> Re
         search_paths.push(fs_homepath.clone().into_os_string().into_string().unwrap());
     }
 
-    if exe_path.is_dir() && !search_paths.contains(&exe_path.clone().into_os_string().into_string().unwrap()) {
+    if !search_paths.contains(&exe_path.clone().into_os_string().into_string().unwrap()) {
         search_paths.push(exe_path.clone().into_os_string().into_string().unwrap());
     }
     
     fs_homepath.pop();
     fs_homepath.push(if client.uses_openarena_paths() {"baseoa"} else {"baseq3"});
 
-    if fs_homepath.is_dir() && 
-      !search_paths.contains(&fs_homepath.clone().into_os_string().into_string().unwrap()) &&
+    if !search_paths.contains(&fs_homepath.clone().into_os_string().into_string().unwrap()) &&
       client.game_uses_basegame_paths() 
     {
         search_paths.push(fs_homepath.clone().into_os_string().into_string().unwrap());
@@ -144,8 +143,7 @@ pub async fn get_client_search_paths(app: AppHandle, client: Q3Executable) -> Re
     exe_path.pop();
     exe_path.push(if client.uses_openarena_paths() {"baseoa"} else {"baseq3"});
 
-    if exe_path.is_dir() && 
-        !search_paths.contains(&exe_path.clone().into_os_string().into_string().unwrap()) &&
+    if !search_paths.contains(&exe_path.clone().into_os_string().into_string().unwrap()) &&
         client.game_uses_basegame_paths()
     {
         search_paths.push(exe_path.into_os_string().into_string().unwrap());
