@@ -281,12 +281,36 @@
 
   const keepSelectedDetailsOpen = ref(false)
   const showSearchPaths = ref(false)
+
+  const showClientGameOnly = ref(false)
+
+  watch(showClientGameOnly, (newVal, _oldVal) => {
+    if (newVal && activeClient.value) {
+      demos.value = demosLastRefresh.value.filter((x) => x.gamename.includes(activeClient.value!.gamename))
+    }
+    if (!newVal) {
+      demos.value = demosLastRefresh.value
+    }
+    searchQuery.value = ''
+    sortDesc.value = false
+    currentSort.value = ''
+    selectedDemo.value = null
+    lastSelectedDemo.value = null
+  })
   
 </script>
 
 <template>
   <div class="table-header-base no-select">
     <div class="table-header-right">
+      <button
+        v-if="activeClient"
+        class="refresh-button"
+        :class="{ 'base-only': showClientGameOnly }"
+        @click="showClientGameOnly = !showClientGameOnly"
+      >
+        {{ activeClient?.gamename }}
+      </button>
       <input class="search" type="text" placeholder="search" v-model="searchQuery" />
     </div>
     <div class="table-header-left">
@@ -353,8 +377,7 @@
 
   <div class="table-footer">
     <div class="table-footer-right">
-      <span class="footer-data-right" v-if="searchQuery.length == 0">Demos: {{ demosLastRefresh.length }}</span>
-      <span class="footer-data-right" v-if="searchQuery.length > 0">Demos: {{ demos.length }}</span>
+      <span class="footer-data-right">Demos: {{ demos.length }}</span>
     </div>
     <div class="table-footer-left">
       <button v-if="activeClient" 

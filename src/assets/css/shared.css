@@ -489,6 +489,12 @@ div::-webkit-scrollbar-thumb {
   font-weight: 800;
 }
 
+.base-only {
+  background-color: rgba(0, 143, 168, 0.514);
+  border-radius: 0.2rem;
+  cursor: pointer;
+}
+
 .q3c-0 {
   color: rgb(0, 0, 0);
 }

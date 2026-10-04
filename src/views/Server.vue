@@ -594,7 +594,7 @@
   
     <div class="table-column-header">
       <span style="width: 3%;"></span>
-      <span style="width: 11%; text-align: left;"><span class="sort-header" @click="sortServers('game');">fs_game</span><span :class="getArrowSort('game')" @click="sortServers('game');"/></span>
+      <span style="width: 11%; text-align: left;"><span class="sort-header" @click="sortServers('game');">game</span><span :class="getArrowSort('game')" @click="sortServers('game');"/></span>
       <span style="width: 3%;"></span>
       <span style="width: 36%; text-align: left;"><span class="sort-header" @click="sortServers('host');">hostname</span><span :class="getArrowSort('host')" @click="sortServers('host');" /></span>
       <span style="width: 1%;"></span>
@@ -892,12 +892,6 @@
 
   .close-button:hover {
     background-color: var(--main-bg);
-    cursor: pointer;
-  }
-
-  .base-only {
-    background-color: rgba(0, 143, 168, 0.514);
-    border-radius: 0.2rem;
     cursor: pointer;
   }
     
