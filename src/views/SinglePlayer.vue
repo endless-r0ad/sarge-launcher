@@ -167,6 +167,9 @@
           case 'defrag':
             levels.value = levelsLastRefresh.value.filter((m) => m.is_defrag)
             break
+          case 'devotion':
+            levels.value = levelsLastRefresh.value.filter((m) => !m.is_defrag)
+            break
           case 'q3ut4':
             levels.value = levelsLastRefresh.value.filter((m) => m.level_name.includes('ut4'))
             break
@@ -300,6 +303,8 @@
         return ['VQ3', 'CPM']
       case 'excessiveplus':
         return ['FFA', '1v1', 'SP', 'TDM', 'CTF', 'RTF', '1FCTF', 'CA', 'FT', 'PTL']
+      case 'devotion':
+        return ['FFA', '1v1', 'SP', 'TDM', 'CTF', 'CA', 'CTFE', 'LMS']
       default:
         return ['FFA', '1v1', 'SP', 'TDM', 'CTF']
     }
