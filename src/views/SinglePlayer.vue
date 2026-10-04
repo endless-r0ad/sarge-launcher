@@ -167,6 +167,9 @@
           case 'defrag':
             levels.value = levelsLastRefresh.value.filter((m) => m.is_defrag)
             break
+          case 'devotion':
+            levels.value = levelsLastRefresh.value.filter((m) => !m.is_defrag)
+            break
           case 'q3ut4':
             levels.value = levelsLastRefresh.value.filter((m) => m.level_name.includes('ut4'))
             break
