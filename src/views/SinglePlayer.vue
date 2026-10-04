@@ -677,12 +677,6 @@
 </template>
 
 <style scoped>
-  .base-only {
-    background-color: rgba(0, 143, 168, 0.514);
-    border-radius: 0.2rem;
-    cursor: pointer;
-  }
-
   .single-player {
     height: calc(100% - 72px);
   }
