@@ -77,7 +77,11 @@
   function getServersByList(list: string) { return serverDetails.value.filter((s) => s.list == list) }
 
   function numServersByMaster(master: MasterServer) {
-    return serverDetails.value.filter((s) => s.master?.address == master.address && s.master?.game == master.game).length
+    if (config.value.show_trashed_servers) {
+      return serverDetails.value.filter((s) => s.master?.address == master.address && s.master?.game == master.game).length
+    } else {
+      return serverDetails.value.filter((s) => s.master?.address == master.address && s.master?.game == master.game && s.list != 'trash').length
+    }
   }
 
   const { levelshots } = useLevelshot()
