@@ -15,7 +15,7 @@
   useAppData()
   const { config } = useConfig()
 
-  const appVersion = 'v0.4.0'
+  const appVersion = 'v0.4.1'
   const isMounted = ref(false)
   const latestRelease = ref<string | null>(null)
   const updateAvailable = ref(false)
