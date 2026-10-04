@@ -300,6 +300,8 @@
         return ['VQ3', 'CPM']
       case 'excessiveplus':
         return ['FFA', '1v1', 'SP', 'TDM', 'CTF', 'RTF', '1FCTF', 'CA', 'FT', 'PTL']
+      case 'devotion':
+        return ['FFA', '1v1', 'SP', 'TDM', 'CTF', 'CA', 'CTFE', 'LMS']
       default:
         return ['FFA', '1v1', 'SP', 'TDM', 'CTF']
     }

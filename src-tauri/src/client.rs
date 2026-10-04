@@ -20,7 +20,8 @@ impl Q3Executable {
         match self.gamename.to_lowercase().as_str() {
             "baseq3" => return true,
             "cpma" => return true, 
-            "defrag" => return true, 
+            "defrag" => return true,
+            "devotion" => return true,
             "excessiveplus" => return true, 
             "osp" => return true,
             "rat" => return true,

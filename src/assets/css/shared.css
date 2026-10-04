@@ -445,6 +445,11 @@ div::-webkit-scrollbar-thumb {
   background-size: 28%;
 }
 
+.devotion {
+  background: url('../../assets/images/devotion.png') 84% center no-repeat;
+  background-size: 28%;
+}
+
 .grid {
   height: 100%;
   display: grid;
